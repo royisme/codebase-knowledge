@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -19,6 +19,7 @@ import {
   updatePolicy,
   type ListPoliciesResponse,
 } from '@/lib/rbac-service'
+import { AdminUsersPage } from '../users/admin-users-page'
 import {
   Card,
   CardContent,
@@ -26,6 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -58,6 +60,7 @@ const DISPLAY_ACTION_SET = new Set<ActionVerb>(DISPLAY_ACTIONS)
 type RoleMember = RoleAssignment & { email: string; displayName: string }
 
 export function RbacDashboard() {
+  const [activeTab, setActiveTab] = useState('overview')
   const queryClient = useQueryClient()
 
   const rolesQuery = useQuery({
@@ -145,70 +148,83 @@ export function RbacDashboard() {
   const audits = auditsQuery.data ?? []
 
   return (
-    <div className='grid gap-6 xl:grid-cols-[2fr,1fr]'>
-      <div className='space-y-6'>
-        <RoleMembersCard
-          members={roleMembers as RoleMember[]}
-          roles={roles}
-          isLoading={membersQuery.isLoading}
-          onAssign={(userId, roleId) =>
-            assignMutation.mutate({ userId, roleId })
-          }
-          isSaving={assignMutation.isPending}
-        />
-        {roles.map((role) => (
-          <RolePolicyCard
-            key={role.id}
-            role={role}
-            policies={rolePolicyMap[role.id] ?? []}
-            resourceActions={resources}
-            isUpdating={mutation.isPending}
-            onToggle={(resource, nextActions) =>
-              mutation.mutate({
-                roleId: role.id,
-                resource,
-                actions: nextActions,
-              })
-            }
-          />
-        ))}
-      </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
+      <TabsList>
+        <TabsTrigger value='overview'>角色权限</TabsTrigger>
+        <TabsTrigger value='users'>用户管理</TabsTrigger>
+      </TabsList>
 
-      <Card className='h-fit'>
-        <CardHeader>
-          <CardTitle>策略审计</CardTitle>
-          <CardDescription>最近的角色与策略变更记录</CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          {audits.length === 0 ? (
-            <p className='text-sm text-muted-foreground'>暂无审计记录。</p>
-          ) : (
-            <div className='space-y-4'>
-              {audits.map((log) => (
-                <div key={log.id} className='space-y-1'>
-                  <div className='flex items-center justify-between text-sm font-medium'>
-                    <span>{log.action}</span>
-                    <span className={log.status === 'success' ? 'text-muted-foreground' : 'text-destructive'}>
-                      {log.status === 'success' ? '成功' : '失败'}
-                    </span>
-                  </div>
-                  <div className='text-xs text-muted-foreground'>
-                    目标：{log.target}
-                  </div>
-                  <div className='text-xs text-muted-foreground'>
-                    操作人：{log.actor} · {new Date(log.timestamp).toLocaleString()}
-                  </div>
-                  {log.details ? (
-                    <div className='text-xs text-muted-foreground'>{log.details}</div>
-                  ) : null}
-                  <Separator className='mt-3' />
+      <TabsContent value='overview' className='space-y-6'>
+        <div className='grid gap-6 xl:grid-cols-[2fr,1fr]'>
+          <div className='space-y-6'>
+            <RoleMembersCard
+              members={roleMembers as RoleMember[]}
+              roles={roles}
+              isLoading={membersQuery.isLoading}
+              onAssign={(userId, roleId) =>
+                assignMutation.mutate({ userId, roleId })
+              }
+              isSaving={assignMutation.isPending}
+            />
+            {roles.map((role) => (
+              <RolePolicyCard
+                key={role.id}
+                role={role}
+                policies={rolePolicyMap[role.id] ?? []}
+                resourceActions={resources}
+                isUpdating={mutation.isPending}
+                onToggle={(resource, nextActions) =>
+                  mutation.mutate({
+                    roleId: role.id,
+                    resource,
+                    actions: nextActions,
+                  })
+                }
+              />
+            ))}
+          </div>
+
+          <Card className='h-fit'>
+            <CardHeader>
+              <CardTitle>策略审计</CardTitle>
+              <CardDescription>最近的角色与策略变更记录</CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              {audits.length === 0 ? (
+                <p className='text-sm text-muted-foreground'>暂无审计记录。</p>
+              ) : (
+                <div className='space-y-4'>
+                  {audits.map((log) => (
+                    <div key={log.id} className='space-y-1'>
+                      <div className='flex items-center justify-between text-sm font-medium'>
+                        <span>{log.action}</span>
+                        <span className={log.status === 'success' ? 'text-muted-foreground' : 'text-destructive'}>
+                          {log.status === 'success' ? '成功' : '失败'}
+                        </span>
+                      </div>
+                      <div className='text-xs text-muted-foreground'>
+                        目标：{log.target}
+                      </div>
+                      <div className='text-xs text-muted-foreground'>
+                        操作人：{log.actor} · {new Date(log.timestamp).toLocaleString()}
+                      </div>
+                      {log.details ? (
+                        <div className='text-xs text-muted-foreground'>{log.details}</div>
+                      ) : null}
+                      <Separator className='mt-3' />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
+
+      <TabsContent value='users'>
+        <AdminUsersPage />
+      </TabsContent>
+    </Tabs>
   )
 }
 

@@ -2,14 +2,6 @@ import { formatDistanceToNow } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -20,9 +12,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal } from 'lucide-react'
+import { ActionMenu } from '@/components/ui/action-menu'
 
-import type { Identifier, KnowledgeSource } from '@/types'
+import type { Identifier, KnowledgeSource, KnowledgeSourceStatus } from '@/types'
 import { KnowledgeSourceStatusBadge } from './knowledge-source-status-badge'
 
 interface KnowledgeSourcesTableProps {
@@ -43,6 +35,10 @@ interface KnowledgeSourcesTableProps {
   onBulkDisable?: (ids: Identifier[]) => void
   onBulkSync?: (ids: Identifier[]) => void
   isMutating?: boolean
+  searchParams?: {
+    search?: string
+    statuses?: KnowledgeSourceStatus[]
+  }
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
@@ -76,6 +72,7 @@ export function KnowledgeSourcesTable({
   onBulkDisable,
   onBulkSync,
   isMutating,
+  searchParams,
 }: KnowledgeSourcesTableProps) {
   const allCurrentPageIds = data.map((source) => source.id)
   const allSelected = allCurrentPageIds.length > 0 && allCurrentPageIds.every(id => selectedIds.includes(id))
@@ -123,10 +120,41 @@ export function KnowledgeSourcesTable({
 
   if (isLoading) {
     return (
-      <div className='space-y-4 rounded-md border border-border/60 p-4'>
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Skeleton key={index} className='h-12 w-full rounded-md' />
-        ))}
+      <div className='space-y-4 rounded-md border border-border/60'>
+        <div className='p-4'>
+          <div className='space-y-3'>
+            {/* Header skeleton */}
+            <div className='flex items-center justify-between'>
+              <Skeleton className='h-6 w-32' />
+              <Skeleton className='h-9 w-24' />
+            </div>
+
+            {/* Table skeleton */}
+            <div className='space-y-2'>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className='flex items-center space-x-4 p-3 border-b border-border/40'>
+                  <Skeleton className='h-4 w-4' />
+                  <Skeleton className='h-4 w-48' />
+                  <Skeleton className='h-4 w-64' />
+                  <Skeleton className='h-4 w-20' />
+                  <Skeleton className='h-4 w-4' />
+                  <Skeleton className='h-4 w-32' />
+                  <Skeleton className='h-8 w-8' />
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination skeleton */}
+            <div className='flex items-center justify-between pt-4'>
+              <Skeleton className='h-4 w-32' />
+              <div className='flex space-x-2'>
+                <Skeleton className='h-8 w-16' />
+                <Skeleton className='h-8 w-16' />
+                <Skeleton className='h-9 w-20' />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -194,8 +222,34 @@ export function KnowledgeSourcesTable({
         <TableBody>
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={onSelectionChange ? 7 : 6} className='py-12 text-center text-muted-foreground'>
-                暂无符合条件的知识源。
+              <TableCell colSpan={onSelectionChange ? 7 : 6} className='py-16'>
+                <div className='flex flex-col items-center justify-center space-y-3 text-center'>
+                  <div className='flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
+                    <svg
+                      className='h-6 w-6 text-muted-foreground'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                      stroke='currentColor'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                      />
+                    </svg>
+                  </div>
+                  <div className='space-y-1'>
+                    <h3 className='text-lg font-medium text-foreground'>
+                      暂无知识源
+                    </h3>
+                    <p className='text-sm text-muted-foreground max-w-sm'>
+                      {searchParams?.search || (searchParams?.statuses && searchParams.statuses.length > 0)
+                        ? '没有找到符合条件的知识源，请尝试调整搜索条件或筛选器。'
+                        : '还没有添加任何知识源，点击"新增知识源"开始添加。'}
+                    </p>
+                  </div>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
@@ -241,32 +295,39 @@ export function KnowledgeSourcesTable({
                   </div>
                 </TableCell>
                 <TableCell className='text-right'>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant='ghost' size='icon' className='h-8 w-8'>
-                        <MoreHorizontal className='h-4 w-4' />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align='end'>
-                      <DropdownMenuLabel>操作</DropdownMenuLabel>
-                      <DropdownMenuItem onSelect={() => onEdit(source)}>
-                        编辑
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => onSync(source)}>
-                        触发同步
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={() => onToggle(source)}>
-                        {source.status === 'disabled' ? '启用' : '禁用'}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => onDelete(source)}
-                        className='text-destructive focus:text-destructive'
-                      >
-                        删除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <ActionMenu
+                    groups={[
+                      {
+                        label: '操作',
+                        actions: [
+                          {
+                            label: '编辑',
+                            onSelect: () => onEdit(source),
+                          },
+                          {
+                            label: '触发同步',
+                            onSelect: () => onSync(source),
+                            disabled: source.status === 'disabled',
+                          },
+                        ],
+                      },
+                      {
+                        actions: [
+                          {
+                            label: source.status === 'disabled' ? '启用' : '禁用',
+                            onSelect: () => onToggle(source),
+                          },
+                          {
+                            label: '删除',
+                            onSelect: () => onDelete(source),
+                            destructive: true,
+                          },
+                        ],
+                      },
+                    ]}
+                    triggerLabel={`操作 ${source.name}`}
+                    disabled={isMutating}
+                  />
                 </TableCell>
               </TableRow>
             ))

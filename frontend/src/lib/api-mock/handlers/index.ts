@@ -1,5 +1,6 @@
 import type { HttpHandler } from 'msw'
 
+import { adminUserHandlers } from './admin-users'
 import { authHandlers } from './auth'
 import { knowledgeSourceHandlers } from './knowledge-sources'
 import { ragHandlers } from './rag'
@@ -12,4 +13,5 @@ export const handlers: HttpHandler[] = [
   ...taskHandlers,
   ...ragHandlers,
   ...rbacHandlers,
+  ...adminUserHandlers,
 ]

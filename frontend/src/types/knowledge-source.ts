@@ -52,14 +52,14 @@ export interface KnowledgeSourceListParams {
 }
 
 export interface BulkOperationPayload {
-  ids: Identifier[]
+  ids: string[]
   operation: 'enable' | 'disable' | 'sync'
 }
 
 export interface BulkOperationResponse {
-  updated: Identifier[]
+  updated: string[]
   failed: Array<{
-    id: Identifier
+    id: string
     error: string
   }>
   message: string

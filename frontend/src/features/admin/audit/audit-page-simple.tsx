@@ -1,0 +1,418 @@
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+
+import { fetchAuditLogs } from '@/lib/rbac-service'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Search as SearchIcon,
+  SlidersHorizontal,
+  Download,
+  RefreshCw,
+  Clock,
+  User,
+  Activity,
+  Shield,
+  AlertCircle,
+} from 'lucide-react'
+
+const STATUS_OPTIONS = [
+  { value: 'success', label: '成功', variant: 'default' as const },
+  { value: 'failure', label: '失败', variant: 'destructive' as const },
+]
+
+const ACTION_OPTIONS = [
+  'assign_role',
+  'update_policy',
+  'create_policy',
+  'delete_policy',
+  'login_attempt',
+  'permission_denied',
+]
+
+const STATUS_LABELS: Record<string, string> = {
+  success: '成功',
+  failure: '失败',
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  assign_role: '分配角色',
+  update_policy: '更新策略',
+  create_policy: '创建策略',
+  delete_policy: '删除策略',
+  login_attempt: '登录尝试',
+  permission_denied: '权限不足',
+}
+
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+  success: <Shield className='h-4 w-4' />,
+  failure: <AlertCircle className='h-4 w-4' />,
+}
+
+export function AuditPage() {
+  const [search, setSearch] = useState('')
+  const [statusFilters, setStatusFilters] = useState<string[]>([])
+  const [actionFilters, setActionFilters] = useState<string[]>([])
+  const [page, setPage] = useState(1)
+  const pageSize = 20
+
+  const {
+    data: audits,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['rbac', 'audits'],
+    queryFn: fetchAuditLogs,
+  })
+
+  // Mock 分页和过滤逻辑
+  const filteredAudits = useMemo(() => {
+    if (!audits) return { items: [], total: 0 }
+
+    const filtered = audits.filter((audit) => {
+      // 搜索过滤
+      if (search) {
+        const searchLower = search.toLowerCase()
+        if (
+          !audit.actor.toLowerCase().includes(searchLower) &&
+          !audit.action.toLowerCase().includes(searchLower) &&
+          !audit.target.toLowerCase().includes(searchLower) &&
+          !(audit.details?.toLowerCase().includes(searchLower) || false)
+        ) {
+          return false
+        }
+      }
+
+      // 状态过滤
+      if (statusFilters.length > 0 && !statusFilters.includes(audit.status)) {
+        return false
+      }
+
+      // 动作过滤
+      if (actionFilters.length > 0 && !actionFilters.includes(audit.action)) {
+        return false
+      }
+
+      return true
+    })
+
+    // Mock 分页
+    const startIndex = (page - 1) * pageSize
+    const paginatedItems = filtered.slice(startIndex, startIndex + pageSize)
+
+    return {
+      items: paginatedItems,
+      total: filtered.length,
+    }
+  }, [audits, search, statusFilters, actionFilters, page, pageSize])
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString()
+  }
+
+  const getStatusBadge = (status: string) => {
+    const statusOption = STATUS_OPTIONS.find(option => option.value === status)
+    if (!statusOption) return null
+
+    return (
+      <Badge variant={statusOption.variant} className='flex items-center gap-1'>
+        {STATUS_ICONS[status]}
+        {STATUS_LABELS[status]}
+      </Badge>
+    )
+  }
+
+  const getActionLabel = (action: string) => {
+    return ACTION_LABELS[action] || action
+  }
+
+  const handleExport = () => {
+    toast.info('导出功能开发中...')
+  }
+
+  if (isLoading) {
+    return (
+      <div className='space-y-6'>
+        <div className='flex items-center justify-between'>
+          <div>
+            <h1 className='text-2xl font-bold'>审计日志</h1>
+            <p className='text-muted-foreground'>查看系统操作审计记录</p>
+          </div>
+          <Button>
+            <Download className='mr-2 h-4 w-4' />
+            导出日志
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <div className='flex space-x-4'>
+              <Skeleton className='h-10 w-64' />
+              <Skeleton className='h-10 w-32' />
+              <Skeleton className='h-10 w-32' />
+              <Skeleton className='h-10 w-24' />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className='space-y-4'>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className='h-16 w-full' />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className='space-y-6'>
+      <div className='flex items-center justify-between'>
+        <div>
+          <h1 className='text-2xl font-bold'>审计日志</h1>
+          <p className='text-muted-foreground'>查看系统操作审计记录</p>
+        </div>
+        <div className='flex gap-2'>
+          <Button variant='outline' onClick={handleExport}>
+            <Download className='mr-2 h-4 w-4' />
+            导出日志
+          </Button>
+          <Button onClick={() => refetch()}>
+            <RefreshCw className='mr-2 h-4 w-4' />
+            刷新
+          </Button>
+        </div>
+      </div>
+
+      {/* 搜索和筛选区域 */}
+      <Card>
+        <CardHeader>
+          <div className='flex flex-wrap items-center gap-2'>
+            <div className='relative flex-1 max-w-md'>
+              <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder='搜索操作人、动作或目标'
+                className='pl-9'
+              />
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant='outline'>
+                  <SlidersHorizontal className='mr-2 h-4 w-4' />
+                  状态筛选
+                  {statusFilters.length > 0 && (
+                    <Badge variant='secondary' className='ml-2'>
+                      {statusFilters.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='start'>
+                <DropdownMenuLabel>筛选状态</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {STATUS_OPTIONS.map((option) => (
+                  <DropdownMenuCheckboxItem
+                    key={option.value}
+                    checked={statusFilters.includes(option.value)}
+                    onCheckedChange={() => {
+                      const newFilters = statusFilters.includes(option.value)
+                        ? statusFilters.filter((item) => item !== option.value)
+                        : [...statusFilters, option.value]
+                      setStatusFilters(newFilters)
+                    }}
+                  >
+                    {option.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  重置筛选
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant='outline'>
+                  <Activity className='mr-2 h-4 w-4' />
+                  动作筛选
+                  {actionFilters.length > 0 && (
+                    <Badge variant='secondary' className='ml-2'>
+                      {actionFilters.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='start'>
+                <DropdownMenuLabel>筛选动作</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ACTION_OPTIONS.map((action) => (
+                  <DropdownMenuCheckboxItem
+                    key={action}
+                    checked={actionFilters.includes(action)}
+                    onCheckedChange={() => {
+                      const newFilters = actionFilters.includes(action)
+                        ? actionFilters.filter((item) => item !== action)
+                        : [...actionFilters, action]
+                      setActionFilters(newFilters)
+                    }}
+                  >
+                    {getActionLabel(action)}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  重置筛选
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Input
+              type='date'
+              placeholder='开始日期'
+              className='w-40'
+            />
+
+            <Input
+              type='date'
+              placeholder='结束日期'
+              className='w-40'
+            />
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* 审计日志列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center justify-between'>
+            <span>审计记录</span>
+            <div className='text-sm font-normal text-muted-foreground'>
+              共 {filteredAudits.total} 条记录 · 第 {page} 页
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredAudits.items.length === 0 ? (
+            <div className='text-center py-12'>
+              <Clock className='mx-auto h-12 w-12 text-muted-foreground' />
+              <h3 className='mt-2 text-sm font-semibold text-foreground'>
+                暂无审计记录
+              </h3>
+              <p className='mt-1 text-sm text-muted-foreground'>
+                {search || statusFilters.length > 0 || actionFilters.length > 0
+                  ? '没有找到符合条件的审计记录，请尝试调整搜索条件或筛选器。'
+                  : '还没有审计记录。'}
+              </p>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>时间</TableHead>
+                    <TableHead>操作人</TableHead>
+                    <TableHead>动作</TableHead>
+                    <TableHead>目标</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>详情</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAudits.items.map((audit) => (
+                    <TableRow key={audit.id}>
+                      <TableCell>
+                        <div className='text-sm'>
+                          {formatDate(audit.timestamp)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className='flex items-center space-x-2'>
+                          <User className='h-4 w-4 text-muted-foreground' />
+                          <span className='font-medium'>{audit.actor}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant='outline'>
+                          {getActionLabel(audit.action)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className='max-w-xs truncate' title={audit.target}>
+                          {audit.target}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(audit.status)}
+                      </TableCell>
+                      <TableCell>
+                        {audit.details && (
+                          <div className='max-w-xs truncate text-sm text-muted-foreground' title={audit.details}>
+                            {audit.details}
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* 分页 */}
+              <div className='flex items-center justify-between pt-4'>
+                <div className='text-sm text-muted-foreground'>
+                  共 {filteredAudits.total} 条记录 · 第 {page} 页
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    disabled={page <= 1}
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                  >
+                    上一页
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    disabled={page * pageSize >= filteredAudits.total}
+                    onClick={() => setPage(Math.min(page + 1))}
+                  >
+                    下一页
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

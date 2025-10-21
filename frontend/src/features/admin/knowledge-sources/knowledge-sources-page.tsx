@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
 import { Plus, RefreshCw, Search as SearchIcon, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -71,12 +72,11 @@ function toParserConfig(values: KnowledgeSourceFormValues): CreateKnowledgeSourc
   }
 }
 
+const route = getRouteApi('/_authenticated/admin/sources')
+
 export function KnowledgeSourcesPage() {
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [searchTerm, setSearchTerm] = useState('')
-  const deferredSearch = useDeferredValue(searchTerm)
-  const [statusFilters, setStatusFilters] = useState<KnowledgeSourceStatus[]>([])
+  const routeSearchParams = route.useSearch()
+  const navigate = route.useNavigate()
 
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [mode, setMode] = useState<'create' | 'edit'>('create')
@@ -87,12 +87,18 @@ export function KnowledgeSourcesPage() {
   const [bulkConfirmAction, setBulkConfirmAction] = useState<
     | {
         type: 'enable' | 'disable' | 'sync'
-        ids: Identifier[]
+        ids: string[]
       }
     | null
   >(null)
 
   const queryClient = useQueryClient()
+
+  // 使用 deferred value 优化搜索输入
+  const deferredSearch = useDeferredValue(routeSearchParams.search || '')
+  const page = routeSearchParams.page || 1
+  const pageSize = routeSearchParams.pageSize || 10
+  const statusFilters = useMemo(() => routeSearchParams.statuses || [], [routeSearchParams.statuses])
 
   const queryKey = useMemo(() => {
     const normalizedStatuses = [...statusFilters].sort().join(',')
@@ -274,28 +280,40 @@ export function KnowledgeSourcesPage() {
     setConfirmAction(null)
   }
 
+  const updateSearchParam = (updates: Partial<typeof routeSearchParams>) => {
+    navigate({
+      search: (prev: typeof routeSearchParams) => ({ ...prev, ...updates }),
+    })
+  }
+
   const toggleStatusFilter = (status: KnowledgeSourceStatus) => {
-    setPage(1)
-    setStatusFilters((prev) =>
-      prev.includes(status) ? prev.filter((item) => item !== status) : [...prev, status]
-    )
+    const newFilters = statusFilters.includes(status)
+      ? statusFilters.filter((item: KnowledgeSourceStatus) => item !== status)
+      : [...statusFilters, status]
+
+    updateSearchParam({
+      statuses: newFilters,
+      page: 1
+    })
   }
 
   const resetFilters = () => {
-    setStatusFilters([])
-    setSearchTerm('')
-    setPage(1)
+    updateSearchParam({
+      search: '',
+      statuses: [],
+      page: 1
+    })
   }
 
-  const handleBulkEnable = (ids: Identifier[]) => {
+  const handleBulkEnable = (ids: string[]) => {
     setBulkConfirmAction({ type: 'enable', ids })
   }
 
-  const handleBulkDisable = (ids: Identifier[]) => {
+  const handleBulkDisable = (ids: string[]) => {
     setBulkConfirmAction({ type: 'disable', ids })
   }
 
-  const handleBulkSync = (ids: Identifier[]) => {
+  const handleBulkSync = (ids: string[]) => {
     setBulkConfirmAction({ type: 'sync', ids })
   }
 
@@ -328,10 +346,12 @@ export function KnowledgeSourcesPage() {
         <div className='relative w-full max-w-md'>
           <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
           <Input
-            value={searchTerm}
+            value={routeSearchParams.search || ''}
             onChange={(event) => {
-              setSearchTerm(event.target.value)
-              setPage(1)
+              updateSearchParam({
+                search: event.target.value,
+                page: 1
+              })
             }}
             placeholder='搜索知识源名称或仓库地址'
             className='pl-9'
@@ -385,10 +405,12 @@ export function KnowledgeSourcesPage() {
         page={page}
         pageSize={pageSize}
         total={listQuery.data?.total ?? 0}
-        onPageChange={(next) => setPage(Math.max(1, next))}
+        onPageChange={(next) => updateSearchParam({ page: Math.max(1, next) })}
         onPageSizeChange={(size) => {
-          setPageSize(size)
-          setPage(1)
+          updateSearchParam({
+            pageSize: size,
+            page: 1
+          })
         }}
         onEdit={onEdit}
         onToggle={onToggle}
@@ -402,6 +424,10 @@ export function KnowledgeSourcesPage() {
         onBulkDisable={handleBulkDisable}
         onBulkSync={handleBulkSync}
         isMutating={isMutating}
+        searchParams={{
+          search: routeSearchParams.search,
+          statuses: routeSearchParams.statuses
+        }}
       />
 
       <KnowledgeSourceFormDialog

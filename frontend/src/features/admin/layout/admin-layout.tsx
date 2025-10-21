@@ -14,8 +14,16 @@ const ADMIN_NAV_ITEMS = [
     to: '/admin/sources',
   },
   {
-    label: 'RBAC 策略',
+    label: '用户管理',
     to: '/admin/rbac',
+  },
+  {
+    label: '策略管理',
+    to: '/admin/policies',
+  },
+  {
+    label: '审计日志',
+    to: '/admin/audit',
   },
 ]
 

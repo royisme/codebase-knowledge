@@ -210,8 +210,8 @@ export function triggerKnowledgeSourceSyncFixture(id: Identifier) {
 
 export function bulkOperationFixture(payload: BulkOperationPayload): BulkOperationResponse {
   const { ids, operation } = payload
-  const updated: Identifier[] = []
-  const failed: Array<{ id: Identifier; error: string }> = []
+  const updated: string[] = []
+  const failed: Array<{ id: string; error: string }> = []
 
   for (const id of ids) {
     const target = sources.find((item) => item.id === id && !item.deleted)
