@@ -11,6 +11,8 @@ import { toast } from 'sonner'
 import { AdminUsersPage } from '@/features/admin/users/admin-users-page'
 import { adminUserHandlers } from '@/lib/api-mock/handlers/admin-users'
 import { rbacHandlers } from '@/lib/api-mock/handlers/rbac'
+import { listAdminUsersFixture } from '@/lib/api-mock/fixtures/admin-users'
+import type { AdminUserListParams, AdminUserListResponse, UserStatus } from '@/types'
 
 // Mock TanStack Router with dynamic state
 let mockSearchState = { page: 1, pageSize: 10, search: '', statuses: [] }
@@ -86,6 +88,30 @@ describe('用户管理页面（UI）', () => {
   it('支持搜索与状态筛选过滤', async () => {
     const user = userEvent.setup()
 
+    let lastSearchParam = ''
+    let lastStatuses: UserStatus[] = []
+    let lastResponse: AdminUserListResponse | null = null
+    let requestCount = 0
+
+    server.use(
+      http.get('*/api/admin/users', ({ request }) => {
+        requestCount += 1
+        const url = new URL(request.url)
+        lastSearchParam = url.searchParams.get('search') ?? ''
+        lastStatuses = url.searchParams.getAll('statuses') as UserStatus[]
+
+        const params: AdminUserListParams = {
+          page: Number(url.searchParams.get('page') ?? 1),
+          pageSize: Number(url.searchParams.get('pageSize') ?? 10),
+          search: lastSearchParam || undefined,
+          statuses: lastStatuses.length > 0 ? lastStatuses : undefined,
+        }
+        const response = listAdminUsersFixture(params)
+        lastResponse = response
+        return HttpResponse.json(response)
+      })
+    )
+
     // Mock the navigate function to properly handle state updates
     mockNavigate.mockImplementation(({ search }) => {
       if (typeof search === 'function') {
@@ -96,7 +122,12 @@ describe('用户管理页面（UI）', () => {
       }
     })
 
-    renderWithQueryClient(<AdminUsersPage />)
+    const queryClient = createTestQueryClient()
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <AdminUsersPage />
+      </QueryClientProvider>
+    )
 
     // Wait for initial load
     await waitFor(() => {
@@ -116,15 +147,35 @@ describe('用户管理页面（UI）', () => {
     await user.clear(searchInput)
     await user.type(searchInput, '张三')
 
-    // Verify navigation function was called for search (don't assert exact parameters due to useDeferredValue)
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalled()
-      const navigateCall = mockNavigate.mock.calls.find(call =>
-        call[0]?.search && typeof call[0].search === 'function'
-      )
-      expect(navigateCall).toBeDefined()
-      expect(typeof navigateCall[0].search).toBe('function')
     })
+
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <AdminUsersPage />
+      </QueryClientProvider>
+    )
+
+    await waitFor(() => {
+      expect(requestCount).toBeGreaterThan(1)
+      expect(lastSearchParam.length).toBeGreaterThan(0)
+      expect(lastSearchParam).toMatch(/[张三]/)
+    })
+
+    await waitFor(() => {
+      expect(lastResponse?.items ?? []).not.toHaveLength(0)
+      const names = (lastResponse?.items ?? []).map(item => item.displayName)
+      expect(names.every(name => name.includes('张三'))).toBe(true)
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('张三', { selector: '.font-medium' })).toBeInTheDocument()
+      expect(screen.queryByText('系统管理员')).not.toBeInTheDocument()
+      expect(screen.queryByText('admin@enterprise.com')).not.toBeInTheDocument()
+    })
+
+    expect(mockSearchState.search.length).toBeGreaterThan(0)
 
     // Test status filter button exists and is clickable
     const statusFilterButton = screen.getByText('状态筛选')
@@ -141,41 +192,27 @@ describe('用户管理页面（UI）', () => {
     const activeStatusOption = screen.getByRole('menuitemcheckbox', { name: '活跃' })
     await user.click(activeStatusOption)
 
-    // Verify navigation function was called for status filter
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalled()
-      const navigateCall = mockNavigate.mock.calls.find(call =>
-        call[0]?.search && typeof call[0].search === 'function'
-      )
-      expect(navigateCall).toBeDefined()
-      expect(typeof navigateCall[0].search).toBe('function')
     })
 
-    // Verify that statuses filter was applied
-    expect(mockSearchState.statuses).toContain('active')
-
-    // Verify that navigate was called with search parameter (check that function exists)
-    const searchNavigateCall = mockNavigate.mock.calls.find(call =>
-      call[0]?.search && typeof call[0].search === 'function'
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <AdminUsersPage />
+      </QueryClientProvider>
     )
-    expect(searchNavigateCall).toBeDefined()
-    expect(typeof searchNavigateCall[0].search).toBe('function')
 
-    // Verify that search value was properly set in mockSearchState (even if truncated by useDeferredValue)
-    // Due to React useDeferredValue, the search value may be truncated, but we verify it was processed
-    expect(typeof mockSearchState.search).toBe('string')
+    await waitFor(() => {
+      expect(requestCount).toBeGreaterThan(2)
+      expect(lastStatuses).toContain('active')
+    })
 
-    // Verify that the search interaction was processed (navigation called and filter applied)
-    // Note: Due to React useDeferredValue limitations, search value may be truncated
-    // but we can confirm the interaction flow works correctly
+    await waitFor(() => {
+      const statuses = lastResponse?.items.map(item => item.status) ?? []
+      expect(statuses.every(status => status === 'active')).toBe(true)
+    })
+
     expect(mockSearchState.statuses).toContain('active')
-
-    // Additional verification: Test that the search function produces expected state structure
-    const testPrevState = { page: 1, pageSize: 10, search: '', statuses: [] }
-    const searchResult = searchNavigateCall[0].search(testPrevState)
-    expect(searchResult).toHaveProperty('search')
-    expect(searchResult).toHaveProperty('statuses')
-    expect(searchResult.statuses).toEqual(['active'])
   })
 
   it('角色切换成功并显示提示', async () => {
@@ -307,6 +344,27 @@ describe('用户管理页面（UI）', () => {
   it('搜索结果为空时显示正确提示', async () => {
     const user = userEvent.setup()
 
+    let lastSearchParam = ''
+    let lastResponse: AdminUserListResponse | null = null
+    let requestCount = 0
+
+    server.use(
+      http.get('*/api/admin/users', ({ request }) => {
+        requestCount += 1
+        const url = new URL(request.url)
+        lastSearchParam = url.searchParams.get('search') ?? ''
+
+        const params: AdminUserListParams = {
+          page: Number(url.searchParams.get('page') ?? 1),
+          pageSize: Number(url.searchParams.get('pageSize') ?? 10),
+          search: lastSearchParam || undefined,
+        }
+        const response = listAdminUsersFixture(params)
+        lastResponse = response
+        return HttpResponse.json(response)
+      })
+    )
+
     // Mock the navigate function to properly handle state updates
     mockNavigate.mockImplementation(({ search }) => {
       if (typeof search === 'function') {
@@ -317,7 +375,12 @@ describe('用户管理页面（UI）', () => {
       }
     })
 
-    renderWithQueryClient(<AdminUsersPage />)
+    const queryClient = createTestQueryClient()
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <AdminUsersPage />
+      </QueryClientProvider>
+    )
 
     // Wait for initial load
     await waitFor(() => {
@@ -331,43 +394,33 @@ describe('用户管理页面（UI）', () => {
 
     // Clear the input and type a search term that won't match any users
     await user.clear(searchInput)
-    await user.type(searchInput, 'xyz')
+    await user.type(searchInput, '!!!!')
 
-    // Wait for navigation to be called, indicating search interaction worked
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalled()
-      const navigateCall = mockNavigate.mock.calls.find(call =>
-        call[0]?.search && typeof call[0].search === 'function'
-      )
-      expect(navigateCall).toBeDefined()
     }, { timeout: 3000 })
 
-    // Verify that navigate was called with search parameter
-    // Check that the search function exists and is callable
-    const emptySearchNavigateCall = mockNavigate.mock.calls.find(call =>
-      call[0]?.search && typeof call[0].search === 'function'
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <AdminUsersPage />
+      </QueryClientProvider>
     )
-    expect(emptySearchNavigateCall).toBeDefined()
-    expect(typeof emptySearchNavigateCall[0].search).toBe('function')
 
-    // Test that the search function would work with a simple test case
-    const testPrevState = { page: 1, pageSize: 10, search: '', statuses: [] }
-    const searchResult = emptySearchNavigateCall[0].search(testPrevState)
-    expect(searchResult).toHaveProperty('search')
-    expect(typeof searchResult.search).toBe('string')
+    await waitFor(() => {
+      expect(requestCount).toBeGreaterThan(1)
+      expect(lastSearchParam.length).toBeGreaterThan(0)
+      expect(lastSearchParam).toMatch(/!/)
+    }, { timeout: 3000 })
 
-    // Note: Due to React useDeferredValue and Mock API timing issues in the test environment,
-    // the empty state may not immediately appear in the UI. However, the search interaction
-    // has been properly initiated, which is the core functionality we need to verify.
-    // In a real environment, the empty state would appear as users type search terms.
-    console.log('Empty state search test completed - search interaction verified')
+    await waitFor(() => {
+      expect(lastResponse?.items.length).toBe(0)
+    }, { timeout: 3000 })
 
-    // The test passes by verifying that:
-    // 1. User interaction triggers search (navigate called with search function)
-    // 2. Search function exists and is callable
-    // 3. Empty state message is properly displayed
-    // 4. The search interaction was properly initiated and processed
-    // This confirms the complete search functionality works as expected
-    console.log('Search test completed - full search flow verified')
+    await waitFor(() => {
+      expect(screen.getByText('没有找到符合条件的用户，请尝试调整搜索条件或筛选器。')).toBeInTheDocument()
+    }, { timeout: 3000 })
+
+    expect(screen.queryByText('系统管理员')).not.toBeInTheDocument()
+    expect(screen.queryByText('张三')).not.toBeInTheDocument()
   })
 })
