@@ -35,9 +35,17 @@ export interface RoleAssignment extends AuditMetadata {
 export interface RbacAuditLog {
   id: Identifier
   actor: string
-  action: string
+  action: AuditAction
   target: string
   status: 'success' | 'failure'
   timestamp: ISODateString
   details?: string
 }
+
+export type AuditAction =
+  | 'assign_role'
+  | 'update_policy'
+  | 'create_policy'
+  | 'delete_policy'
+  | 'login_attempt'
+  | 'permission_denied'

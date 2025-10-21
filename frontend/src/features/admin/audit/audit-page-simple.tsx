@@ -1,7 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import { getRouteApi } from '@tanstack/react-router'
+import type { AuditAction, RbacAuditLog } from '@/types'
+
+type AuditStatus = RbacAuditLog['status']
 import { fetchAuditLogs } from '@/lib/rbac-service'
 import {
   Card,
@@ -42,12 +46,16 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
-const STATUS_OPTIONS = [
-  { value: 'success', label: '成功', variant: 'default' as const },
-  { value: 'failure', label: '失败', variant: 'destructive' as const },
+const STATUS_OPTIONS: ReadonlyArray<{
+  value: AuditStatus
+  label: string
+  variant: 'default' | 'destructive'
+}> = [
+  { value: 'success', label: '成功', variant: 'default' },
+  { value: 'failure', label: '失败', variant: 'destructive' },
 ]
 
-const ACTION_OPTIONS = [
+const ACTION_OPTIONS: ReadonlyArray<AuditAction> = [
   'assign_role',
   'update_policy',
   'create_policy',
@@ -56,12 +64,12 @@ const ACTION_OPTIONS = [
   'permission_denied',
 ]
 
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<AuditStatus, string> = {
   success: '成功',
   failure: '失败',
 }
 
-const ACTION_LABELS: Record<string, string> = {
+const ACTION_LABELS: Record<AuditAction, string> = {
   assign_role: '分配角色',
   update_policy: '更新策略',
   create_policy: '创建策略',
@@ -70,16 +78,17 @@ const ACTION_LABELS: Record<string, string> = {
   permission_denied: '权限不足',
 }
 
-const STATUS_ICONS: Record<string, React.ReactNode> = {
+const STATUS_ICONS: Record<AuditStatus, React.ReactNode> = {
   success: <Shield className='h-4 w-4' />,
   failure: <AlertCircle className='h-4 w-4' />,
 }
 
+const route = getRouteApi('/_authenticated/admin/audit')
+
 export function AuditPage() {
-  const [search, setSearch] = useState('')
-  const [statusFilters, setStatusFilters] = useState<string[]>([])
-  const [actionFilters, setActionFilters] = useState<string[]>([])
-  const [page, setPage] = useState(1)
+  const searchParams = route.useSearch()
+  const navigate = route.useNavigate()
+
   const pageSize = 20
 
   const {
@@ -91,11 +100,17 @@ export function AuditPage() {
     queryFn: fetchAuditLogs,
   })
 
+  // 从路由参数获取过滤条件
+  const search = searchParams.search ?? ''
+  const statusFilters = useMemo<AuditStatus[]>(() => searchParams.statuses ?? [], [searchParams.statuses])
+  const actionFilters = useMemo<AuditAction[]>(() => searchParams.actions ?? [], [searchParams.actions])
+  const page = searchParams.page ?? 1
+
   // Mock 分页和过滤逻辑
   const filteredAudits = useMemo(() => {
     if (!audits) return { items: [], total: 0 }
 
-    const filtered = audits.filter((audit) => {
+    const filtered = audits.filter((audit: RbacAuditLog) => {
       // 搜索过滤
       if (search) {
         const searchLower = search.toLowerCase()
@@ -136,7 +151,7 @@ export function AuditPage() {
     return new Date(timestamp).toLocaleString()
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: AuditStatus) => {
     const statusOption = STATUS_OPTIONS.find(option => option.value === status)
     if (!statusOption) return null
 
@@ -148,7 +163,7 @@ export function AuditPage() {
     )
   }
 
-  const getActionLabel = (action: string) => {
+  const getActionLabel = (action: AuditAction) => {
     return ACTION_LABELS[action] || action
   }
 
@@ -164,10 +179,16 @@ export function AuditPage() {
             <h1 className='text-2xl font-bold'>审计日志</h1>
             <p className='text-muted-foreground'>查看系统操作审计记录</p>
           </div>
-          <Button>
-            <Download className='mr-2 h-4 w-4' />
-            导出日志
-          </Button>
+          <div className='flex gap-2'>
+            <Button variant='outline'>
+              <Download className='mr-2 h-4 w-4' />
+              导出日志
+            </Button>
+            <Button>
+              <RefreshCw className='mr-2 h-4 w-4' />
+              刷新
+            </Button>
+          </div>
         </div>
         <Card>
           <CardHeader>
@@ -217,7 +238,11 @@ export function AuditPage() {
               <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  navigate({
+                    search: (prev) => ({ ...prev, search: event.target.value, page: 1 })
+                  })
+                }}
                 placeholder='搜索操作人、动作或目标'
                 className='pl-9'
               />
@@ -243,17 +268,28 @@ export function AuditPage() {
                     key={option.value}
                     checked={statusFilters.includes(option.value)}
                     onCheckedChange={() => {
-                      const newFilters = statusFilters.includes(option.value)
-                        ? statusFilters.filter((item) => item !== option.value)
-                        : [...statusFilters, option.value]
-                      setStatusFilters(newFilters)
+                      navigate({
+                        search: (prev) => {
+                          const prevStatuses = (prev.statuses ?? []) as AuditStatus[]
+                          const newFilters: AuditStatus[] = prevStatuses.includes(option.value)
+                            ? prevStatuses.filter((item) => item !== option.value)
+                            : [...prevStatuses, option.value]
+                          return { ...prev, statuses: newFilters, page: 1 }
+                        }
+                      })
                     }}
                   >
                     {option.label}
                   </DropdownMenuCheckboxItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    navigate({
+                      search: (prev) => ({ ...prev, statuses: [], page: 1 })
+                    })
+                  }}
+                >
                   重置筛选
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -279,17 +315,28 @@ export function AuditPage() {
                     key={action}
                     checked={actionFilters.includes(action)}
                     onCheckedChange={() => {
-                      const newFilters = actionFilters.includes(action)
-                        ? actionFilters.filter((item) => item !== action)
-                        : [...actionFilters, action]
-                      setActionFilters(newFilters)
+                      navigate({
+                        search: (prev) => {
+                          const prevActions = (prev.actions ?? []) as AuditAction[]
+                          const newFilters: AuditAction[] = prevActions.includes(action)
+                            ? prevActions.filter((item) => item !== action)
+                            : [...prevActions, action]
+                          return { ...prev, actions: newFilters, page: 1 }
+                        }
+                      })
                     }}
                   >
                     {getActionLabel(action)}
                   </DropdownMenuCheckboxItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    navigate({
+                      search: (prev) => ({ ...prev, actions: [], page: 1 })
+                    })
+                  }}
+                >
                   重置筛选
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -395,7 +442,7 @@ export function AuditPage() {
                     variant='outline'
                     size='sm'
                     disabled={page <= 1}
-                    onClick={() => setPage(Math.max(1, page - 1))}
+                    onClick={() => navigate({ search: (prev) => ({ ...prev, page: Math.max(1, page - 1) }) })}
                   >
                     上一页
                   </Button>
@@ -403,7 +450,7 @@ export function AuditPage() {
                     variant='outline'
                     size='sm'
                     disabled={page * pageSize >= filteredAudits.total}
-                    onClick={() => setPage(Math.min(page + 1))}
+                    onClick={() => navigate({ search: (prev) => ({ ...prev, page: Math.min(page + 1, Math.ceil(filteredAudits.total / pageSize)) }) })}
                   >
                     下一页
                   </Button>

@@ -57,20 +57,18 @@ describe('策略管理页面（UI）', () => {
       expect(screen.getByText('管理角色与资源的权限策略')).toBeInTheDocument()
     })
 
-    // 检查新增策略按钮
-    expect(screen.getByText('新增策略')).toBeInTheDocument()
-    expect(screen.getByText('批量操作')).toBeInTheDocument()
+    // 检查新增策略与批量操作按钮（数据加载后出现）
+    await screen.findByText('新增策略')
+    await screen.findByText('批量操作')
 
     // 检查资源权限概览
-    await waitFor(() => {
-      expect(screen.getByText('资源权限概览')).toBeInTheDocument()
-      expect(screen.getByText('知识源')).toBeInTheDocument()
-      expect(screen.getByText('用户')).toBeInTheDocument()
-      expect(screen.getByText('策略')).toBeInTheDocument()
-    })
+    await screen.findByText('资源权限概览')
+    expect(screen.getAllByText('知识源').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('用户').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('策略').length).toBeGreaterThan(0)
 
     // 检查角色策略详情
-    expect(screen.getByText('角色策略详情')).toBeInTheDocument()
+    await screen.findByText('角色策略详情')
   })
 
   it('支持资源权限展开与收起', async () => {
@@ -150,9 +148,9 @@ describe('策略管理页面（UI）', () => {
     })
 
     // 检查资源权限概览仍然存在
-    expect(screen.getByText('资源权限概览')).toBeInTheDocument()
+    await screen.findByText('资源权限概览')
 
     // 检查角色策略详情为空
-    expect(screen.getByText('角色策略详情')).toBeInTheDocument()
+    await screen.findByText('角色策略详情')
   })
 })
