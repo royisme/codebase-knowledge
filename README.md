@@ -2,7 +2,7 @@
 
 `apps/` 目录用于承载可运行的子项目。目前包含：
 
-- `frontend/`：基于 shadcn-admin 的管理控制台，使用 Bun 1.3+、React 19 与 Vite 7。
+- `frontend/`：CIT Knowledge Graph Console 管理控制台，使用 Bun 1.3+、React 19 与 Vite 7。
   - 安装依赖：`bun install --cwd apps/frontend`
   - 常用命令：
     - `bun run --cwd apps/frontend dev`

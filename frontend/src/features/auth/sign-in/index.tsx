@@ -17,10 +17,10 @@ export function SignIn() {
     <AuthLayout>
       <Card className='gap-4'>
         <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>Sign in</CardTitle>
+          <CardTitle className='text-lg tracking-tight'>企业登录</CardTitle>
           <CardDescription>
-            Enter your email and password below to <br />
-            log into your account
+            登录 CIT 企业知识库管理平台<br />
+            支持本地认证和 LDAP 企业目录服务
           </CardDescription>
         </CardHeader>
         <CardContent>

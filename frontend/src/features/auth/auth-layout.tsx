@@ -20,7 +20,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <div className='mx-auto flex w-full flex-col justify-center space-y-4 rounded-lg border border-border/60 bg-background/90 p-6 shadow-sm backdrop-blur-sm sm:max-w-[520px] sm:p-8'>
           <div className='flex items-center justify-center'>
             <Logo className='me-2' />
-            <h1 className='text-xl font-medium'>Shadcn Admin</h1>
+            <h1 className='text-xl font-medium'>企业知识库</h1>
           </div>
           {children}
         </div>

@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
-import { IconFacebook, IconGithub } from '@/assets/brand-icons'
 import { toast } from 'sonner'
 import { signUp } from '@/lib/auth-service'
 import { handleServerError } from '@/lib/handle-server-error'
@@ -25,20 +24,20 @@ const formSchema = z
   .object({
     displayName: z
       .string()
-      .min(1, 'Please enter your name')
-      .max(60, 'Name is too long'),
+      .min(1, '请输入姓名')
+      .max(60, '姓名过长'),
     email: z.email({
       error: (iss) =>
-        iss.input === '' ? 'Please enter your email' : undefined,
+        iss.input === '' ? '请输入邮箱地址' : undefined,
     }),
     password: z
       .string()
-      .min(1, 'Please enter your password')
-      .min(7, 'Password must be at least 7 characters long'),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+      .min(1, '请输入密码')
+      .min(7, '密码长度至少7个字符'),
+    confirmPassword: z.string().min(1, '请确认密码'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: "两次输入的密码不一致",
     path: ['confirmPassword'],
   })
 
@@ -107,9 +106,9 @@ export function SignUpForm({
           name='displayName'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>姓名</FormLabel>
               <FormControl>
-                <Input placeholder='Jane Doe' {...field} />
+                <Input placeholder='张三' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -120,7 +119,7 @@ export function SignUpForm({
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>邮箱地址</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -133,7 +132,7 @@ export function SignUpForm({
           name='password'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -146,7 +145,7 @@ export function SignUpForm({
           name='confirmPassword'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>确认密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -155,7 +154,7 @@ export function SignUpForm({
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
-          Create Account
+          创建账户
         </Button>
 
         <div className='relative my-2'>
@@ -164,27 +163,14 @@ export function SignUpForm({
           </div>
           <div className='relative flex justify-center text-xs uppercase'>
             <span className='bg-background text-muted-foreground px-2'>
-              Or continue with
+              如需开通账户，请联系管理员
             </span>
           </div>
         </div>
 
-        <div className='grid grid-cols-2 gap-2'>
-          <Button
-            variant='outline'
-            className='w-full'
-            type='button'
-            disabled={isLoading}
-          >
-            <IconGithub className='h-4 w-4' /> GitHub
-          </Button>
-          <Button
-            variant='outline'
-            className='w-full'
-            type='button'
-            disabled={isLoading}
-          >
-            <IconFacebook className='h-4 w-4' /> Facebook
+        <div className='grid grid-cols-1 gap-2'>
+          <Button variant='outline' type='button' disabled={isLoading} onClick={() => toast.info('请联系管理员开通账户')}>
+            联系管理员开通
           </Button>
         </div>
       </form>

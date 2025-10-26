@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input'
 
 const formSchema = z.object({
   email: z.email({
-    error: (iss) => (iss.input === '' ? 'Please enter your email' : undefined),
+    error: (iss) => (iss.input === '' ? '请输入邮箱地址' : undefined),
   }),
 })
 
@@ -55,7 +55,7 @@ export function ForgotPasswordForm({
     try {
       await submission
       form.reset()
-      navigate({ to: '/otp', search: { email: data.email } })
+      navigate({ to: '/sign-in' })
     } catch (_error) {
       // 错误已在 toast 中处理
     } finally {
@@ -75,7 +75,7 @@ export function ForgotPasswordForm({
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>邮箱地址</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
               </FormControl>
@@ -84,8 +84,8 @@ export function ForgotPasswordForm({
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
-          Continue
           {isLoading ? <Loader2 className='animate-spin' /> : <ArrowRight />}
+          发送验证码
         </Button>
       </form>
     </Form>
