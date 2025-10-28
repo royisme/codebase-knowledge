@@ -15,10 +15,10 @@ export function SignIn() {
   return (
     <AuthLayout>
       <CardHeader className='pb-4'>
-        <CardTitle className='text-2xl font-bold tracking-tight text-center text-white'>
+        <CardTitle className='text-2xl font-bold tracking-tight text-center text-foreground'>
           企业登录
         </CardTitle>
-        <CardDescription className='text-center text-slate-300'>
+        <CardDescription className='text-center text-muted-foreground'>
           登录 CIT 企业知识库管理平台
         </CardDescription>
       </CardHeader>
@@ -26,13 +26,13 @@ export function SignIn() {
         <UserAuthForm redirectTo={redirect} />
       </CardContent>
       <CardFooter className='flex flex-col gap-3 pt-4'>
-        <div className='text-center space-y-2'>
-          <p className='text-slate-300 text-sm'>
+        <div className='space-y-2 text-center'>
+          <p className='text-sm text-muted-foreground'>
             还没有账户？
           </p>
           <Link
             to='/sign-up'
-            className='inline-flex items-center gap-1 text-purple-400 font-medium hover:text-purple-300 transition-colors text-sm'
+            className='inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80'
           >
             立即注册
             <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
@@ -40,19 +40,19 @@ export function SignIn() {
             </svg>
           </Link>
         </div>
-        <div className='h-px bg-gradient-to-r from-transparent via-white/20 to-transparent' />
-        <p className='text-slate-400 text-center text-xs'>
+        <div className='h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent dark:via-primary/40' />
+        <p className='text-center text-xs text-muted-foreground'>
           登录即表示您同意我们的{' '}
           <a
             href='/terms'
-            className='text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-4'
+            className='text-primary underline underline-offset-4 transition-colors hover:text-primary/80'
           >
             服务条款
           </a>{' '}
           和{' '}
           <a
             href='/privacy'
-            className='text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-4'
+            className='text-primary underline underline-offset-4 transition-colors hover:text-primary/80'
           >
             隐私政策
           </a>
