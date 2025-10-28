@@ -17,16 +17,16 @@ export function LdapAuth() {
     <AuthLayout>
       <CardHeader className='pb-4'>
         <div className='mb-3 flex items-center justify-center'>
-          <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/50'>
-            <svg className='h-6 w-6 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+          <div className='flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-sky-500 shadow-lg shadow-primary/40'>
+            <svg className='h-6 w-6 text-primary-foreground' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' />
             </svg>
           </div>
         </div>
-        <CardTitle className='text-2xl font-bold tracking-tight text-center text-white'>
+        <CardTitle className='text-2xl font-bold tracking-tight text-center text-foreground'>
           企业 LDAP 认证
         </CardTitle>
-        <CardDescription className='text-center text-slate-300'>
+        <CardDescription className='text-center text-muted-foreground'>
           通过企业目录服务验证身份
         </CardDescription>
       </CardHeader>
@@ -34,13 +34,13 @@ export function LdapAuth() {
         <LdapAuthForm email={email} company={company} />
       </CardContent>
       <CardFooter className='flex flex-col gap-3 pt-4'>
-        <div className='text-center space-y-2'>
-          <p className='text-slate-300 text-sm'>
+        <div className='space-y-2 text-center'>
+          <p className='text-sm text-muted-foreground'>
             遇到问题？
           </p>
           <Link
             to='/sign-in'
-            className='inline-flex items-center gap-1 text-purple-400 font-medium hover:text-purple-300 transition-colors text-sm'
+            className='inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80'
           >
             <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 19l-7-7 7-7' />
@@ -48,8 +48,8 @@ export function LdapAuth() {
             返回登录
           </Link>
         </div>
-        <div className='h-px bg-gradient-to-r from-transparent via-white/20 to-transparent' />
-        <p className='text-slate-400 text-center text-xs'>
+        <div className='h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent dark:via-primary/40' />
+        <p className='text-center text-xs text-muted-foreground'>
           或使用其他认证方式
         </p>
       </CardFooter>
