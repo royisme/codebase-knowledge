@@ -8,6 +8,7 @@ import {
   Search,
   Eye,
   Activity,
+  Brain,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -64,6 +65,11 @@ export const sidebarData: SidebarData = {
           url: '/rag-console',
           icon: Search,
           badge: '即将上线',
+        },
+        {
+          title: 'GraphRAG 查询',
+          url: '/knowledge-graph-query',
+          icon: Brain,
         },
         {
           title: '数据分析',

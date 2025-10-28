@@ -49,7 +49,7 @@ function formatLastSync(lastSyncedAt?: string) {
     return `${formatDistanceToNow(new Date(lastSyncedAt), {
       addSuffix: true,
     })}`
-  } catch (_error) {
+  } catch {
     return '时间格式错误'
   }
 }

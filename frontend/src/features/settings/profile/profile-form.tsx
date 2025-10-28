@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuthStore } from '@/stores/auth-store'
 
 const profileFormSchema = z.object({
   username: z
@@ -36,6 +37,8 @@ const profileFormSchema = z.object({
         : undefined,
   }),
   bio: z.string().max(160).min(4),
+  company: z.string().optional(),
+  department: z.string().optional(),
   urls: z
     .array(
       z.object({
@@ -57,9 +60,16 @@ const defaultValues: Partial<ProfileFormValues> = {
 }
 
 export function ProfileForm() {
+  const { user } = useAuthStore((state) => state.auth)
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues,
+    defaultValues: {
+      ...defaultValues,
+      username: user?.fullName || '',
+      email: user?.email || '',
+      company: user?.company || '',
+      department: user?.department || '',
+    },
     mode: 'onChange',
   })
 
@@ -133,6 +143,38 @@ export function ProfileForm() {
               <FormDescription>
                 You can <span>@mention</span> other users and organizations to
                 link to them.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='company'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company</FormLabel>
+              <FormControl>
+                <Input placeholder='Your company name' {...field} />
+              </FormControl>
+              <FormDescription>
+                Your company or organization name.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='department'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Department</FormLabel>
+              <FormControl>
+                <Input placeholder='Your department' {...field} />
+              </FormControl>
+              <FormDescription>
+                Your department or team within the organization.
               </FormDescription>
               <FormMessage />
             </FormItem>

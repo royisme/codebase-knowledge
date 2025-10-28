@@ -32,7 +32,7 @@ import { PasswordInput } from '@/components/password-input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const step1Schema = z.object({
-  displayName: z.string().min(1, '请输入姓名').max(60, '姓名过长'),
+  fullName: z.string().min(1, '请输入姓名').max(60, '姓名过长'),
   email: z.email({
     error: (iss) => (iss.input === '' ? '请输入邮箱地址' : undefined),
   }),
@@ -67,7 +67,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
   const navigate = useNavigate()
 
   const [step1Data, setStep1Data] = useState<Step1Data>({
-    displayName: '',
+    fullName: '',
     email: '',
     department: '',
     company: '',
@@ -161,7 +161,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
             user: {
               id: 'enterprise-user-1',
               email: step1Data.email,
-              name: step1Data.displayName,
+              name: step1Data.fullName,
               role: 'user',
               department: step1Data.department,
               company: step1Data.company,
@@ -185,7 +185,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
 
       toast.success('企业账户创建成功！请使用新账户登录')
       navigate({ to: '/sign-in' })
-    } catch (error) {
+    } catch {
       toast.error('注册过程中出现问题，请重试')
     } finally {
       setIsLoading(false)
@@ -278,7 +278,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
               <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className='space-y-4'>
                 <FormField
                   control={step1Form.control}
-                  name='displayName'
+                  name='fullName'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>姓名</FormLabel>
@@ -376,7 +376,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
               <div className='space-y-2 text-sm'>
                 <div className='flex justify-between'>
                   <span className='text-muted-foreground'>姓名:</span>
-                  <span className='font-medium'>{step1Data.displayName}</span>
+                  <span className='font-medium'>{step1Data.fullName}</span>
                 </div>
                 <div className='flex justify-between'>
                   <span className='text-muted-foreground'>邮箱:</span>

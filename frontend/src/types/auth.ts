@@ -9,10 +9,14 @@ export type UserRole =
 export interface AuthUser extends AuditMetadata {
   id: Identifier
   email: string
-  displayName: string
+  fullName: string
+  company?: string | null
+  department?: string | null
   roles: UserRole[]
   lastLoginAt?: ISODateString
 }
+
+export type UserRead = Omit<AuthUser, 'lastLoginAt'>
 
 export interface SessionToken {
   accessToken: string
@@ -34,7 +38,9 @@ export interface SignUpPayload {
   email: string
   password: string
   confirmPassword: string
-  displayName: string
+  fullName: string
+  company?: string
+  department?: string
 }
 
 export interface OtpVerificationPayload {

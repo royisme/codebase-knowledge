@@ -335,7 +335,7 @@ export function KnowledgeSourcesPage() {
           break
       }
       setBulkConfirmAction(null)
-    } catch (_error) {
+    } catch {
       // Error handling is done in mutations
     }
   }

@@ -6,6 +6,7 @@ import { knowledgeSourceHandlers } from './knowledge-sources'
 import { ragHandlers } from './rag'
 import { taskHandlers } from './tasks'
 import { rbacHandlers } from './rbac'
+import { graphRAGHandlers } from '../graphrag-handlers'
 
 export const handlers: HttpHandler[] = [
   ...authHandlers,
@@ -14,4 +15,5 @@ export const handlers: HttpHandler[] = [
   ...ragHandlers,
   ...rbacHandlers,
   ...adminUserHandlers,
+  ...graphRAGHandlers,
 ]

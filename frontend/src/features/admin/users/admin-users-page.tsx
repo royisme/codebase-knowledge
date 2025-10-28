@@ -186,7 +186,7 @@ export function AdminUsersPage() {
           })
           break
       }
-    } catch (_error) {
+    } catch {
       // 错误处理已在 mutations 中完成
     }
   }

@@ -1,6 +1,7 @@
 import type {
   AuthResponse,
   AuthUser,
+  UserRead,
   Identifier,
   SessionToken,
   SignInPayload,
@@ -8,12 +9,16 @@ import type {
   UserRole,
 } from '@/types'
 
+import type { BearerResponseAPI, UserReadAPI } from '@/types/api'
+
 const mockRoles: UserRole[] = ['admin']
 
 const mockUser: AuthUser = {
   id: 'user-1' as Identifier,
   email: 'admin@example.com',
-  displayName: 'Admin User',
+  fullName: 'Admin User',
+  company: 'CIT Corporation',
+  department: '技术部',
   roles: mockRoles,
   createdAt: new Date('2025-01-01T08:00:00Z').toISOString() as AuthUser['createdAt'],
   updatedAt: new Date('2025-01-10T08:00:00Z').toISOString() as AuthUser['updatedAt'],
@@ -52,15 +57,18 @@ const credentialStore = new Map<string, CredentialEntry>([
 const tokenStore = new Map<string, AuthUser>()
 
 let pendingOtpEmail: string | null = null
+let simulateLoginFailureAfterRegistration = false
 
-function createUserFromSignUp(payload: SignUpPayload): AuthUser {
+function createUserFromSignUp(payload: SignUpPayload): UserRead {
   return {
     id: `user-${crypto.randomUUID?.() ?? Date.now()}` as Identifier,
     email: payload.email,
-    displayName: payload.displayName ?? payload.email.split('@')[0],
+    fullName: payload.fullName ?? payload.email.split('@')[0],
+    company: payload.company || null,
+    department: payload.department || null,
     roles: ['viewer'],
-    createdAt: new Date().toISOString() as AuthUser['createdAt'],
-    updatedAt: new Date().toISOString() as AuthUser['updatedAt'],
+    createdAt: new Date().toISOString() as UserRead['createdAt'],
+    updatedAt: new Date().toISOString() as UserRead['updatedAt'],
     createdBy: 'system' as Identifier,
     updatedBy: 'system' as Identifier,
   }
@@ -87,23 +95,61 @@ export const authFixtures = {
       token: session,
     }
   },
+  // New: Create BearerResponse (backend login format)
+  createBearerResponse(user: AuthUser): BearerResponseAPI {
+    const session = createSessionToken()
+    // Store the token for later /users/me lookup
+    tokenStore.set(session.accessToken, user)
+    return {
+      access_token: session.accessToken,
+      token_type: 'bearer',
+    }
+  },
+  // New: Convert AuthUser to UserReadAPI (backend format)
+  convertToUserReadAPI(user: AuthUser): UserReadAPI {
+    return {
+      id: user.id,
+      email: user.email,
+      is_active: true,
+      is_superuser: user.roles.includes('superadmin'),
+      is_verified: true,
+      full_name: user.fullName,
+      company: user.company || null,
+      department: user.department || null,
+      role: user.roles[0] || 'viewer',
+    }
+  },
+  // Test utility for simulating login failure after registration
+  setLoginFailureMode(enabled: boolean) {
+    simulateLoginFailureAfterRegistration = enabled
+  },
+  shouldSimulateLoginFailure() {
+    return simulateLoginFailureAfterRegistration
+  },
   findCredentials(email: string): CredentialEntry | undefined {
     return credentialStore.get(email.toLowerCase())
   },
   findUserByToken(token: string): AuthUser | undefined {
     return tokenStore.get(token)
   },
-  registerUser(payload: SignUpPayload): AuthResponse {
+  registerUser(payload: SignUpPayload): UserRead {
     const existing = credentialStore.get(payload.email.toLowerCase())
     if (existing) {
       throw new Error('USER_EXISTS')
     }
     const newUser = createUserFromSignUp(payload)
+
+    // Convert UserRead to AuthUser for credential storage
+    const authUser: AuthUser = {
+      ...newUser,
+      lastLoginAt: new Date().toISOString() as AuthUser['lastLoginAt'],
+    }
+
     credentialStore.set(payload.email.toLowerCase(), {
-      user: newUser,
+      user: authUser,
       password: payload.password,
     })
-    return authFixtures.createAuthResponse(newUser)
+    return newUser
   },
   requestPasswordReset(email: string): void {
     const account = credentialStore.get(email.toLowerCase())

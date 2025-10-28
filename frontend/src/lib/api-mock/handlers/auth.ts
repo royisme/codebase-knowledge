@@ -3,9 +3,10 @@ import { HttpResponse, http } from 'msw'
 import type {
   ForgotPasswordPayload,
   OtpVerificationPayload,
-  SignInPayload,
   SignUpPayload,
 } from '@/types'
+
+import type { BearerResponseAPI, UserReadAPI } from '@/types/api'
 
 import { authFixtures } from '../fixtures/auth'
 
@@ -17,104 +18,172 @@ function extractBearerToken(headerValue: string | null): string | null {
 }
 
 export const authHandlers = [
-  http.post('*/auth/login', async ({ request }) => {
-    const payload = (await request.json()) as Partial<SignInPayload>
-    if (!payload?.email || !payload?.password) {
+  // POST /api/v1/auth/login - Returns BearerResponse
+  http.post('*/api/v1/auth/login', async ({ request }) => {
+    // Parse form-urlencoded data
+    const formData = await request.formData()
+    const username = formData.get('username') as string
+    const password = formData.get('password') as string
+
+    if (!username || !password) {
       return HttpResponse.json(
         {
-          code: 'INVALID_CREDENTIALS',
-          message: '邮箱或密码为必填项',
+          detail: 'LOGIN_BAD_CREDENTIALS',
         },
         { status: 400 }
       )
     }
 
-    const credential = authFixtures.findCredentials(payload.email)
-    if (!credential || credential.password !== payload.password) {
+    // Check credentials
+    const credential = authFixtures.findCredentials(username)
+    if (!credential || credential.password !== password || authFixtures.shouldSimulateLoginFailure?.()) {
       return HttpResponse.json(
         {
-          code: 'INVALID_CREDENTIALS',
-          message: '邮箱或密码错误',
+          detail: 'LOGIN_BAD_CREDENTIALS',
         },
+        { status: 400 }
+      )
+    }
+
+    // Return BearerResponse format (backend format)
+    // Pass the authenticated user to associate token correctly
+    const bearerResponse: BearerResponseAPI = authFixtures.createBearerResponse(credential.user)
+    return HttpResponse.json(bearerResponse)
+  }),
+
+  // GET /api/v1/admin/users/me - Returns UserRead
+  http.get('*/api/v1/admin/users/me', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token) {
+      return HttpResponse.json(
+        { detail: 'UNAUTHORIZED' },
         { status: 401 }
       )
     }
 
-    return HttpResponse.json(authFixtures.createAuthResponse(credential.user))
+    const user = authFixtures.findUserByToken(token)
+    if (!user) {
+      return HttpResponse.json(
+        { detail: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
+    // Return backend format (snake_case)
+    const userReadAPI: UserReadAPI = authFixtures.convertToUserReadAPI(user)
+    return HttpResponse.json(userReadAPI)
   }),
 
-  http.post('*/auth/register', async ({ request }) => {
-    const payload = (await request.json()) as Partial<SignUpPayload>
-    if (!payload?.email || !payload?.password || !payload?.confirmPassword) {
+  // POST /api/v1/auth/register - Returns UserRead
+  http.post('*/api/v1/auth/register', async ({ request }) => {
+    // Handle backend field names (full_name, company, department)
+    const payload = await request.json() as {
+      email: string
+      password: string
+      full_name: string
+      company?: string | null
+      department?: string | null
+    }
+
+    // Map backend fields to frontend types
+    const signUpPayload: SignUpPayload = {
+      email: payload.email,
+      password: payload.password,
+      confirmPassword: payload.password, // Backend doesn't need confirmPassword
+      fullName: payload.full_name,
+      company: payload.company || '',
+      department: payload.department || '',
+    }
+
+    // Basic validation
+    if (!signUpPayload?.email || !signUpPayload?.password || !signUpPayload?.fullName) {
       return HttpResponse.json(
         {
-          code: 'VALIDATION_ERROR',
-          message: '请填写完整的注册信息',
+          detail: 'VALIDATION_ERROR',
         },
         { status: 400 }
       )
     }
 
-    if (payload.password !== payload.confirmPassword) {
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(signUpPayload.email)) {
       return HttpResponse.json(
         {
-          code: 'PASSWORD_MISMATCH',
-          message: '两次输入的密码不一致',
+          detail: 'INVALID_EMAIL',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Password length validation (backend requires at least 3 chars per OpenAPI)
+    if (signUpPayload.password.length < 3) {
+      return HttpResponse.json(
+        {
+          detail: {
+            code: 'REGISTER_INVALID_PASSWORD',
+            reason: 'Password should be at least 3 characters',
+          },
         },
         { status: 400 }
       )
     }
 
     try {
-      const response = authFixtures.registerUser({
-        email: payload.email,
-        password: payload.password,
-        confirmPassword: payload.confirmPassword,
-        displayName: payload.displayName ?? payload.email,
-      })
-      return HttpResponse.json(response, { status: 201 })
+      const userRead = authFixtures.registerUser(signUpPayload)
+      // Return backend format (snake_case)
+      const userReadAPI: UserReadAPI = {
+        id: userRead.id,
+        email: userRead.email,
+        is_active: true,
+        is_superuser: false,
+        is_verified: false,
+        full_name: userRead.fullName,
+        company: userRead.company || null,
+        department: userRead.department || null,
+        role: userRead.roles[0] || 'viewer',
+      }
+      return HttpResponse.json(userReadAPI, { status: 201 })
     } catch (error) {
       if (error instanceof Error && error.message === 'USER_EXISTS') {
         return HttpResponse.json(
           {
-            code: 'USER_EXISTS',
-            message: '该邮箱已注册，请直接登录',
+            detail: 'REGISTER_USER_ALREADY_EXISTS',
           },
-          { status: 409 }
+          { status: 400 }
         )
       }
       return HttpResponse.json(
         {
-          code: 'UNKNOWN_ERROR',
-          message: '注册失败，请稍后再试',
+          detail: 'UNKNOWN_ERROR',
         },
         { status: 500 }
       )
     }
   }),
 
-  http.post('*/auth/forgot-password', async ({ request }) => {
+  // POST /api/v1/auth/forgot-password
+  http.post('*/api/v1/auth/forgot-password', async ({ request }) => {
     const payload = (await request.json()) as Partial<ForgotPasswordPayload>
     if (!payload?.email) {
       return HttpResponse.json(
         {
-          code: 'VALIDATION_ERROR',
-          message: '请输入邮箱地址',
+          detail: 'VALIDATION_ERROR',
         },
         { status: 400 }
       )
     }
     authFixtures.requestPasswordReset(payload.email)
-    return HttpResponse.json({ sent: true })
+    return HttpResponse.json({}, { status: 202 })
   }),
 
-  http.post('*/auth/otp/verify', async ({ request }) => {
+  // POST /api/v1/auth/otp/verify (might not exist in backend)
+  http.post('*/api/v1/auth/otp/verify', async ({ request }) => {
     const payload = (await request.json()) as Partial<OtpVerificationPayload>
     if (!payload?.email || !payload?.otp) {
       return HttpResponse.json(
         {
-          code: 'VALIDATION_ERROR',
-          message: '请输入邮箱与验证码',
+          detail: 'VALIDATION_ERROR',
         },
         { status: 400 }
       )
@@ -127,8 +196,7 @@ export const authHandlers = [
         if (error.message === 'OTP_INVALID') {
           return HttpResponse.json(
             {
-              code: 'OTP_INVALID',
-              message: '验证码无效或已过期',
+              detail: 'OTP_INVALID',
             },
             { status: 400 }
           )
@@ -136,8 +204,7 @@ export const authHandlers = [
         if (error.message === 'USER_NOT_FOUND') {
           return HttpResponse.json(
             {
-              code: 'USER_NOT_FOUND',
-              message: '账号不存在，请重新注册',
+              detail: 'USER_NOT_FOUND',
             },
             { status: 404 }
           )
@@ -145,37 +212,19 @@ export const authHandlers = [
       }
       return HttpResponse.json(
         {
-          code: 'UNKNOWN_ERROR',
-          message: '验证码验证失败',
+          detail: 'UNKNOWN_ERROR',
         },
         { status: 500 }
       )
     }
   }),
 
-  http.post('*/auth/logout', ({ request }) => {
+  // POST /api/v1/auth/logout
+  http.post('*/api/v1/auth/logout', ({ request }) => {
     const token = extractBearerToken(request.headers.get('authorization'))
     if (token) {
       authFixtures.revokeToken(token)
     }
-    return HttpResponse.json(null, { status: 204 })
-  }),
-
-  http.get('*/auth/me', ({ request }) => {
-    const token = extractBearerToken(request.headers.get('authorization'))
-    if (!token) {
-      return HttpResponse.json(
-        { code: 'UNAUTHORIZED', message: '未授权访问' },
-        { status: 401 }
-      )
-    }
-    const user = authFixtures.findUserByToken(token)
-    if (!user) {
-      return HttpResponse.json(
-        { code: 'UNAUTHORIZED', message: '会话已过期' },
-        { status: 401 }
-      )
-    }
-    return HttpResponse.json(user)
+    return HttpResponse.json({}, { status: 200 })
   }),
 ]

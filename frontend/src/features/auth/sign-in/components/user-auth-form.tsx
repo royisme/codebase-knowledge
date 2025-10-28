@@ -74,7 +74,7 @@ export function UserAuthForm({
 
       const targetPath = redirectTo || '/'
       navigate({ to: targetPath, replace: true })
-    } catch (_error) {
+    } catch {
       // 错误已在 toast.promise 的 error 回调中处理，这里保持捕获避免控制台噪音
     } finally {
       setIsLoading(false)

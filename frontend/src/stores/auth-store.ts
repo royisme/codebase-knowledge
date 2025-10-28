@@ -20,7 +20,7 @@ function readTokenFromCookie(): SessionToken | null {
   if (!rawCookie) return null
   try {
     return JSON.parse(decodeURIComponent(rawCookie)) as SessionToken
-  } catch (_error) {
+  } catch {
     removeCookie(AUTH_TOKEN_COOKIE)
     return null
   }

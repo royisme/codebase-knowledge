@@ -18,13 +18,13 @@ import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
-import { handleServerError } from '@/lib/handle-server-error'
+import type { AuthResponse } from '@/types/auth'
 
 const formSchema = z.object({
   password: z
     .string()
     .min(1, '请输入密码')
-    .min(7, '密码长度至少7个字符'),
+    .min(6, '密码长度至少6个字符'),
   domain: z.string().optional(),
 })
 
@@ -36,6 +36,7 @@ interface LdapAuthFormProps {
 export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [ldapStatus, setLdapStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting')
+  const [lastError, setLastError] = useState<string>('')
   const navigate = useNavigate()
   const auth = useAuthStore((state) => state.auth)
 
@@ -51,28 +52,35 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
   useState(() => {
     const timer = setTimeout(() => {
       setLdapStatus('connected')
-    }, 2000)
+    }, 1500)
     return () => clearTimeout(timer)
   })
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     setLdapStatus('connecting')
+    setLastError('')
 
     try {
-      // 模拟 LDAP 认证过程
+      // 简化的假认证逻辑 - 只要有密码就成功
       const ldapPromise = new Promise((resolve, reject) => {
         setTimeout(() => {
-          // 模拟 LDAP 认证成功
-          if (data.password.length >= 7) {
+          if (data.password.trim()) {
+            // 假认证成功 - 只要有密码就行
+            const now = new Date().toISOString()
             resolve({
               user: {
-                id: 'ldap-user-1',
-                email: email || 'user@corp.company.com',
-                name: '企业用户',
-                role: 'admin',
-                department: '技术部',
+                id: 'ldap-user-' + Date.now(),
+                email: email || `user@${data.domain || 'corp.company.com'}`,
+                fullName: '企业用户',
+                roles: ['viewer'],
+                department: '企业部门',
                 company: company || 'CIT Corporation',
+                createdAt: now,
+                updatedAt: now,
+                createdBy: 'ldap',
+                updatedBy: 'ldap',
+                lastLoginAt: now,
               },
               token: {
                 accessToken: 'mock-ldap-token-' + Date.now(),
@@ -81,9 +89,9 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
               },
             })
           } else {
-            reject(new Error('LDAP 认证失败：用户名或密码错误'))
+            reject(new Error('LDAP 认证失败：密码不能为空'))
           }
-        }, 1500)
+        }, 1000) // 快速响应
       })
 
       toast.promise(ldapPromise, {
@@ -91,23 +99,22 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
         success: 'LDAP 认证成功！',
         error: (error) => {
           setLdapStatus('failed')
-          handleServerError(error)
-          if (typeof error === 'object' && error && 'message' in error) {
-            return (error as { message: string }).message ?? 'LDAP 认证失败'
-          }
-          return 'LDAP 认证失败，请检查用户名和密码'
+          const errorMsg = error instanceof Error ? error.message : 'LDAP 认证失败'
+          setLastError(errorMsg)
+          return errorMsg
         },
       })
 
-      const authResponse = await ldapPromise as any
+      const authResponse = await ldapPromise as AuthResponse
 
       setLdapStatus('connected')
       auth.setAuth(authResponse)
 
       // 登录成功后跳转
       navigate({ to: '/', replace: true })
-    } catch (_error) {
+    } catch {
       // 错误已在 toast.promise 的 error 回调中处理
+      // 重置状态，允许用户重新尝试
     } finally {
       setIsLoading(false)
     }
@@ -133,9 +140,17 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
       case 'connected':
         return 'LDAP 服务器连接成功'
       case 'failed':
-        return 'LDAP 连接失败，请重试'
+        return lastError || 'LDAP 认证失败，请重试'
       default:
         return '检查 LDAP 连接状态'
+    }
+  }
+
+  // 重置错误状态的函数
+  const resetError = () => {
+    if (ldapStatus === 'failed') {
+      setLdapStatus('connected')
+      setLastError('')
     }
   }
 
@@ -166,6 +181,14 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
               <p className='text-xs text-muted-foreground mt-1'>
                 请输入您的企业域名，系统将自动连接到对应的 LDAP 服务器
               </p>
+              <div className='rounded bg-muted/50 border p-2 mt-2'>
+                <p className='text-xs text-muted-foreground font-medium'>
+                  💡 测试环境
+                </p>
+                <p className='text-xs text-muted-foreground mt-1'>
+                  输入任意密码即可进行假认证
+                </p>
+              </div>
             </FormItem>
           )}
         />
@@ -195,6 +218,10 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
                   placeholder='请输入 LDAP 认证密码'
                   {...field}
                   disabled={isLoading}
+                  onChange={(e) => {
+                    field.onChange(e)
+                    resetError() // 用户输入时重置错误状态
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -215,7 +242,7 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
         <Button
           type='submit'
           className='w-full'
-          disabled={isLoading || ldapStatus === 'failed'}
+          disabled={isLoading}
         >
           {isLoading ? (
             <>

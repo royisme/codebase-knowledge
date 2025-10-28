@@ -1,9 +1,9 @@
 import { HttpResponse, http } from 'msw'
 import { ragFixtures } from '../fixtures/rag'
-import type { RagSession, RagMessage, Identifier, ISODateString } from '@/types'
+import type { RagSession, RagMessage, RagCitation, Identifier, ISODateString } from '@/types'
 
 // Mock data store - in a real app this would be in a database
-let sessions = [...ragFixtures.sessions]
+const sessions = [...ragFixtures.sessions]
 let messageIdCounter = 100 // Start from a high number to avoid conflicts
 let sessionIdCounter = 10
 
@@ -268,7 +268,7 @@ export const ragHandlers = [
 // Mock AI response generation
 async function generateMockAIResponse(question: string, repositoryId: string): Promise<{
   content: string
-  citations: any[]
+  citations: RagCitation[]
 }> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
@@ -278,13 +278,13 @@ async function generateMockAIResponse(question: string, repositoryId: string): P
       content: `基于对"${question}"的分析，我找到了相关的解决方案。这个问题通常涉及到配置优化和代码调整。建议按照以下步骤进行排查：\n\n1. 检查相关配置文件\n2. 查看日志文件中的错误信息\n3. 验证代码逻辑是否正确\n\n需要我为您提供更详细的指导吗？`,
       citations: [
         {
-          id: `cite-${Date.now()}-1`,
+          id: `cite-${Date.now()}-1` as Identifier,
           label: '配置文件示例',
           resourceUri: `file://config/${repositoryId}/settings.yml`,
           score: 0.89 + Math.random() * 0.1,
         },
         {
-          id: `cite-${Date.now()}-2`,
+          id: `cite-${Date.now()}-2` as Identifier,
           label: '错误处理文档',
           resourceUri: `file://docs/troubleshooting.md`,
           score: 0.85 + Math.random() * 0.1,
@@ -295,13 +295,13 @@ async function generateMockAIResponse(question: string, repositoryId: string): P
       content: `关于"${question}"，我找到了以下关键信息：\n\n根据代码分析，这个功能在最近的更新中有所改进。主要变化包括性能优化和错误处理增强。\n\n具体来说：\n- 优化了数据查询逻辑\n- 增加了缓存机制\n- 改进了错误提示信息\n\n您可以查看相关的提交记录了解详细信息。`,
       citations: [
         {
-          id: `cite-${Date.now()}-3`,
+          id: `cite-${Date.now()}-3` as Identifier,
           label: '源代码文件',
           resourceUri: `file://src/${repositoryId}/main.ts`,
           score: 0.92 + Math.random() * 0.08,
         },
         {
-          id: `cite-${Date.now()}-4`,
+          id: `cite-${Date.now()}-4` as Identifier,
           label: '更新日志',
           resourceUri: `file://CHANGELOG.md`,
           score: 0.88 + Math.random() * 0.1,

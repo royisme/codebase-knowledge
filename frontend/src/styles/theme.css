@@ -1,29 +1,52 @@
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
 
+  /* Enterprise Light Theme - Professional Blue-Purple Palette */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.15 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.02 260);
+
+  /* Primary - Professional Blue-Purple */
+  --primary: oklch(0.45 0.08 260);
+  --primary-foreground: oklch(0.98 0.01 260);
+
+  /* Secondary - Clean Gray */
+  --secondary: oklch(0.96 0.01 260);
+  --secondary-foreground: oklch(0.25 0.02 260);
+
+  /* Muted & Accent - Subtle variations */
+  --muted: oklch(0.94 0.01 260);
+  --muted-foreground: oklch(0.45 0.02 260);
+  --accent: oklch(0.92 0.02 260);
+  --accent-foreground: oklch(0.30 0.02 260);
+
+  /* Functional Colors - Enterprise standard */
+  --destructive: oklch(0.65 0.12 20);
+  --success: oklch(0.65 0.08 160);
+  --warning: oklch(0.70 0.08 70);
+  --info: oklch(0.60 0.08 220);
+
+  /* Knowledge Management Specific Colors */
+  --knowledge: oklch(0.55 0.12 240);
+  --data: oklch(0.60 0.08 120);
+  --insight: oklch(0.65 0.10 80);
+
+  /* Border & Input */
+  --border: oklch(0.88 0.01 260);
+  --input: oklch(0.92 0.01 260);
+  --ring: oklch(0.50 0.06 260);
+
+  /* Chart Colors - Professional palette */
+  --chart-1: oklch(0.55 0.12 240);
+  --chart-2: oklch(0.60 0.08 120);
+  --chart-3: oklch(0.65 0.10 80);
+  --chart-4: oklch(0.70 0.08 340);
+  --chart-5: oklch(0.60 0.08 20);
+
+  /* Sidebar */
   --sidebar: var(--background);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -35,29 +58,50 @@
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.14 0.04 259.21);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  /* Enterprise Dark Theme - Professional Palette */
+  --background: oklch(0.12 0.02 260);
+  --foreground: oklch(0.95 0.01 260);
+  --card: oklch(0.16 0.02 260);
+  --card-foreground: oklch(0.95 0.01 260);
+  --popover: oklch(0.20 0.02 260);
+  --popover-foreground: oklch(0.95 0.01 260);
+
+  /* Primary - Brighter for dark mode */
+  --primary: oklch(0.75 0.08 260);
+  --primary-foreground: oklch(0.08 0.02 260);
+
+  /* Secondary - Elevated surfaces */
+  --secondary: oklch(0.20 0.02 260);
+  --secondary-foreground: oklch(0.90 0.01 260);
+
+  /* Muted & Accent - Subtle variations */
+  --muted: oklch(0.18 0.02 260);
+  --muted-foreground: oklch(0.65 0.02 260);
+  --accent: oklch(0.22 0.02 260);
+  --accent-foreground: oklch(0.85 0.01 260);
+
+  /* Functional Colors - Enterprise standard (dark mode) */
+  --destructive: oklch(0.70 0.16 20);
+  --success: oklch(0.70 0.12 160);
+  --warning: oklch(0.75 0.12 70);
+  --info: oklch(0.65 0.12 220);
+
+  /* Knowledge Management Specific Colors (dark mode) */
+  --knowledge: oklch(0.70 0.12 240);
+  --data: oklch(0.75 0.10 120);
+  --insight: oklch(0.80 0.12 80);
+
+  /* Border & Input */
+  --border: oklch(0.25 0.02 260);
+  --input: oklch(0.30 0.02 260);
+  --ring: oklch(0.65 0.06 260);
+
+  /* Chart Colors - Professional palette (dark mode) */
+  --chart-1: oklch(0.70 0.12 240);
+  --chart-2: oklch(0.75 0.10 120);
+  --chart-3: oklch(0.80 0.12 80);
+  --chart-4: oklch(0.75 0.10 340);
+  --chart-5: oklch(0.70 0.10 20);
 }
 
 @theme inline {
@@ -68,6 +112,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Core Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -86,11 +132,25 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Functional Colors */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  /* Knowledge Management Colors */
+  --color-knowledge: var(--knowledge);
+  --color-data: var(--data);
+  --color-insight: var(--insight);
+
+  /* Chart Colors */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  /* Sidebar Colors */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

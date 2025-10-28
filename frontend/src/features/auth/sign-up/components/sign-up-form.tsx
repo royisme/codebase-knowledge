@@ -4,8 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { signUp } from '@/lib/auth-service'
-import { handleServerError } from '@/lib/handle-server-error'
+import { signUp, signIn } from '@/lib/auth-service'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -22,7 +21,7 @@ import { PasswordInput } from '@/components/password-input'
 
 const formSchema = z
   .object({
-    displayName: z
+    fullName: z
       .string()
       .min(1, '请输入姓名')
       .max(60, '姓名过长'),
@@ -35,6 +34,8 @@ const formSchema = z
       .min(1, '请输入密码')
       .min(7, '密码长度至少7个字符'),
     confirmPassword: z.string().min(1, '请确认密码'),
+    company: z.string().optional(),
+    department: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "两次输入的密码不一致",
@@ -52,10 +53,12 @@ export function SignUpForm({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      displayName: '',
+      fullName: '',
       email: '',
       password: '',
       confirmPassword: '',
+      company: '',
+      department: '',
     },
   })
 
@@ -66,29 +69,54 @@ export function SignUpForm({
       email: data.email,
       password: data.password,
       confirmPassword: data.confirmPassword,
-      displayName: data.displayName,
+      fullName: data.fullName,
+      company: data.company || '',
+      department: data.department || '',
     }
 
-    const submission = signUp(payload)
-
-    toast.promise(submission, {
-      loading: '正在创建账号…',
-      success: `欢迎来到系统，${data.displayName}!`,
-      error: (error) => {
-        handleServerError(error)
-        if (typeof error === 'object' && error && 'message' in error) {
-          return (error as { message: string }).message ?? '注册失败'
-        }
-        return '注册失败，请稍后再试'
-      },
-    })
-
     try {
-      const response = await submission
-      auth.setAuth(response)
-      navigate({ to: '/', replace: true })
-    } catch (_error) {
-      // 错误已在 toast 中处理
+      // Register the user (registration returns UserRead without tokens)
+      const user = await signUp(payload)
+
+      toast.success(`注册成功！欢迎 ${user.fullName}`, {
+        duration: 4000,
+        action: {
+          label: '立即登录',
+          onClick: async () => {
+            try {
+              toast.loading('正在登录...', { id: 'auto-login' })
+              const loginResponse = await signIn({
+                email: data.email,
+                password: data.password,
+              })
+
+              toast.success('登录成功！', { id: 'auto-login' })
+              auth.setAuth(loginResponse)
+              navigate({ to: '/', replace: true })
+            } catch (_loginError) {
+              toast.error('自动登录失败，请手动登录', { id: 'auto-login' })
+              navigate({ to: '/sign-in' })
+            }
+          }
+        }
+      })
+
+      // Also show manual login option after timeout
+      setTimeout(() => {
+        toast.info('您也可以稍后手动登录', {
+          action: {
+            label: '去登录页面',
+            onClick: () => navigate({ to: '/sign-in' })
+          }
+        })
+      }, 5000)
+
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message || '注册失败，请稍后再试')
+      } else {
+        toast.error('注册失败，请稍后再试')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -103,7 +131,7 @@ export function SignUpForm({
       >
         <FormField
           control={form.control}
-          name='displayName'
+          name='fullName'
           render={({ field }) => (
             <FormItem>
               <FormLabel>姓名</FormLabel>
@@ -122,6 +150,32 @@ export function SignUpForm({
               <FormLabel>邮箱地址</FormLabel>
               <FormControl>
                 <Input placeholder='name@example.com' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='company'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>公司</FormLabel>
+              <FormControl>
+                <Input placeholder='CIT Corporation (可选)' {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='department'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>部门</FormLabel>
+              <FormControl>
+                <Input placeholder='技术部 (可选)' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

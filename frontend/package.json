@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "lint:eslint": "eslint .",
+    "lint:oxlint": "oxlint",
+    "lint:fix": "oxlint --fix && eslint . --fix",
     "preview": "vite preview",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
@@ -18,6 +21,7 @@
     "bun": "^1.3.0"
   },
   "dependencies": {
+    "@ai-sdk/react": "^2.0.80",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",

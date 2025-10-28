@@ -3,6 +3,7 @@ import type {
   ISODateString,
   RagMessage,
   RagSession,
+  RagCitation,
 } from '@/types'
 
 const buildMessage = (input: {
@@ -10,7 +11,7 @@ const buildMessage = (input: {
   role: RagMessage['role']
   content: string
   createdAt: string
-  citations?: any[]
+  citations?: RagCitation[]
 }): RagMessage => ({
   id: input.id as Identifier,
   role: input.role,
@@ -241,6 +242,28 @@ const sessions: RagSession[] = [
             label: '生产环境配置检查清单',
             resourceUri: 'file://checklists/production-deployment.md',
             score: 0.88,
+          },
+        ],
+      },
+      buildMessage({
+        id: 'msg-11',
+        role: 'user',
+        content: '根据 query_id=graph-query-neo4j 的结果，想继续确认缓存设置是否也会影响连接。',
+        createdAt: new Date('2025-01-17T14:49:00Z').toISOString(),
+      }),
+      {
+        ...buildMessage({
+          id: 'msg-12',
+          role: 'assistant',
+          content: '继续沿用上一轮上下文（query_id=graph-query-neo4j）：建议检查连接池缓存大小与空闲连接回收时间，避免长时间占用导致连接假死。',
+          createdAt: new Date('2025-01-17T14:49:25Z').toISOString(),
+        }),
+        citations: [
+          {
+            id: 'cite-17' as Identifier,
+            label: '连接池配置说明',
+            resourceUri: 'file://docs/deployment/connection-pool.md',
+            score: 0.9,
           },
         ],
       },

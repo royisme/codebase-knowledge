@@ -1,6 +1,5 @@
-import { useSearch } from '@tanstack/react-router'
+import { useSearch, Link } from '@tanstack/react-router'
 import {
-  Card,
   CardContent,
   CardDescription,
   CardFooter,
@@ -15,37 +14,50 @@ export function SignIn() {
 
   return (
     <AuthLayout>
-      <Card className='gap-4'>
-        <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>企业登录</CardTitle>
-          <CardDescription>
-            登录 CIT 企业知识库管理平台<br />
-            支持本地认证和 LDAP 企业目录服务
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <UserAuthForm redirectTo={redirect} />
-        </CardContent>
-        <CardFooter>
-          <p className='text-muted-foreground px-8 text-center text-sm'>
-            By clicking sign in, you agree to our{' '}
-            <a
-              href='/terms'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a
-              href='/privacy'
-              className='hover:text-primary underline underline-offset-4'
-            >
-              Privacy Policy
-            </a>
-            .
+      <CardHeader className='pb-4'>
+        <CardTitle className='text-2xl font-bold tracking-tight text-center text-white'>
+          企业登录
+        </CardTitle>
+        <CardDescription className='text-center text-slate-300'>
+          登录 CIT 企业知识库管理平台
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='pb-4'>
+        <UserAuthForm redirectTo={redirect} />
+      </CardContent>
+      <CardFooter className='flex flex-col gap-3 pt-4'>
+        <div className='text-center space-y-2'>
+          <p className='text-slate-300 text-sm'>
+            还没有账户？
           </p>
-        </CardFooter>
-      </Card>
+          <Link
+            to='/sign-up'
+            className='inline-flex items-center gap-1 text-purple-400 font-medium hover:text-purple-300 transition-colors text-sm'
+          >
+            立即注册
+            <svg className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5l7 7-7 7' />
+            </svg>
+          </Link>
+        </div>
+        <div className='h-px bg-gradient-to-r from-transparent via-white/20 to-transparent' />
+        <p className='text-slate-400 text-center text-xs'>
+          登录即表示您同意我们的{' '}
+          <a
+            href='/terms'
+            className='text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-4'
+          >
+            服务条款
+          </a>{' '}
+          和{' '}
+          <a
+            href='/privacy'
+            className='text-purple-400 hover:text-purple-300 transition-colors underline underline-offset-4'
+          >
+            隐私政策
+          </a>
+        </p>
+      </CardFooter>
     </AuthLayout>
   )
 }

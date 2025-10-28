@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Search,
   Plus,
@@ -14,40 +15,107 @@ import {
   GitBranch,
   MessageSquare,
   Brain,
-  Loader2
+  Loader2,
+  Info,
+  AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type RagSession } from '@/types'
-import { ragFixtures } from '@/lib/api-mock/fixtures/rag'
-
-// Mock data - will be replaced with real API calls
-const mockSessions: RagSession[] = ragFixtures.sessions
+import { buildAssistantMessage, useRagChatStore } from './store'
 
 interface RAGConsoleProps {
   className?: string
 }
 
 export function RAGConsole({ className }: RAGConsoleProps) {
-  const [sessions] = useState<RagSession[]>(mockSessions)
-  const [selectedSession, setSelectedSession] = useState<RagSession | null>(mockSessions[0])
+  const sessions = useRagChatStore((state) => state.sessions)
+  const selectedSessionId = useRagChatStore((state) => state.selectedSessionId)
+  const selectSession = useRagChatStore((state) => state.selectSession)
+  const queueUserMessage = useRagChatStore((state) => state.queueUserMessage)
+  const completeAssistantMessage = useRagChatStore((state) => state.completeAssistantMessage)
+  const registerFailure = useRagChatStore((state) => state.registerFailure)
+  const retryLastMessage = useRagChatStore((state) => state.retryLastMessage)
+  const isLoading = useRagChatStore((state) => state.isLoading)
+  const error = useRagChatStore((state) => state.error)
+  const lastQueryIds = useRagChatStore((state) => state.lastQueryIds)
+  const pendingMessage = useRagChatStore((state) => state.pendingMessage)
   const [searchQuery, setSearchQuery] = useState('')
   const [inputMessage, setInputMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+
+  const selectedSession = useMemo<RagSession | null>(() => {
+    if (!selectedSessionId) {
+      return null
+    }
+
+    return sessions.find((session) => session.id === selectedSessionId) ?? null
+  }, [selectedSessionId, sessions])
+
+  const lastQueryId = useMemo(() => {
+    if (!selectedSessionId) {
+      return null
+    }
+
+    return lastQueryIds[selectedSessionId] ?? null
+  }, [lastQueryIds, selectedSessionId])
 
   const filteredSessions = sessions.filter(session =>
     session.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim() || !selectedSession) return
+  const mockGraphQuery = useCallback(async (content: string) => {
+    await new Promise((resolve) => setTimeout(resolve, 800))
 
-    setIsLoading(true)
-    // Mock API call - will be replaced with real implementation
-    setTimeout(() => {
-      setIsLoading(false)
-      setInputMessage('')
-    }, 1000)
-  }
+    return `这是针对「${content}」的示例回答。后端接入 GraphRAG 服务后会返回真实结果，并附带 query_id。`
+  }, [])
+
+  const handleSendMessage = useCallback(async () => {
+    const trimmed = inputMessage.trim()
+    if (!trimmed) {
+      return
+    }
+
+    const queued = queueUserMessage(trimmed)
+    if (!queued) {
+      return
+    }
+
+    setInputMessage('')
+
+    try {
+      const responseContent = await mockGraphQuery(trimmed)
+      const assistantMessage = buildAssistantMessage(responseContent)
+      const nextQueryId = `graph-query-${assistantMessage.id}`
+
+      completeAssistantMessage({
+        sessionId: queued.sessionId,
+        message: assistantMessage,
+        lastQueryId: nextQueryId,
+      })
+    } catch (err) {
+      registerFailure(err instanceof Error ? err.message : '请求失败，请稍后重试')
+    }
+  }, [completeAssistantMessage, inputMessage, mockGraphQuery, queueUserMessage, registerFailure])
+
+  const handleRetry = useCallback(async () => {
+    const pending = retryLastMessage()
+    if (!pending) {
+      return
+    }
+
+    try {
+      const responseContent = await mockGraphQuery(pending.message)
+      const assistantMessage = buildAssistantMessage(responseContent)
+      const nextQueryId = `graph-query-${assistantMessage.id}`
+
+      completeAssistantMessage({
+        sessionId: pending.sessionId,
+        message: assistantMessage,
+        lastQueryId: nextQueryId,
+      })
+    } catch (err) {
+      registerFailure(err instanceof Error ? err.message : '请求失败，请稍后重试')
+    }
+  }, [completeAssistantMessage, mockGraphQuery, registerFailure, retryLastMessage])
 
   return (
     <div className={cn('flex h-full gap-4', className)}>
@@ -79,7 +147,7 @@ export function RAGConsole({ className }: RAGConsoleProps) {
           {filteredSessions.map((session) => (
             <button
               key={session.id}
-              onClick={() => setSelectedSession(session)}
+              onClick={() => selectSession(session.id)}
               className={cn(
                 'w-full text-left p-3 rounded-lg mb-2 transition-colors',
                 'hover:bg-accent hover:text-accent-foreground',
@@ -107,11 +175,36 @@ export function RAGConsole({ className }: RAGConsoleProps) {
       <div className='flex-1 flex flex-col'>
         {selectedSession ? (
           <>
-            <div className='p-4 border-b'>
-              <h1 className='text-xl font-semibold'>{selectedSession.title}</h1>
-              <p className='text-sm text-muted-foreground'>
-                知识库: {selectedSession.repositoryId}
-              </p>
+            <div className='p-4 border-b flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between'>
+              <div>
+                <h1 className='text-xl font-semibold'>{selectedSession.title}</h1>
+                <p className='text-sm text-muted-foreground'>
+                  知识库: {selectedSession.repositoryId}
+                </p>
+              </div>
+              {lastQueryId && (
+                <Badge variant='secondary' className='self-start'>
+                  最近 query_id: {lastQueryId}
+                </Badge>
+              )}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant='ghost' size='sm' className='gap-2 self-start lg:self-auto'>
+                    <Info className='h-4 w-4' />
+                    使用说明
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align='end' className='w-80 text-sm leading-relaxed'>
+                  <p className='font-medium mb-2'>GraphRAG 多轮查询提示</p>
+                  <ol className='list-decimal list-inside space-y-2 text-muted-foreground'>
+                    <li>首轮提问后会返回 <code>query_id</code>，继续追问会自动回传该 ID。</li>
+                    <li>命中缓存时答案会参考上一轮的摘要和关联实体，帮助保持上下文。</li>
+                    <li>缓存默认保留 10 分钟，可在后端通过 <code>GRAPHRAG_QUERY_CACHE_TTL_SECONDS</code> 调整。</li>
+                    <li>若看到“上下文失效”提示，可重新开始或继续追问，系统会自动恢复。</li>
+                  </ol>
+                  <p className='mt-3 text-xs text-muted-foreground'>详见 <code>docs/frontend/graph-query.md</code> 获取完整指南。</p>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <ScrollArea className='flex-1 p-4'>
@@ -150,6 +243,19 @@ export function RAGConsole({ className }: RAGConsoleProps) {
             </ScrollArea>
 
             <div className='p-4 border-t'>
+              {error && (
+                <div className='mb-3 flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive'>
+                  <div className='flex items-center gap-2'>
+                    <AlertCircle className='h-4 w-4' />
+                    <span>{error}</span>
+                  </div>
+                  {pendingMessage && (
+                    <Button variant='outline' size='sm' onClick={handleRetry}>
+                      重新发送
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className='flex gap-2'>
                 <Input
                   placeholder='输入您的问题...'

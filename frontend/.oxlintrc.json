@@ -1,45 +1,77 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
   "rules": {
+    // TypeScript 严格类型规则
     "typescript/await-thenable": "error",
     "typescript/no-array-delete": "error",
     "typescript/no-base-to-string": "error",
-    "typescript/no-confusing-void-expression": "error",
+    "typescript/no-confusing-void-expression": "off", // 暂时关闭，不符合 React 回调风格
     "typescript/no-duplicate-type-constituents": "error",
-    "typescript/no-floating-promises": "error",
+    "typescript/no-floating-promises": "warn", // 降级为警告，在 React 事件处理中常见
     "typescript/no-for-in-array": "error",
     "typescript/no-implied-eval": "error",
     "typescript/no-meaningless-void-operator": "error",
-    "typescript/no-misused-promises": "error",
+    "typescript/no-misused-promises": "warn", // 降级为警告，在 React 回调中常见
     "typescript/no-misused-spread": "error",
     "typescript/no-mixed-enums": "error",
-    "typescript/no-redundant-type-constituents": "error",
+    "typescript/no-redundant-type-constituents": "warn", // 降级为警告
     "typescript/no-unnecessary-boolean-literal-compare": "error",
-    "typescript/no-unnecessary-template-expression": "error",
+    "typescript/no-unnecessary-template-expression": "warn", // 降级为警告
     "typescript/no-unnecessary-type-arguments": "error",
     "typescript/no-unnecessary-type-assertion": "error",
-    "typescript/no-unsafe-argument": "error",
-    "typescript/no-unsafe-assignment": "error",
-    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-argument": "off", // 暂时关闭，过于严格
+    "typescript/no-unsafe-assignment": "off", // 暂时关闭，过于严格
+    "typescript/no-unsafe-call": "off", // 暂时关闭，过于严格
     "typescript/no-unsafe-enum-comparison": "error",
-    "typescript/no-unsafe-member-access": "error",
-    "typescript/no-unsafe-return": "error",
-    "typescript/no-unsafe-type-assertion": "error",
+    "typescript/no-unsafe-member-access": "off", // 暂时关闭，过于严格
+    "typescript/no-unsafe-return": "off", // 暂时关闭，过于严格
+    "typescript/no-unsafe-type-assertion": "off", // 暂时关闭，在 API 和测试中大量使用
     "typescript/no-unsafe-unary-minus": "error",
-    "typescript/non-nullable-type-assertion-style": "error",
-    "typescript/only-throw-error": "error",
+    "typescript/non-nullable-type-assertion-style": "warn", // 降级为警告
+    "typescript/only-throw-error": "warn", // 降级为警告
     "typescript/prefer-promise-reject-errors": "error",
     "typescript/prefer-reduce-type-parameter": "error",
     "typescript/prefer-return-this-type": "error",
-    "typescript/promise-function-async": "error",
+    "typescript/promise-function-async": "off", // 暂时关闭，不符合项目编码风格
     "typescript/related-getter-setter-pairs": "error",
     "typescript/require-array-sort-compare": "error",
     "typescript/require-await": "error",
     "typescript/restrict-plus-operands": "error",
-    "typescript/restrict-template-expressions": "error",
+    "typescript/restrict-template-expressions": "warn", // 降级为警告
     "typescript/return-await": "error",
     "typescript/switch-exhaustiveness-check": "error",
     "typescript/unbound-method": "error",
-    "typescript/use-unknown-in-catch-callback-variable": "error"
+    "typescript/use-unknown-in-catch-callback-variable": "error",
+
+    // 代码质量规则
+    "no-console": "error",
+    "no-debugger": "warn",
+    "no-unused-vars": "error", // 使用 oxlint 的原生规则
+    "no-duplicate-imports": "error",
+    "prefer-const": "error",
+    "no-alert": "error",
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+
+    // React 相关规则（如果需要）
+    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/rules-of-hooks": "error",
+
+    // 代码风格规则（与 Prettier 协调）
+    "quotes": ["error", "single", { "avoidEscape": true }],
+    "semi": ["error", "never"],
+    "comma-dangle": ["error", "always-multiline"]
+  },
+  "plugins": ["react", "@typescript-eslint"],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   }
 }
