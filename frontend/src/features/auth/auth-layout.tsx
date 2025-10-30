@@ -136,8 +136,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           </div>
 
           {/* 右侧 - 表单区域 */}
-          <div className='mx-auto flex w-full flex-col justify-center'>
-            <div className='group border-border/60 bg-card/80 hover:border-border hover:bg-card supports-[backdrop-filter]:bg-card/70 relative overflow-hidden rounded-2xl border p-8 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:max-w-md'>
+          <div className='flex w-full flex-col justify-center'>
+            <div className='group border-border/60 bg-card/80 hover:border-border hover:bg-card supports-[backdrop-filter]:bg-card/70 relative overflow-hidden rounded-2xl border p-8 shadow-2xl backdrop-blur-xl transition-all duration-500'>
               {/* 卡片内部光晕 */}
               <div className='bg-primary/20 dark:bg-primary/30 absolute -top-24 -right-24 h-48 w-48 rounded-full blur-3xl transition-all duration-500 group-hover:scale-110' />
               <div className='absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-sky-300/30 blur-3xl transition-all duration-500 group-hover:scale-110 dark:bg-sky-600/30' />

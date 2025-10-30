@@ -34,7 +34,7 @@ export async function fetchRoles(): Promise<RoleDefinition[]> {
 }
 
 export async function fetchPolicies(): Promise<ListPoliciesResponse> {
-  return apiClient<ListPoliciesResponse>({ endpoint: '/api/admin/policies' })
+  return apiClient<ListPoliciesResponse>({ endpoint: '/api/v1/admin/policies' })
 }
 
 export async function fetchAuditLogs(): Promise<RbacAuditLog[]> {
@@ -73,7 +73,7 @@ export async function updatePolicy(payload: {
   actions: ActionVerb[]
 }): Promise<PolicyRule> {
   const data = await apiClient<{ policy: PolicyRule }>({
-    endpoint: '/api/admin/policies/update',
+    endpoint: '/api/v1/admin/policies/update',
     method: 'POST',
     body: payload,
   })

@@ -53,7 +53,7 @@ export async function signIn(payload: SignInPayload): Promise<AuthResponse> {
   const sessionToken = convertBearerResponseToSessionToken(bearerResponse)
 
   // Step 2: Get current user info using the access token
-  const userUrl = new URL('/api/v1/admin/users/me', BASE_URL).toString()
+  const userUrl = new URL('/api/v1/auth/me', BASE_URL).toString()
   const userResponse = await fetch(userUrl, {
     method: 'GET',
     headers: {
@@ -140,7 +140,7 @@ export async function verifyOtp(
 
 export async function fetchCurrentUser(): Promise<AuthUser> {
   const response = await apiClient<UserReadAPI>({
-    endpoint: '/api/v1/admin/users/me',
+    endpoint: '/api/v1/auth/me',
     method: 'GET',
   })
 

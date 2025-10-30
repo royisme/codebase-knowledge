@@ -36,6 +36,8 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { signUp } from '@/lib/auth-service'
+import type { SignUpPayload } from '@/types'
 
 const step1Schema = z.object({
   fullName: z.string().min(1, '请输入姓名').max(60, '姓名过长'),
@@ -122,7 +124,6 @@ export function EnterpriseSignUpForm({
 
   // LDAP 验证函数
   const validateLdapConnection = async (
-    email: string,
     ldapPassword: string,
     originalPassword: string
   ) => {
@@ -131,18 +132,13 @@ export function EnterpriseSignUpForm({
     // 模拟 LDAP 连接检查
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    if (email.includes('@corp.company.com')) {
-      setLdapStatus('validating')
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+    setLdapStatus('validating')
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // 验证 LDAP 密码是否与设置的密码一致
-      if (ldapPassword === originalPassword) {
-        setLdapStatus('success')
-        return true
-      } else {
-        setLdapStatus('failed')
-        return false
-      }
+    // 验证 LDAP 密码是否与设置的密码一致
+    if (ldapPassword === originalPassword) {
+      setLdapStatus('success')
+      return true
     } else {
       setLdapStatus('failed')
       return false
@@ -163,46 +159,39 @@ export function EnterpriseSignUpForm({
     setIsLoading(true)
 
     try {
+      // LDAP密码验证 - 确认与第二步设置的密码一致
       const ldapValid = await validateLdapConnection(
-        step1Data.email,
         data.ldapPassword,
         step2Data.password
       )
 
       if (!ldapValid) {
-        toast.error('LDAP 认证失败，请检查密码是否与之前设置的一致')
+        toast.error('密码验证失败，请输入与第二步相同的密码')
         setIsLoading(false)
         return
       }
 
-      // 创建账户
-      const submissionPromise = new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            user: {
-              id: 'enterprise-user-1',
-              email: step1Data.email,
-              name: step1Data.fullName,
-              role: 'user',
-              department: step1Data.department,
-              company: step1Data.company,
-            },
-            token: {
-              accessToken: 'enterprise-token-' + Date.now(),
-              refreshToken: 'refresh-token-' + Date.now(),
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-            },
-          })
-        }, 1000)
-      })
+      // 调用真实的注册API
+      const signUpPayload: SignUpPayload = {
+        email: step1Data.email,
+        password: step2Data.password,
+        confirmPassword: step2Data.confirmPassword,
+        fullName: step1Data.fullName,
+        company: step1Data.company,
+        department: step1Data.department,
+      }
 
-      toast.promise(submissionPromise, {
+      const registrationPromise = signUp(signUpPayload)
+
+      toast.promise(registrationPromise, {
         loading: '正在创建企业账户...',
-        success: `欢迎加入 ${step1Data.company}！`,
-        error: '账户创建失败，请稍后再试',
+        success: `欢迎加入 ${step1Data.company || '我们'}！`,
+        error: (err) => {
+          return err?.message || '账户创建失败，请稍后再试'
+        },
       })
 
-      await submissionPromise
+      await registrationPromise
 
       toast.success('企业账户创建成功！请使用新账户登录')
       navigate({ to: '/sign-in' })
@@ -557,7 +546,7 @@ export function EnterpriseSignUpForm({
                       </FormControl>
                       <FormMessage />
                       <p className='text-muted-foreground mt-1 text-xs'>
-                        请输入与上一步设置的密码相同的密码
+                        请输入LDAP的密码
                       </p>
                     </FormItem>
                   )}
