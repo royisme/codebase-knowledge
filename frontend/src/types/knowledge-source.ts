@@ -1,10 +1,6 @@
 import type { AuditMetadata, Identifier, ISODateString } from './common'
 
-export type KnowledgeSourceStatus =
-  | 'active'
-  | 'disabled'
-  | 'syncing'
-  | 'error'
+export type KnowledgeSourceStatus = 'active' | 'disabled' | 'syncing' | 'error'
 
 export type RepositoryCredentialMode = 'ssh' | 'https' | 'token'
 

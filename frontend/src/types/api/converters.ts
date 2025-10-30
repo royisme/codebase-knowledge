@@ -1,10 +1,9 @@
 /**
  * Type converters between backend API types (snake_case) and frontend types (camelCase)
  */
-
 import type { AuthUser, SessionToken, UserRole } from '../auth'
-import type { UserReadAPI, BearerResponseAPI } from './auth'
 import type { Identifier, ISODateString } from '../common'
+import type { UserReadAPI, BearerResponseAPI } from './auth'
 
 /**
  * Convert backend role string to frontend UserRole array
@@ -12,10 +11,10 @@ import type { Identifier, ISODateString } from '../common'
 export function convertRoleToRoles(role: string): UserRole[] {
   // Map backend role to frontend role type
   const roleMap: Record<string, UserRole> = {
-    'viewer': 'viewer',
-    'maintainer': 'maintainer',
-    'admin': 'admin',
-    'superadmin': 'superadmin',
+    viewer: 'viewer',
+    maintainer: 'maintainer',
+    admin: 'admin',
+    superadmin: 'superadmin',
   }
 
   const mappedRole = roleMap[role] || 'viewer'
@@ -50,7 +49,9 @@ export function convertBearerResponseToSessionToken(
   bearer: BearerResponseAPI
 ): SessionToken {
   // Default to 1 hour expiry if not provided
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString() as ISODateString
+  const expiresAt = new Date(
+    Date.now() + 60 * 60 * 1000
+  ).toISOString() as ISODateString
 
   return {
     accessToken: bearer.access_token,

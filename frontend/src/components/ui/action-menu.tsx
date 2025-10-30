@@ -1,3 +1,4 @@
+import { MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -7,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal } from 'lucide-react'
 
 export interface ActionMenuAction {
   label: string
@@ -27,9 +27,13 @@ export interface ActionMenuProps {
   disabled?: boolean
 }
 
-export function ActionMenu({ groups, triggerLabel, disabled }: ActionMenuProps) {
-  const hasVisibleActions = groups.some(group =>
-    group.actions.some(action => !action.disabled)
+export function ActionMenu({
+  groups,
+  triggerLabel,
+  disabled,
+}: ActionMenuProps) {
+  const hasVisibleActions = groups.some((group) =>
+    group.actions.some((action) => !action.disabled)
   )
 
   if (!hasVisibleActions) {
@@ -58,20 +62,26 @@ export function ActionMenu({ groups, triggerLabel, disabled }: ActionMenuProps) 
                 {groupIndex > 0 && <DropdownMenuSeparator />}
               </>
             )}
-            {group.actions.map((action, actionIndex) => (
-              !action.disabled && (
-                <DropdownMenuItem
-                  key={actionIndex}
-                  onSelect={action.onSelect}
-                  className={action.destructive ? 'text-destructive focus:text-destructive' : ''}
-                >
-                  {action.label}
-                </DropdownMenuItem>
-              )
-            ))}
-            {groupIndex < groups.length - 1 && group.actions.some(action => !action.disabled) && (
-              <DropdownMenuSeparator />
+            {group.actions.map(
+              (action, actionIndex) =>
+                !action.disabled && (
+                  <DropdownMenuItem
+                    key={actionIndex}
+                    onSelect={action.onSelect}
+                    className={
+                      action.destructive
+                        ? 'text-destructive focus:text-destructive'
+                        : ''
+                    }
+                  >
+                    {action.label}
+                  </DropdownMenuItem>
+                )
             )}
+            {groupIndex < groups.length - 1 &&
+              group.actions.some((action) => !action.disabled) && (
+                <DropdownMenuSeparator />
+              )}
           </div>
         ))}
       </DropdownMenuContent>

@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-
 import type {
   ActionVerb,
   Identifier,
@@ -9,12 +7,17 @@ import type {
   ResourceIdentifier,
   RoleDefinition,
 } from '@/types'
+import { Plus, Settings, Shield, FolderOpen, Users } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   fetchPolicies,
   fetchRoles,
   updatePolicy,
   type ListPoliciesResponse,
 } from '@/lib/rbac-service'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -22,7 +25,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -31,11 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Switch } from '@/components/ui/switch'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
-import { Plus, Settings, Shield, FolderOpen, Users } from 'lucide-react'
 
 const DISPLAY_ACTIONS = ['read', 'admin'] as const satisfies ActionVerb[]
 const ACTION_LABELS: Record<(typeof DISPLAY_ACTIONS)[number], string> = {
@@ -93,7 +92,9 @@ export function PoliciesPage() {
   })
 
   const policiesResponse = policiesQuery.data
-  const resources = policiesResponse?.resources ?? ({} as Record<ResourceIdentifier, ActionVerb[]>)
+  const resources =
+    policiesResponse?.resources ??
+    ({} as Record<ResourceIdentifier, ActionVerb[]>)
 
   const rolePolicyMap = useMemo(() => {
     if (!policiesResponse) return {}
@@ -169,7 +170,7 @@ export function PoliciesPage() {
                     <div className='font-medium'>
                       {RESOURCE_LABELS[resource as ResourceIdentifier]}
                     </div>
-                    <div className='text-sm text-muted-foreground'>
+                    <div className='text-muted-foreground text-sm'>
                       {actions.length} 个可用操作
                     </div>
                   </div>
@@ -199,7 +200,9 @@ export function PoliciesPage() {
               resourceActions={resources}
               isUpdating={mutation.isPending}
               isSelected={selectedRole === role.id}
-              onSelect={() => setSelectedRole(selectedRole === role.id ? null : role.id)}
+              onSelect={() =>
+                setSelectedRole(selectedRole === role.id ? null : role.id)
+              }
               onToggle={(resource, nextActions) =>
                 mutation.mutate({
                   roleId: role.id,
@@ -258,7 +261,7 @@ function RolePolicyCard({
   }
 
   return (
-    <Card className={cn(isSelected && 'ring-2 ring-primary')}>
+    <Card className={cn(isSelected && 'ring-primary ring-2')}>
       <CardHeader>
         <div className='flex items-center justify-between'>
           <div>
@@ -272,7 +275,7 @@ function RolePolicyCard({
       </CardHeader>
       <CardContent className='space-y-4'>
         {resources.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>暂无可配置的资源。</p>
+          <p className='text-muted-foreground text-sm'>暂无可配置的资源。</p>
         ) : (
           <Table>
             <TableHeader>
@@ -287,13 +290,17 @@ function RolePolicyCard({
             </TableHeader>
             <TableBody>
               {resources.map(([resource, allowedActions]) => {
-                const currentActions = new Set(getActionsFor(resource as ResourceIdentifier))
+                const currentActions = new Set(
+                  getActionsFor(resource as ResourceIdentifier)
+                )
                 return (
                   <TableRow key={resource}>
                     <TableCell className='font-medium'>
                       <div className='flex items-center space-x-2'>
                         {RESOURCE_ICONS[resource as ResourceIdentifier]}
-                        <span>{RESOURCE_LABELS[resource as ResourceIdentifier]}</span>
+                        <span>
+                          {RESOURCE_LABELS[resource as ResourceIdentifier]}
+                        </span>
                       </div>
                     </TableCell>
                     {DISPLAY_ACTIONS.map((verb) => {
@@ -305,10 +312,16 @@ function RolePolicyCard({
                             disabled={disabled || isUpdating}
                             checked={checked}
                             onCheckedChange={(value) =>
-                              handleToggle(resource as ResourceIdentifier, verb, value)
+                              handleToggle(
+                                resource as ResourceIdentifier,
+                                verb,
+                                value
+                              )
                             }
                             aria-label={`${resource}:${verb}`}
-                            className={cn(disabled && 'opacity-30 cursor-not-allowed')}
+                            className={cn(
+                              disabled && 'cursor-not-allowed opacity-30'
+                            )}
                           />
                         </TableCell>
                       )

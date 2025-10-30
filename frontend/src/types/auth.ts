@@ -1,10 +1,6 @@
 import type { AuditMetadata, Identifier, ISODateString } from './common'
 
-export type UserRole =
-  | 'superadmin'
-  | 'admin'
-  | 'maintainer'
-  | 'viewer'
+export type UserRole = 'superadmin' | 'admin' | 'maintainer' | 'viewer'
 
 export interface AuthUser extends AuditMetadata {
   id: Identifier

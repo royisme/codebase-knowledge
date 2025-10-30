@@ -4,8 +4,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { signUp, signIn } from '@/lib/auth-service'
 import { useAuthStore } from '@/stores/auth-store'
+import { signUp, signIn } from '@/lib/auth-service'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,24 +21,17 @@ import { PasswordInput } from '@/components/password-input'
 
 const formSchema = z
   .object({
-    fullName: z
-      .string()
-      .min(1, '请输入姓名')
-      .max(60, '姓名过长'),
+    fullName: z.string().min(1, '请输入姓名').max(60, '姓名过长'),
     email: z.email({
-      error: (iss) =>
-        iss.input === '' ? '请输入邮箱地址' : undefined,
+      error: (iss) => (iss.input === '' ? '请输入邮箱地址' : undefined),
     }),
-    password: z
-      .string()
-      .min(1, '请输入密码')
-      .min(7, '密码长度至少7个字符'),
+    password: z.string().min(1, '请输入密码').min(7, '密码长度至少7个字符'),
     confirmPassword: z.string().min(1, '请确认密码'),
     company: z.string().optional(),
     department: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "两次输入的密码不一致",
+    message: '两次输入的密码不一致',
     path: ['confirmPassword'],
   })
 
@@ -97,8 +90,8 @@ export function SignUpForm({
               toast.error('自动登录失败，请手动登录', { id: 'auto-login' })
               navigate({ to: '/sign-in' })
             }
-          }
-        }
+          },
+        },
       })
 
       // Also show manual login option after timeout
@@ -106,11 +99,10 @@ export function SignUpForm({
         toast.info('您也可以稍后手动登录', {
           action: {
             label: '去登录页面',
-            onClick: () => navigate({ to: '/sign-in' })
-          }
+            onClick: () => navigate({ to: '/sign-in' }),
+          },
         })
       }, 5000)
-
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message || '注册失败，请稍后再试')
@@ -223,7 +215,12 @@ export function SignUpForm({
         </div>
 
         <div className='grid grid-cols-1 gap-2'>
-          <Button variant='outline' type='button' disabled={isLoading} onClick={() => toast.info('请联系管理员开通账户')}>
+          <Button
+            variant='outline'
+            type='button'
+            disabled={isLoading}
+            onClick={() => toast.info('请联系管理员开通账户')}
+          >
             联系管理员开通
           </Button>
         </div>

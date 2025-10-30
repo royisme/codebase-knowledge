@@ -1,5 +1,3 @@
-import { faker } from '@faker-js/faker'
-
 import type {
   BulkOperationPayload,
   BulkOperationResponse,
@@ -13,6 +11,7 @@ import type {
   CreateKnowledgeSourcePayload,
   UpdateKnowledgeSourcePayload,
 } from '@/types'
+import { faker } from '@faker-js/faker'
 
 const DEFAULT_PARSER_CONFIG: ParserConfig = {
   languages: ['python', 'typescript', 'sql'],
@@ -31,7 +30,9 @@ let sources: MutableKnowledgeSource[] = createInitialSources()
 function createInitialSources(): MutableKnowledgeSource[] {
   const createSource = (input: Partial<MutableKnowledgeSource>) => {
     const now = faker.date.recent()
-    const createdAt = (faker.date.past({ years: 1 }) as Date).toISOString() as ISODateString
+    const createdAt = (
+      faker.date.past({ years: 1 }) as Date
+    ).toISOString() as ISODateString
     const updatedAt = (now.toISOString() as ISODateString) ?? createdAt
     return {
       id: faker.string.uuid() as Identifier,
@@ -56,8 +57,10 @@ function createInitialSources(): MutableKnowledgeSource[] {
       parserConfig: DEFAULT_PARSER_CONFIG,
       createdAt,
       updatedAt,
-      createdBy: (faker.string.uuid() as Identifier) ?? ('user-1' as Identifier),
-      updatedBy: (faker.string.uuid() as Identifier) ?? ('user-1' as Identifier),
+      createdBy:
+        (faker.string.uuid() as Identifier) ?? ('user-1' as Identifier),
+      updatedBy:
+        (faker.string.uuid() as Identifier) ?? ('user-1' as Identifier),
       ...input,
     }
   }
@@ -208,7 +211,9 @@ export function triggerKnowledgeSourceSyncFixture(id: Identifier) {
   return target
 }
 
-export function bulkOperationFixture(payload: BulkOperationPayload): BulkOperationResponse {
+export function bulkOperationFixture(
+  payload: BulkOperationPayload
+): BulkOperationResponse {
   const { ids, operation } = payload
   const updated: string[] = []
   const failed: Array<{ id: string; error: string }> = []
@@ -245,7 +250,10 @@ export function bulkOperationFixture(payload: BulkOperationPayload): BulkOperati
           failed.push({ id, error: '不支持的操作类型' })
       }
     } catch (error) {
-      failed.push({ id, error: error instanceof Error ? error.message : '未知错误' })
+      failed.push({
+        id,
+        error: error instanceof Error ? error.message : '未知错误',
+      })
     }
   }
 

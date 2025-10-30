@@ -85,9 +85,21 @@ declare module '@tanstack/react-router' {
 }
 
 async function bootstrap() {
+  // Only start MSW in development mode when explicitly enabled
   if (import.meta.env.DEV) {
-    const { startMockWorker } = await import('@/lib/api-mock/msw/browser')
-    await startMockWorker()
+    const enableMock = import.meta.env.VITE_ENABLE_MOCK
+    const shouldMock =
+      enableMock === 'true' || enableMock === '1' || enableMock === 'yes'
+
+    if (shouldMock) {
+      const { startMockWorker } = await import('@/lib/api-mock/msw/browser')
+      await startMockWorker()
+      // eslint-disable-next-line no-console
+      console.log('[MSW] Mock API enabled')
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('[MSW] Mock API disabled - using real backend')
+    }
   }
 
   const rootElement = document.getElementById('root')

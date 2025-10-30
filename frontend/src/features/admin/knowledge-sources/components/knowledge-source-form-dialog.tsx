@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-
+import type { KnowledgeSource } from '@/types'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -11,14 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Form,
   FormControl,
@@ -28,9 +21,14 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-
-import type { KnowledgeSource } from '@/types'
 
 const formSchema = z.object({
   name: z.string().min(1, '请输入知识源名称'),
@@ -46,7 +44,7 @@ const formSchema = z.object({
     .string()
     .optional()
     .refine(
-      (val) => (val == null || val === '' || Number.isFinite(Number(val))),
+      (val) => val == null || val === '' || Number.isFinite(Number(val)),
       '请输入合法的数字'
     ),
   enableIncrementalRefresh: z.boolean(),
@@ -151,7 +149,10 @@ export function KnowledgeSourceFormDialog({
                 <FormItem className='md:col-span-1'>
                   <FormLabel>仓库地址</FormLabel>
                   <FormControl>
-                    <Input placeholder='git@github.com:org/repo.git' {...field} />
+                    <Input
+                      placeholder='git@github.com:org/repo.git'
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -254,17 +255,26 @@ export function KnowledgeSourceFormDialog({
                 <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm md:col-span-2'>
                   <div className='space-y-0.5'>
                     <FormLabel className='text-base'>启用增量刷新</FormLabel>
-                    <p className='text-sm text-muted-foreground'>开启后可支持 webhook 增量解析。</p>
+                    <p className='text-muted-foreground text-sm'>
+                      开启后可支持 webhook 增量解析。
+                    </p>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
             <DialogFooter className='md:col-span-2'>
-              <Button variant='outline' type='button' onClick={() => onOpenChange(false)}>
+              <Button
+                variant='outline'
+                type='button'
+                onClick={() => onOpenChange(false)}
+              >
                 取消
               </Button>
               <Button type='submit' disabled={isSubmitting}>

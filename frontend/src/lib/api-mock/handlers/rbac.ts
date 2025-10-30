@@ -1,7 +1,5 @@
-import { HttpResponse, http } from 'msw'
-
 import type { ActionVerb, Identifier, ResourceIdentifier } from '@/types'
-
+import { HttpResponse, http } from 'msw'
 import { rbacFixtures } from '../fixtures/rbac'
 
 interface UpdatePolicyPayload {
@@ -48,7 +46,9 @@ export const rbacHandlers = [
     }
 
     const allowedActions = rbacFixtures.listResourceActions()[payload.resource]
-    const invalid = payload.actions.filter((action) => !allowedActions.includes(action))
+    const invalid = payload.actions.filter(
+      (action) => !allowedActions.includes(action)
+    )
     if (invalid.length > 0) {
       return HttpResponse.json(
         {
@@ -88,7 +88,8 @@ export const rbacHandlers = [
       return HttpResponse.json({ assignment })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'ASSIGN_FAILED'
-      const status = message === 'USER_NOT_FOUND' || message === 'ROLE_NOT_FOUND' ? 404 : 500
+      const status =
+        message === 'USER_NOT_FOUND' || message === 'ROLE_NOT_FOUND' ? 404 : 500
       return HttpResponse.json({ code: message, message }, { status })
     }
   }),

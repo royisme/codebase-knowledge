@@ -1,28 +1,19 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { Plus, RefreshCw, Search as SearchIcon, SlidersHorizontal } from 'lucide-react'
-import { toast } from 'sonner'
-
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/confirm-dialog'
 import type {
   CreateKnowledgeSourcePayload,
   Identifier,
   KnowledgeSource,
   KnowledgeSourceStatus,
 } from '@/types'
+import {
+  Plus,
+  RefreshCw,
+  Search as SearchIcon,
+  SlidersHorizontal,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import {
   bulkOperationOnKnowledgeSources,
   createKnowledgeSource,
@@ -32,7 +23,19 @@ import {
   updateKnowledgeSource,
   type KnowledgeSourceListResponse,
 } from '@/lib/knowledge-source-service'
-
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   KnowledgeSourceFormDialog,
   type KnowledgeSourceFormValues,
@@ -51,7 +54,9 @@ type ConfirmAction =
   | { type: 'toggle'; source: KnowledgeSource }
   | null
 
-function toParserConfig(values: KnowledgeSourceFormValues): CreateKnowledgeSourcePayload['parserConfig'] {
+function toParserConfig(
+  values: KnowledgeSourceFormValues
+): CreateKnowledgeSourcePayload['parserConfig'] {
   const languages = values.languages
     .split(',')
     .map((item) => item.trim())
@@ -62,11 +67,15 @@ function toParserConfig(values: KnowledgeSourceFormValues): CreateKnowledgeSourc
     .map((item) => item.trim())
     .filter(Boolean)
 
-  const maxDepth = values.maxDepth && values.maxDepth.length > 0 ? Number(values.maxDepth) : undefined
+  const maxDepth =
+    values.maxDepth && values.maxDepth.length > 0
+      ? Number(values.maxDepth)
+      : undefined
 
   return {
     languages: languages.length > 0 ? languages : ['python'],
-    pathAllowList: pathAllowList && pathAllowList.length > 0 ? pathAllowList : undefined,
+    pathAllowList:
+      pathAllowList && pathAllowList.length > 0 ? pathAllowList : undefined,
     maxDepth,
     enableIncrementalRefresh: values.enableIncrementalRefresh,
   }
@@ -84,13 +93,10 @@ export function KnowledgeSourcesPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [selectedIds, setSelectedIds] = useState<Identifier[]>([])
 
-  const [bulkConfirmAction, setBulkConfirmAction] = useState<
-    | {
-        type: 'enable' | 'disable' | 'sync'
-        ids: string[]
-      }
-    | null
-  >(null)
+  const [bulkConfirmAction, setBulkConfirmAction] = useState<{
+    type: 'enable' | 'disable' | 'sync'
+    ids: string[]
+  } | null>(null)
 
   const queryClient = useQueryClient()
 
@@ -98,11 +104,18 @@ export function KnowledgeSourcesPage() {
   const deferredSearch = useDeferredValue(routeSearchParams.search || '')
   const page = routeSearchParams.page || 1
   const pageSize = routeSearchParams.pageSize || 10
-  const statusFilters = useMemo(() => routeSearchParams.statuses || [], [routeSearchParams.statuses])
+  const statusFilters = useMemo(
+    () => routeSearchParams.statuses || [],
+    [routeSearchParams.statuses]
+  )
 
   const queryKey = useMemo(() => {
     const normalizedStatuses = [...statusFilters].sort().join(',')
-    return ['admin', 'knowledge-sources', { page, pageSize, search: deferredSearch, statuses: normalizedStatuses }]
+    return [
+      'admin',
+      'knowledge-sources',
+      { page, pageSize, search: deferredSearch, statuses: normalizedStatuses },
+    ]
   }, [page, pageSize, deferredSearch, statusFilters])
 
   const listQuery = useQuery<KnowledgeSourceListResponse>({
@@ -118,7 +131,8 @@ export function KnowledgeSourcesPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (payload: CreateKnowledgeSourcePayload) => createKnowledgeSource(payload),
+    mutationFn: (payload: CreateKnowledgeSourcePayload) =>
+      createKnowledgeSource(payload),
     onSuccess: () => {
       toast.success('知识源已创建')
       queryClient.invalidateQueries({ queryKey })
@@ -135,7 +149,9 @@ export function KnowledgeSourcesPage() {
       payload,
     }: {
       id: Identifier
-      payload: Partial<CreateKnowledgeSourcePayload> & { status?: KnowledgeSourceStatus }
+      payload: Partial<CreateKnowledgeSourcePayload> & {
+        status?: KnowledgeSourceStatus
+      }
     }) => updateKnowledgeSource(id, payload),
     onSuccess: () => {
       toast.success('知识源已更新')
@@ -171,7 +187,8 @@ export function KnowledgeSourcesPage() {
   })
 
   const bulkEnableMutation = useMutation({
-    mutationFn: (ids: string[]) => bulkOperationOnKnowledgeSources({ ids, operation: 'enable' }),
+    mutationFn: (ids: string[]) =>
+      bulkOperationOnKnowledgeSources({ ids, operation: 'enable' }),
     onSuccess: (response) => {
       toast.success(response.message)
       setSelectedIds([])
@@ -183,7 +200,8 @@ export function KnowledgeSourcesPage() {
   })
 
   const bulkDisableMutation = useMutation({
-    mutationFn: (ids: string[]) => bulkOperationOnKnowledgeSources({ ids, operation: 'disable' }),
+    mutationFn: (ids: string[]) =>
+      bulkOperationOnKnowledgeSources({ ids, operation: 'disable' }),
     onSuccess: (response) => {
       toast.success(response.message)
       setSelectedIds([])
@@ -195,7 +213,8 @@ export function KnowledgeSourcesPage() {
   })
 
   const bulkSyncMutation = useMutation({
-    mutationFn: (ids: string[]) => bulkOperationOnKnowledgeSources({ ids, operation: 'sync' }),
+    mutationFn: (ids: string[]) =>
+      bulkOperationOnKnowledgeSources({ ids, operation: 'sync' }),
     onSuccess: (response) => {
       toast.success(response.message)
       setSelectedIds([])
@@ -293,7 +312,7 @@ export function KnowledgeSourcesPage() {
 
     updateSearchParam({
       statuses: newFilters,
-      page: 1
+      page: 1,
     })
   }
 
@@ -301,7 +320,7 @@ export function KnowledgeSourcesPage() {
     updateSearchParam({
       search: '',
       statuses: [],
-      page: 1
+      page: 1,
     })
   }
 
@@ -344,13 +363,13 @@ export function KnowledgeSourcesPage() {
     <div className='space-y-6'>
       <div className='flex flex-wrap items-center gap-2'>
         <div className='relative w-full max-w-md'>
-          <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+          <SearchIcon className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
           <Input
             value={routeSearchParams.search || ''}
             onChange={(event) => {
               updateSearchParam({
                 search: event.target.value,
-                page: 1
+                page: 1,
               })
             }}
             placeholder='搜索知识源名称或仓库地址'
@@ -389,7 +408,12 @@ export function KnowledgeSourcesPage() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button onClick={() => listQuery.refetch()} variant='ghost' size='icon' className='ml-auto'>
+        <Button
+          onClick={() => listQuery.refetch()}
+          variant='ghost'
+          size='icon'
+          className='ml-auto'
+        >
           <RefreshCw className='h-4 w-4' />
         </Button>
 
@@ -409,7 +433,7 @@ export function KnowledgeSourcesPage() {
         onPageSizeChange={(size) => {
           updateSearchParam({
             pageSize: size,
-            page: 1
+            page: 1,
           })
         }}
         onEdit={onEdit}
@@ -426,7 +450,7 @@ export function KnowledgeSourcesPage() {
         isMutating={isMutating}
         searchParams={{
           search: routeSearchParams.search,
-          statuses: routeSearchParams.statuses
+          statuses: routeSearchParams.statuses,
         }}
       />
 

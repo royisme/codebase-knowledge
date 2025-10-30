@@ -1,5 +1,4 @@
 import { setupWorker } from 'msw/browser'
-
 import { handlers } from '../handlers'
 import { shouldEnableMocking } from './shared'
 

@@ -23,8 +23,12 @@ const roles: RoleDefinition[] = [
     name: 'Administrator',
     description: '可管理知识源及用户权限',
     inheritedRoles: [],
-    createdAt: new Date('2025-01-01T00:00:00Z').toISOString() as RoleDefinition['createdAt'],
-    updatedAt: new Date('2025-01-10T00:00:00Z').toISOString() as RoleDefinition['updatedAt'],
+    createdAt: new Date(
+      '2025-01-01T00:00:00Z'
+    ).toISOString() as RoleDefinition['createdAt'],
+    updatedAt: new Date(
+      '2025-01-10T00:00:00Z'
+    ).toISOString() as RoleDefinition['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   },
@@ -33,8 +37,12 @@ const roles: RoleDefinition[] = [
     name: 'Viewer',
     description: '仅能查看知识源与检索结果',
     inheritedRoles: [],
-    createdAt: new Date('2025-01-05T00:00:00Z').toISOString() as RoleDefinition['createdAt'],
-    updatedAt: new Date('2025-01-10T00:00:00Z').toISOString() as RoleDefinition['updatedAt'],
+    createdAt: new Date(
+      '2025-01-05T00:00:00Z'
+    ).toISOString() as RoleDefinition['createdAt'],
+    updatedAt: new Date(
+      '2025-01-10T00:00:00Z'
+    ).toISOString() as RoleDefinition['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   },
@@ -47,8 +55,12 @@ let policies: PolicyRule[] = [
     resource: 'knowledge_sources',
     actions: [...ALLOWED_ACTIONS],
     effect: 'allow',
-    createdAt: new Date('2025-01-02T00:00:00Z').toISOString() as PolicyRule['createdAt'],
-    updatedAt: new Date('2025-01-15T00:00:00Z').toISOString() as PolicyRule['updatedAt'],
+    createdAt: new Date(
+      '2025-01-02T00:00:00Z'
+    ).toISOString() as PolicyRule['createdAt'],
+    updatedAt: new Date(
+      '2025-01-15T00:00:00Z'
+    ).toISOString() as PolicyRule['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   },
@@ -58,8 +70,12 @@ let policies: PolicyRule[] = [
     resource: 'policies',
     actions: [...ALLOWED_ACTIONS],
     effect: 'allow',
-    createdAt: new Date('2025-01-02T00:00:00Z').toISOString() as PolicyRule['createdAt'],
-    updatedAt: new Date('2025-01-15T00:00:00Z').toISOString() as PolicyRule['updatedAt'],
+    createdAt: new Date(
+      '2025-01-02T00:00:00Z'
+    ).toISOString() as PolicyRule['createdAt'],
+    updatedAt: new Date(
+      '2025-01-15T00:00:00Z'
+    ).toISOString() as PolicyRule['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   },
@@ -69,8 +85,12 @@ let policies: PolicyRule[] = [
     resource: 'users',
     actions: [...ALLOWED_ACTIONS],
     effect: 'allow',
-    createdAt: new Date('2025-01-02T00:00:00Z').toISOString() as PolicyRule['createdAt'],
-    updatedAt: new Date('2025-01-15T00:00:00Z').toISOString() as PolicyRule['updatedAt'],
+    createdAt: new Date(
+      '2025-01-02T00:00:00Z'
+    ).toISOString() as PolicyRule['createdAt'],
+    updatedAt: new Date(
+      '2025-01-15T00:00:00Z'
+    ).toISOString() as PolicyRule['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   },
@@ -80,8 +100,12 @@ let policies: PolicyRule[] = [
     resource: 'knowledge_sources',
     actions: ['read'],
     effect: 'allow',
-    createdAt: new Date('2025-01-06T00:00:00Z').toISOString() as PolicyRule['createdAt'],
-    updatedAt: new Date('2025-01-16T00:00:00Z').toISOString() as PolicyRule['updatedAt'],
+    createdAt: new Date(
+      '2025-01-06T00:00:00Z'
+    ).toISOString() as PolicyRule['createdAt'],
+    updatedAt: new Date(
+      '2025-01-16T00:00:00Z'
+    ).toISOString() as PolicyRule['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   },
@@ -94,7 +118,9 @@ const audits: RbacAuditLog[] = [
     action: 'assign_role',
     target: '张三 -> Administrator',
     status: 'success',
-    timestamp: new Date('2025-01-20T08:12:00Z').toISOString() as RbacAuditLog['timestamp'],
+    timestamp: new Date(
+      '2025-01-20T08:12:00Z'
+    ).toISOString() as RbacAuditLog['timestamp'],
     details: '角色分配成功',
   },
   {
@@ -103,7 +129,9 @@ const audits: RbacAuditLog[] = [
     action: 'update_policy',
     target: 'Administrator / knowledge_sources',
     status: 'success',
-    timestamp: new Date('2025-01-20T09:15:00Z').toISOString() as RbacAuditLog['timestamp'],
+    timestamp: new Date(
+      '2025-01-20T09:15:00Z'
+    ).toISOString() as RbacAuditLog['timestamp'],
     details: '权限设置: read, admin',
   },
   {
@@ -112,7 +140,9 @@ const audits: RbacAuditLog[] = [
     action: 'create_policy',
     target: '新策略 -> Viewer',
     status: 'success',
-    timestamp: new Date('2025-01-20T10:30:00Z').toISOString() as RbacAuditLog['timestamp'],
+    timestamp: new Date(
+      '2025-01-20T10:30:00Z'
+    ).toISOString() as RbacAuditLog['timestamp'],
     details: '创建新的访问策略',
   },
   {
@@ -121,7 +151,9 @@ const audits: RbacAuditLog[] = [
     action: 'login_attempt',
     target: '系统登录',
     status: 'success',
-    timestamp: new Date('2025-01-20T11:45:00Z').toISOString() as RbacAuditLog['timestamp'],
+    timestamp: new Date(
+      '2025-01-20T11:45:00Z'
+    ).toISOString() as RbacAuditLog['timestamp'],
     details: '用户登录成功',
   },
   {
@@ -130,7 +162,9 @@ const audits: RbacAuditLog[] = [
     action: 'permission_denied',
     target: '/admin/users',
     status: 'failure',
-    timestamp: new Date('2025-01-20T12:00:00Z').toISOString() as RbacAuditLog['timestamp'],
+    timestamp: new Date(
+      '2025-01-20T12:00:00Z'
+    ).toISOString() as RbacAuditLog['timestamp'],
     details: '权限不足，访问被拒绝',
   },
 ]
@@ -177,7 +211,10 @@ let roleAssignments: RoleAssignment[] = [
   },
 ]
 
-const sanitizeActions = (actions: ActionVerb[], resource: ResourceIdentifier): ActionVerb[] => {
+const sanitizeActions = (
+  actions: ActionVerb[],
+  resource: ResourceIdentifier
+): ActionVerb[] => {
   const allowed = new Set(RESOURCE_ACTIONS[resource] ?? [])
   return actions.filter((action) => allowed.has(action))
 }
@@ -195,7 +232,9 @@ export const rbacFixtures = {
   getAudits(): RbacAuditLog[] {
     return audits.map((audit) => ({ ...audit }))
   },
-  getRoleMembers(): Array<RoleAssignment & { email: string; displayName: string }> {
+  getRoleMembers(): Array<
+    RoleAssignment & { email: string; displayName: string }
+  > {
     return roleAssignments.map((assignment) => {
       const user = resolveUser(assignment.userId)
       return {
@@ -205,7 +244,11 @@ export const rbacFixtures = {
       }
     })
   },
-  assignRole(input: { userId: Identifier; roleId: Identifier; actorId?: Identifier }) {
+  assignRole(input: {
+    userId: Identifier
+    roleId: Identifier
+    actorId?: Identifier
+  }) {
     const user = resolveUser(input.userId)
     if (!user) {
       throw new Error('USER_NOT_FOUND')
@@ -215,7 +258,9 @@ export const rbacFixtures = {
     }
 
     const now = new Date().toISOString() as ISODateString
-    const index = roleAssignments.findIndex((assignment) => assignment.userId === input.userId)
+    const index = roleAssignments.findIndex(
+      (assignment) => assignment.userId === input.userId
+    )
     const actor = input.actorId ?? ('user-1' as Identifier)
     const previous = index === -1 ? undefined : roleAssignments[index]
     const assignment: RoleAssignment = {
@@ -232,7 +277,9 @@ export const rbacFixtures = {
     if (index === -1) {
       roleAssignments = [...roleAssignments, assignment]
     } else {
-      roleAssignments = roleAssignments.map((current, i) => (i === index ? assignment : current))
+      roleAssignments = roleAssignments.map((current, i) =>
+        i === index ? assignment : current
+      )
     }
 
     audits.unshift({
@@ -261,7 +308,8 @@ export const rbacFixtures = {
   }): PolicyRule {
     const filteredActions = sanitizeActions(input.actions, input.resource)
     const index = policies.findIndex(
-      (policy) => policy.roleId === input.roleId && policy.resource === input.resource
+      (policy) =>
+        policy.roleId === input.roleId && policy.resource === input.resource
     )
 
     const now = new Date().toISOString() as PolicyRule['updatedAt']

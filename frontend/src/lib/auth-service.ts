@@ -7,18 +7,19 @@ import type {
   SignUpPayload,
   UserRead,
 } from '@/types'
-
 import {
   type BearerResponseAPI,
   type UserReadAPI,
   convertBearerResponseToSessionToken,
   convertUserReadToAuthUser,
 } from '@/types/api'
-
 import { apiClient } from './api-client'
 
 const RAW_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim()
-const BASE_URL = RAW_BASE_URL && RAW_BASE_URL.length > 0 ? RAW_BASE_URL : 'http://localhost'
+const BASE_URL =
+  RAW_BASE_URL && RAW_BASE_URL.length > 0
+    ? RAW_BASE_URL
+    : 'http://localhost:8000'
 
 export async function signIn(payload: SignInPayload): Promise<AuthResponse> {
   // Step 1: Login to get access token (form-urlencoded)
@@ -41,9 +42,10 @@ export async function signIn(payload: SignInPayload): Promise<AuthResponse> {
     throw {
       status: loginResponse.status,
       code: error.detail || 'LOGIN_FAILED',
-      message: error.detail === 'LOGIN_BAD_CREDENTIALS'
-        ? '邮箱或密码错误'
-        : '登录失败',
+      message:
+        error.detail === 'LOGIN_BAD_CREDENTIALS'
+          ? '邮箱或密码错误'
+          : '登录失败',
     }
   }
 
@@ -55,7 +57,7 @@ export async function signIn(payload: SignInPayload): Promise<AuthResponse> {
   const userResponse = await fetch(userUrl, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${sessionToken.accessToken}`,
+      Authorization: `Bearer ${sessionToken.accessToken}`,
     },
     credentials: 'include',
   })
@@ -78,11 +80,17 @@ export async function signIn(payload: SignInPayload): Promise<AuthResponse> {
 }
 
 export async function signUp(payload: SignUpPayload): Promise<UserRead> {
-  // Map frontend fields to backend field names
-  const backendPayload = {
-    full_name: payload.fullName,
+  // Map frontend fields to backend field names according to OpenAPI UserCreate schema
+  const backendPayload: {
+    email: string
+    password: string
+    full_name?: string | null
+    company?: string | null
+    department?: string | null
+  } = {
     email: payload.email,
     password: payload.password,
+    full_name: payload.fullName || null,
     company: payload.company || null,
     department: payload.department || null,
   }
@@ -93,7 +101,7 @@ export async function signUp(payload: SignUpPayload): Promise<UserRead> {
     body: backendPayload,
   })
 
-  // Convert snake_case to camelCase for frontend
+  // Convert snake_case UserReadAPI to camelCase UserRead for frontend
   return {
     id: response.id,
     email: response.email,

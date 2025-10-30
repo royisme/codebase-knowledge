@@ -30,7 +30,10 @@ const fileListSchema =
   typeof FileList !== 'undefined'
     ? z.instanceof(FileList)
     : z.custom<FileListLike>((value): value is FileListLike => {
-        return Boolean(value) && typeof (value as { length?: unknown }).length === 'number'
+        return (
+          Boolean(value) &&
+          typeof (value as { length?: unknown }).length === 'number'
+        )
       }, 'Please upload a file')
 
 const formSchema = z.object({
@@ -38,13 +41,10 @@ const formSchema = z.object({
     .refine((files) => files.length > 0, {
       message: 'Please upload a file',
     })
-    .refine(
-      (files) => {
-        const first = files[0]
-        return !first || ['text/csv'].includes(first.type)
-      },
-      'Please upload csv format.'
-    ),
+    .refine((files) => {
+      const first = files[0]
+      return !first || ['text/csv'].includes(first.type)
+    }, 'Please upload csv format.'),
 })
 
 type TaskImportDialogProps = {

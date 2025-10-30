@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
 import {
   ArrowRight,
   ArrowLeft,
@@ -16,9 +15,17 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   Form,
   FormControl,
@@ -29,7 +36,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const step1Schema = z.object({
   fullName: z.string().min(1, '请输入姓名').max(60, '姓名过长'),
@@ -40,13 +46,15 @@ const step1Schema = z.object({
   company: z.string().min(1, '请输入企业名称'),
 })
 
-const step2Schema = z.object({
-  password: z.string().min(7, '密码长度至少7个字符'),
-  confirmPassword: z.string().min(1, '请确认密码'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "两次输入的密码不一致",
-  path: ['confirmPassword'],
-})
+const step2Schema = z
+  .object({
+    password: z.string().min(7, '密码长度至少7个字符'),
+    confirmPassword: z.string().min(1, '请确认密码'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: '两次输入的密码不一致',
+    path: ['confirmPassword'],
+  })
 
 const step3Schema = z.object({
   ldapPassword: z.string().min(1, '请输入 LDAP 密码'),
@@ -60,10 +68,15 @@ interface EnterpriseSignUpFormProps {
   className?: string
 }
 
-export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFormProps) {
+export function EnterpriseSignUpForm({
+  className,
+  ...props
+}: EnterpriseSignUpFormProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
-  const [ldapStatus, setLdapStatus] = useState<'idle' | 'checking' | 'validating' | 'success' | 'failed'>('idle')
+  const [ldapStatus, setLdapStatus] = useState<
+    'idle' | 'checking' | 'validating' | 'success' | 'failed'
+  >('idle')
   const navigate = useNavigate()
 
   const [step1Data, setStep1Data] = useState<Step1Data>({
@@ -108,18 +121,22 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
   ]
 
   // LDAP 验证函数
-  const validateLdapConnection = async (email: string, ldapPassword: string) => {
+  const validateLdapConnection = async (
+    email: string,
+    ldapPassword: string,
+    originalPassword: string
+  ) => {
     setLdapStatus('checking')
 
     // 模拟 LDAP 连接检查
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (email.includes('@corp.company.com')) {
       setLdapStatus('validating')
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      // 模拟 LDAP 认证
-      if (ldapPassword.length >= 6) {
+      // 验证 LDAP 密码是否与设置的密码一致
+      if (ldapPassword === originalPassword) {
         setLdapStatus('success')
         return true
       } else {
@@ -146,10 +163,14 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
     setIsLoading(true)
 
     try {
-      const ldapValid = await validateLdapConnection(step1Data.email, data.ldapPassword)
+      const ldapValid = await validateLdapConnection(
+        step1Data.email,
+        data.ldapPassword,
+        step2Data.password
+      )
 
       if (!ldapValid) {
-        toast.error('LDAP 认证失败，请检查企业邮箱和密码')
+        toast.error('LDAP 认证失败，请检查密码是否与之前设置的一致')
         setIsLoading(false)
         return
       }
@@ -247,7 +268,9 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
             <span
               className={cn(
                 'ml-2 text-sm',
-                currentStep >= step ? 'text-foreground' : 'text-muted-foreground'
+                currentStep >= step
+                  ? 'text-foreground'
+                  : 'text-muted-foreground'
               )}
             >
               {step === 1 && '基本信息'}
@@ -255,7 +278,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
               {step === 3 && '企业认证'}
             </span>
             {step < 3 && (
-              <ArrowRight className='ml-4 h-4 w-4 text-muted-foreground' />
+              <ArrowRight className='text-muted-foreground ml-4 h-4 w-4' />
             )}
           </div>
         ))}
@@ -269,13 +292,14 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
               <User className='h-5 w-5' />
               基本信息
             </CardTitle>
-            <CardDescription>
-              请填写您的基本信息和企业信息
-            </CardDescription>
+            <CardDescription>请填写您的基本信息和企业信息</CardDescription>
           </CardHeader>
           <CardContent className='space-y-4'>
             <Form {...step1Form}>
-              <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className='space-y-4'>
+              <form
+                onSubmit={step1Form.handleSubmit(handleStep1Submit)}
+                className='space-y-4'
+              >
                 <FormField
                   control={step1Form.control}
                   name='fullName'
@@ -300,7 +324,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
                         <Input placeholder='name@corp.company.com' {...field} />
                       </FormControl>
                       <FormMessage />
-                      <p className='text-xs text-muted-foreground mt-1'>
+                      <p className='text-muted-foreground mt-1 text-xs'>
                         请使用企业邮箱进行注册，格式：name@company.com
                       </p>
                     </FormItem>
@@ -316,7 +340,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
                       <FormControl>
                         <select
                           {...field}
-                          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+                          className='border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
                         >
                           <option value=''>请选择部门</option>
                           {departments.map((dept) => (
@@ -363,14 +387,12 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
               <Lock className='h-5 w-5' />
               账户设置
             </CardTitle>
-            <CardDescription>
-              设置您的登录密码
-            </CardDescription>
+            <CardDescription>设置您的登录密码</CardDescription>
           </CardHeader>
           <CardContent className='space-y-4'>
-            <div className='rounded-lg border bg-muted/30 p-4'>
-              <h4 className='font-medium text-sm mb-3 flex items-center gap-2'>
-                <Building className='h-4 w-4 text-primary' />
+            <div className='bg-muted/30 rounded-lg border p-4'>
+              <h4 className='mb-3 flex items-center gap-2 text-sm font-medium'>
+                <Building className='text-primary h-4 w-4' />
                 企业账户信息
               </h4>
               <div className='space-y-2 text-sm'>
@@ -394,7 +416,10 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
             </div>
 
             <Form {...step2Form}>
-              <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className='space-y-4'>
+              <form
+                onSubmit={step2Form.handleSubmit(handleStep2Submit)}
+                className='space-y-4'
+              >
                 <FormField
                   control={step2Form.control}
                   name='password'
@@ -416,7 +441,10 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
                     <FormItem>
                       <FormLabel>确认密码</FormLabel>
                       <FormControl>
-                        <PasswordInput placeholder='请再次输入密码' {...field} />
+                        <PasswordInput
+                          placeholder='请再次输入密码'
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -452,13 +480,11 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
               <Shield className='h-5 w-5' />
               企业 LDAP 认证
             </CardTitle>
-            <CardDescription>
-              通过企业目录服务验证您的身份
-            </CardDescription>
+            <CardDescription>通过企业目录服务验证您的身份</CardDescription>
           </CardHeader>
           <CardContent className='space-y-4'>
-            <div className='rounded-lg border bg-muted/30 p-4'>
-              <h4 className='font-medium text-sm mb-3 flex items-center gap-2'>
+            <div className='bg-muted/30 rounded-lg border p-4'>
+              <h4 className='mb-3 flex items-center gap-2 text-sm font-medium'>
                 {getLdapStatusIcon()}
                 LDAP 服务器状态
               </h4>
@@ -466,30 +492,49 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
 
               <div className='mt-3 space-y-2'>
                 <div className='flex items-center gap-2 text-xs'>
-                  <div className={cn(
-                    'h-2 w-2 rounded-full',
-                    ldapStatus === 'success' ? 'bg-green-500' :
-                    ldapStatus === 'failed' ? 'bg-red-500' :
-                    ldapStatus === 'checking' || ldapStatus === 'validating' ? 'bg-orange-500 animate-pulse' :
-                    'bg-gray-300'
-                  )} />
-                  <span>ldap://ldap.{step1Data.company.toLowerCase().replace(/\s+/g, '')}.com:389</span>
+                  <div
+                    className={cn(
+                      'h-2 w-2 rounded-full',
+                      ldapStatus === 'success'
+                        ? 'bg-green-500'
+                        : ldapStatus === 'failed'
+                          ? 'bg-red-500'
+                          : ldapStatus === 'checking' ||
+                              ldapStatus === 'validating'
+                            ? 'animate-pulse bg-orange-500'
+                            : 'bg-gray-300'
+                    )}
+                  />
+                  <span>
+                    ldap://ldap.
+                    {step1Data.company.toLowerCase().replace(/\s+/g, '')}
+                    .com:389
+                  </span>
                 </div>
                 <div className='flex items-center gap-2 text-xs'>
-                  <div className={cn(
-                    'h-2 w-2 rounded-full',
-                    ldapStatus === 'success' ? 'bg-green-500' :
-                    ldapStatus === 'failed' ? 'bg-red-500' :
-                    ldapStatus === 'checking' || ldapStatus === 'validating' ? 'bg-orange-500 animate-pulse' :
-                    'bg-gray-300'
-                  )} />
+                  <div
+                    className={cn(
+                      'h-2 w-2 rounded-full',
+                      ldapStatus === 'success'
+                        ? 'bg-green-500'
+                        : ldapStatus === 'failed'
+                          ? 'bg-red-500'
+                          : ldapStatus === 'checking' ||
+                              ldapStatus === 'validating'
+                            ? 'animate-pulse bg-orange-500'
+                            : 'bg-gray-300'
+                    )}
+                  />
                   <span>SSL/TLS 加密连接</span>
                 </div>
               </div>
             </div>
 
             <Form {...step3Form}>
-              <form onSubmit={step3Form.handleSubmit(handleStep3Submit)} className='space-y-4'>
+              <form
+                onSubmit={step3Form.handleSubmit(handleStep3Submit)}
+                className='space-y-4'
+              >
                 <FormField
                   control={step3Form.control}
                   name='ldapPassword'
@@ -501,11 +546,18 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
                           placeholder='请输入您的 LDAP 认证密码'
                           {...field}
                           disabled={isLoading}
+                          onChange={(e) => {
+                            field.onChange(e)
+                            // 当用户修改输入时，重置失败状态以允许重试
+                            if (ldapStatus === 'failed') {
+                              setLdapStatus('idle')
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
-                      <p className='text-xs text-muted-foreground mt-1'>
-                        请输入企业 LDAP 目录服务的认证密码
+                      <p className='text-muted-foreground mt-1 text-xs'>
+                        请输入与上一步设置的密码相同的密码
                       </p>
                     </FormItem>
                   )}
@@ -535,7 +587,7 @@ export function EnterpriseSignUpForm({ className, ...props }: EnterpriseSignUpFo
                   </Button>
                   <Button
                     type='submit'
-                    disabled={isLoading || ldapStatus === 'failed'}
+                    disabled={isLoading}
                     className='flex-1'
                   >
                     {isLoading ? (

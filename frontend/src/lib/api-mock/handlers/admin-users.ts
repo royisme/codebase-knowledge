@@ -1,5 +1,3 @@
-import { HttpResponse, http } from 'msw'
-
 import type {
   AdminUserListParams,
   Identifier,
@@ -7,7 +5,7 @@ import type {
   UpdateUserStatusPayload,
   UserStatus,
 } from '@/types'
-
+import { HttpResponse, http } from 'msw'
 import {
   getUserActivityFixture,
   listAdminUsersFixture,
@@ -57,44 +55,51 @@ export const adminUserHandlers = [
     return HttpResponse.json(updated)
   }),
 
-  http.post('*/api/admin/users/:userId/reset-password', async ({ params, request }) => {
-    const userId = params.userId as Identifier
-    const payload = (await request.json()) as ResetPasswordPayload
+  http.post(
+    '*/api/admin/users/:userId/reset-password',
+    async ({ params, request }) => {
+      const userId = params.userId as Identifier
+      const payload = (await request.json()) as ResetPasswordPayload
 
-    const result = resetUserPasswordFixture(userId)
-    if (!result) {
-      return HttpResponse.json(
-        { code: 'NOT_FOUND', message: '用户不存在' },
-        { status: 404 }
-      )
+      const result = resetUserPasswordFixture(userId)
+      if (!result) {
+        return HttpResponse.json(
+          { code: 'NOT_FOUND', message: '用户不存在' },
+          { status: 404 }
+        )
+      }
+
+      return HttpResponse.json({
+        temporaryPassword:
+          payload.temporaryPassword || result.temporaryPassword,
+        message: '临时密码已生成',
+      })
     }
+  ),
 
-    return HttpResponse.json({
-      temporaryPassword: payload.temporaryPassword || result.temporaryPassword,
-      message: '临时密码已生成',
-    })
-  }),
+  http.patch(
+    '*/api/admin/users/:userId/status',
+    async ({ params, request }) => {
+      const userId = params.userId as Identifier
+      const payload = (await request.json()) as UpdateUserStatusPayload
 
-  http.patch('*/api/admin/users/:userId/status', async ({ params, request }) => {
-    const userId = params.userId as Identifier
-    const payload = (await request.json()) as UpdateUserStatusPayload
+      if (!payload?.status) {
+        return HttpResponse.json(
+          { code: 'VALIDATION_ERROR', message: '用户状态不能为空' },
+          { status: 400 }
+        )
+      }
 
-    if (!payload?.status) {
-      return HttpResponse.json(
-        { code: 'VALIDATION_ERROR', message: '用户状态不能为空' },
-        { status: 400 }
-      )
+      const updated = updateUserStatusFixture(userId, payload.status)
+      if (!updated) {
+        return HttpResponse.json(
+          { code: 'NOT_FOUND', message: '用户不存在' },
+          { status: 404 }
+        )
+      }
+      return HttpResponse.json(updated)
     }
-
-    const updated = updateUserStatusFixture(userId, payload.status)
-    if (!updated) {
-      return HttpResponse.json(
-        { code: 'NOT_FOUND', message: '用户不存在' },
-        { status: 404 }
-      )
-    }
-    return HttpResponse.json(updated)
-  }),
+  ),
 
   http.get('*/api/admin/users/:userId/activity', ({ params }) => {
     const userId = params.userId as Identifier

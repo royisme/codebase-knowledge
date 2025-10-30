@@ -1,6 +1,12 @@
+import type {
+  RagSession,
+  RagMessage,
+  RagCitation,
+  Identifier,
+  ISODateString,
+} from '@/types'
 import { HttpResponse, http } from 'msw'
 import { ragFixtures } from '../fixtures/rag'
-import type { RagSession, RagMessage, RagCitation, Identifier, ISODateString } from '@/types'
 
 // Mock data store - in a real app this would be in a database
 const sessions = [...ragFixtures.sessions]
@@ -11,8 +17,9 @@ export const ragHandlers = [
   // Get all RAG sessions
   http.get('/api/rag/sessions', () => {
     return HttpResponse.json({
-      data: sessions.sort((a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      data: sessions.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       ),
       total: sessions.length,
     })
@@ -21,7 +28,7 @@ export const ragHandlers = [
   // Get a specific RAG session
   http.get('/api/rag/sessions/:sessionId', ({ params }) => {
     const { sessionId } = params
-    const session = sessions.find(s => s.id === sessionId)
+    const session = sessions.find((s) => s.id === sessionId)
 
     if (!session) {
       return HttpResponse.json(
@@ -38,7 +45,7 @@ export const ragHandlers = [
 
   // Create a new RAG session
   http.post('/api/rag/sessions', async ({ request }) => {
-    const body = await request.json() as {
+    const body = (await request.json()) as {
       title?: string
       repositoryId?: string
       question?: string
@@ -51,12 +58,16 @@ export const ragHandlers = [
       createdAt: new Date().toISOString() as ISODateString,
       updatedAt: new Date().toISOString() as ISODateString,
       participants: ['user-1' as Identifier],
-      messages: body.question ? [{
-        id: `msg-${messageIdCounter++}` as Identifier,
-        role: 'user',
-        content: body.question,
-        createdAt: new Date().toISOString() as ISODateString,
-      }] : [],
+      messages: body.question
+        ? [
+            {
+              id: `msg-${messageIdCounter++}` as Identifier,
+              role: 'user',
+              content: body.question,
+              createdAt: new Date().toISOString() as ISODateString,
+            },
+          ]
+        : [],
     }
 
     sessions.unshift(newSession)
@@ -67,7 +78,7 @@ export const ragHandlers = [
   // Delete a RAG session
   http.delete('/api/rag/sessions/:sessionId', ({ params }) => {
     const { sessionId } = params
-    const index = sessions.findIndex(s => s.id === sessionId)
+    const index = sessions.findIndex((s) => s.id === sessionId)
 
     if (index === -1) {
       return HttpResponse.json(
@@ -86,88 +97,97 @@ export const ragHandlers = [
   }),
 
   // Send a message and get AI response
-  http.post('/api/rag/sessions/:sessionId/messages', async ({ params, request }) => {
-    const { sessionId } = params
-    const body = await request.json() as { content: string }
+  http.post(
+    '/api/rag/sessions/:sessionId/messages',
+    async ({ params, request }) => {
+      const { sessionId } = params
+      const body = (await request.json()) as { content: string }
 
-    const session = sessions.find(s => s.id === sessionId)
-    if (!session) {
-      return HttpResponse.json(
-        {
-          code: 'SESSION_NOT_FOUND',
-          message: '会话不存在，请刷新后重试',
-        },
-        { status: 404 }
-      )
-    }
-
-    // Add user message
-    const userMessage: RagMessage = {
-      id: `msg-${messageIdCounter++}` as Identifier,
-      role: 'user',
-      content: body.content,
-      createdAt: new Date().toISOString() as ISODateString,
-    }
-
-    // Generate AI response (mock)
-    const aiResponse = await generateMockAIResponse(body.content, session.repositoryId)
-
-    const assistantMessage: RagMessage = {
-      id: `msg-${messageIdCounter++}` as Identifier,
-      role: 'assistant',
-      content: aiResponse.content,
-      createdAt: new Date().toISOString() as ISODateString,
-      citations: aiResponse.citations,
-    }
-
-    // Update session
-    session.messages.push(userMessage, assistantMessage)
-    session.updatedAt = new Date().toISOString() as ISODateString
-
-    return HttpResponse.json({
-      data: {
-        userMessage,
-        assistantMessage,
+      const session = sessions.find((s) => s.id === sessionId)
+      if (!session) {
+        return HttpResponse.json(
+          {
+            code: 'SESSION_NOT_FOUND',
+            message: '会话不存在，请刷新后重试',
+          },
+          { status: 404 }
+        )
       }
-    })
-  }),
+
+      // Add user message
+      const userMessage: RagMessage = {
+        id: `msg-${messageIdCounter++}` as Identifier,
+        role: 'user',
+        content: body.content,
+        createdAt: new Date().toISOString() as ISODateString,
+      }
+
+      // Generate AI response (mock)
+      const aiResponse = await generateMockAIResponse(
+        body.content,
+        session.repositoryId
+      )
+
+      const assistantMessage: RagMessage = {
+        id: `msg-${messageIdCounter++}` as Identifier,
+        role: 'assistant',
+        content: aiResponse.content,
+        createdAt: new Date().toISOString() as ISODateString,
+        citations: aiResponse.citations,
+      }
+
+      // Update session
+      session.messages.push(userMessage, assistantMessage)
+      session.updatedAt = new Date().toISOString() as ISODateString
+
+      return HttpResponse.json({
+        data: {
+          userMessage,
+          assistantMessage,
+        },
+      })
+    }
+  ),
 
   // Get message citations/evidence
-  http.get('/api/rag/sessions/:sessionId/messages/:messageId/citations', ({ params }) => {
-    const { sessionId, messageId } = params
+  http.get(
+    '/api/rag/sessions/:sessionId/messages/:messageId/citations',
+    ({ params }) => {
+      const { sessionId, messageId } = params
 
-    const session = sessions.find(s => s.id === sessionId)
-    if (!session) {
-      return HttpResponse.json(
-        {
-          code: 'SESSION_NOT_FOUND',
-          message: '会话不存在，请刷新后重试',
-        },
-        { status: 404 }
-      )
+      const session = sessions.find((s) => s.id === sessionId)
+      if (!session) {
+        return HttpResponse.json(
+          {
+            code: 'SESSION_NOT_FOUND',
+            message: '会话不存在，请刷新后重试',
+          },
+          { status: 404 }
+        )
+      }
+
+      const message = session.messages.find((m) => m.id === messageId)
+      if (!message) {
+        return HttpResponse.json(
+          {
+            code: 'MESSAGE_NOT_FOUND',
+            message: '消息不存在，请刷新后重试',
+          },
+          { status: 404 }
+        )
+      }
+
+      return HttpResponse.json({
+        data: message.citations || [],
+      })
     }
-
-    const message = session.messages.find(m => m.id === messageId)
-    if (!message) {
-      return HttpResponse.json(
-        {
-          code: 'MESSAGE_NOT_FOUND',
-          message: '消息不存在，请刷新后重试',
-        },
-        { status: 404 }
-      )
-    }
-
-    return HttpResponse.json({
-      data: message.citations || []
-    })
-  }),
+  ),
 
   // Refresh/rebuild session context
   http.post('/api/rag/sessions/:sessionId/refresh', async ({ params }) => {
     const { sessionId } = params
 
-    const session = sessions.find(s => s.id === sessionId)
+    const session = sessions.find((s) => s.id === sessionId)
     if (!session) {
       return HttpResponse.json(
         {
@@ -179,7 +199,7 @@ export const ragHandlers = [
     }
 
     // Simulate rebuilding process
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
     // Update session timestamp
     session.updatedAt = new Date().toISOString() as ISODateString
@@ -187,8 +207,8 @@ export const ragHandlers = [
     return HttpResponse.json({
       data: {
         message: 'Session context refreshed successfully',
-        session
-      }
+        session,
+      },
     })
   }),
 
@@ -196,7 +216,7 @@ export const ragHandlers = [
   http.get('/api/rag/sessions/:sessionId/export', ({ params }) => {
     const { sessionId } = params
 
-    const session = sessions.find(s => s.id === sessionId)
+    const session = sessions.find((s) => s.id === sessionId)
     if (!session) {
       return HttpResponse.json(
         {
@@ -211,7 +231,7 @@ export const ragHandlers = [
     const exportData = {
       title: session.title,
       createdAt: session.createdAt,
-      messages: session.messages.map(msg => ({
+      messages: session.messages.map((msg) => ({
         role: msg.role,
         content: msg.content,
         timestamp: msg.createdAt,
@@ -237,20 +257,23 @@ export const ragHandlers = [
     }
 
     const results = sessions
-      .filter(session =>
-        session.title.toLowerCase().includes(query.toLowerCase()) ||
-        session.messages.some(msg =>
-          msg.content.toLowerCase().includes(query.toLowerCase())
-        )
+      .filter(
+        (session) =>
+          session.title.toLowerCase().includes(query.toLowerCase()) ||
+          session.messages.some((msg) =>
+            msg.content.toLowerCase().includes(query.toLowerCase())
+          )
       )
-      .map(session => ({
+      .map((session) => ({
         id: session.id,
         title: session.title,
         repositoryId: session.repositoryId,
         updatedAt: session.updatedAt,
         matchingMessages: session.messages
-          .filter(msg => msg.content.toLowerCase().includes(query.toLowerCase()))
-          .map(msg => ({
+          .filter((msg) =>
+            msg.content.toLowerCase().includes(query.toLowerCase())
+          )
+          .map((msg) => ({
             id: msg.id,
             content: msg.content.substring(0, 200) + '...',
             role: msg.role,
@@ -266,12 +289,17 @@ export const ragHandlers = [
 ]
 
 // Mock AI response generation
-async function generateMockAIResponse(question: string, repositoryId: string): Promise<{
+async function generateMockAIResponse(
+  question: string,
+  repositoryId: string
+): Promise<{
   content: string
   citations: RagCitation[]
 }> {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000))
+  await new Promise((resolve) =>
+    setTimeout(resolve, 1000 + Math.random() * 2000)
+  )
 
   const responses = [
     {

@@ -1,5 +1,3 @@
-import { faker } from '@faker-js/faker'
-
 import type {
   AdminUser,
   AdminUserListParams,
@@ -9,11 +7,17 @@ import type {
   UserActivity,
   UserStatus,
 } from '@/types'
+import { faker } from '@faker-js/faker'
 
 const DEFAULT_ROLES = ['admin', 'maintainer', 'viewer'] as const
 
 const toIdentifier = (value: string): Identifier => value as Identifier
-const USER_STATUSES: UserStatus[] = ['active', 'inactive', 'suspended', 'invited']
+const USER_STATUSES: UserStatus[] = [
+  'active',
+  'inactive',
+  'suspended',
+  'invited',
+]
 
 let seed = faker.string.alphanumeric(6)
 faker.seed(seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0))
@@ -24,7 +28,9 @@ let activities: UserActivity[] = createInitialActivities()
 function createInitialUsers(): AdminUser[] {
   const createUser = (input: Partial<AdminUser>): AdminUser => {
     const now = faker.date.recent()
-    const createdAt = (faker.date.past({ years: 2 }) as Date).toISOString() as ISODateString
+    const createdAt = (
+      faker.date.past({ years: 2 }) as Date
+    ).toISOString() as ISODateString
     const updatedAt = (now.toISOString() as ISODateString) ?? createdAt
 
     return {
@@ -33,10 +39,13 @@ function createInitialUsers(): AdminUser[] {
       displayName: faker.person.fullName(),
       avatar: faker.image.avatar(),
       status: faker.helpers.arrayElement(USER_STATUSES),
-      roleIds: faker.helpers.arrayElements(DEFAULT_ROLES, { min: 1, max: 2 }).map((id) => toIdentifier(id)),
-      lastLoginAt: Math.random() > 0.3
-        ? (faker.date.recent({ days: 30 }).toISOString() as ISODateString)
-        : undefined,
+      roleIds: faker.helpers
+        .arrayElements(DEFAULT_ROLES, { min: 1, max: 2 })
+        .map((id) => toIdentifier(id)),
+      lastLoginAt:
+        Math.random() > 0.3
+          ? (faker.date.recent({ days: 30 }).toISOString() as ISODateString)
+          : undefined,
       createdAt,
       updatedAt,
       createdBy: 'system' as Identifier,
@@ -140,10 +149,12 @@ function matchStatus(user: AdminUser, statuses?: UserStatus[]) {
 
 function matchRoles(user: AdminUser, roleIds?: Identifier[]) {
   if (!roleIds || roleIds.length === 0) return true
-  return roleIds.some(roleId => user.roleIds.includes(roleId))
+  return roleIds.some((roleId) => user.roleIds.includes(roleId))
 }
 
-export function listAdminUsersFixture(params?: AdminUserListParams): AdminUserListResponse {
+export function listAdminUsersFixture(
+  params?: AdminUserListParams
+): AdminUserListResponse {
   const page = Math.max(1, Number(params?.page ?? 1))
   const pageSize = Math.max(1, Number(params?.pageSize ?? 10))
 
@@ -166,7 +177,10 @@ export function listAdminUsersFixture(params?: AdminUserListParams): AdminUserLi
   }
 }
 
-export function updateUserRoleFixture(userId: Identifier, roleIds: Identifier[]): AdminUser | undefined {
+export function updateUserRoleFixture(
+  userId: Identifier,
+  roleIds: Identifier[]
+): AdminUser | undefined {
   const target = users.find((user) => user.id === userId)
   if (!target) return undefined
 
@@ -188,11 +202,16 @@ export function updateUserRoleFixture(userId: Identifier, roleIds: Identifier[])
   return target
 }
 
-export function resetUserPasswordFixture(userId: Identifier): { temporaryPassword: string } | undefined {
+export function resetUserPasswordFixture(
+  userId: Identifier
+): { temporaryPassword: string } | undefined {
   const target = users.find((user) => user.id === userId)
   if (!target) return undefined
 
-  const temporaryPassword = faker.internet.password({ length: 12, memorable: true })
+  const temporaryPassword = faker.internet.password({
+    length: 12,
+    memorable: true,
+  })
 
   target.updatedAt = new Date().toISOString() as ISODateString
   target.updatedBy = 'current-user' as Identifier
@@ -211,7 +230,10 @@ export function resetUserPasswordFixture(userId: Identifier): { temporaryPasswor
   return { temporaryPassword }
 }
 
-export function updateUserStatusFixture(userId: Identifier, status: UserStatus): AdminUser | undefined {
+export function updateUserStatusFixture(
+  userId: Identifier,
+  status: UserStatus
+): AdminUser | undefined {
   const target = users.find((user) => user.id === userId)
   if (!target) return undefined
 
@@ -240,6 +262,6 @@ export function updateUserStatusFixture(userId: Identifier, status: UserStatus):
 
 export function getUserActivityFixture(userId: Identifier): UserActivity[] {
   return activities
-    .filter(activity => activity.userId === userId)
+    .filter((activity) => activity.userId === userId)
     .slice(0, 20) // 限制返回最近20条记录
 }

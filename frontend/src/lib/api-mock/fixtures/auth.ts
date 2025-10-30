@@ -8,7 +8,6 @@ import type {
   SignUpPayload,
   UserRole,
 } from '@/types'
-
 import type { BearerResponseAPI, UserReadAPI } from '@/types/api'
 
 const mockRoles: UserRole[] = ['admin']
@@ -20,11 +19,17 @@ const mockUser: AuthUser = {
   company: 'CIT Corporation',
   department: '技术部',
   roles: mockRoles,
-  createdAt: new Date('2025-01-01T08:00:00Z').toISOString() as AuthUser['createdAt'],
-  updatedAt: new Date('2025-01-10T08:00:00Z').toISOString() as AuthUser['updatedAt'],
+  createdAt: new Date(
+    '2025-01-01T08:00:00Z'
+  ).toISOString() as AuthUser['createdAt'],
+  updatedAt: new Date(
+    '2025-01-10T08:00:00Z'
+  ).toISOString() as AuthUser['updatedAt'],
   createdBy: 'system' as Identifier,
   updatedBy: 'system' as Identifier,
-  lastLoginAt: new Date('2025-01-18T12:00:00Z').toISOString() as AuthUser['lastLoginAt'],
+  lastLoginAt: new Date(
+    '2025-01-18T12:00:00Z'
+  ).toISOString() as AuthUser['lastLoginAt'],
 }
 
 const MOCK_PASSWORD = 'Passw0rd!'
@@ -34,7 +39,9 @@ function createSessionToken(): SessionToken {
   return {
     accessToken: `mock-access-token-${crypto.randomUUID?.() ?? Date.now()}`,
     refreshToken: 'mock-refresh-token',
-    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() as SessionToken['expiresAt'],
+    expiresAt: new Date(
+      Date.now() + 60 * 60 * 1000
+    ).toISOString() as SessionToken['expiresAt'],
   }
 }
 
@@ -160,7 +167,11 @@ export const authFixtures = {
     }
   },
   verifyOtp(email: string, otp: string): AuthResponse {
-    if (otp !== VALID_OTP_CODE || !pendingOtpEmail || pendingOtpEmail !== email) {
+    if (
+      otp !== VALID_OTP_CODE ||
+      !pendingOtpEmail ||
+      pendingOtpEmail !== email
+    ) {
       throw new Error('OTP_INVALID')
     }
     const record = credentialStore.get(email.toLowerCase())

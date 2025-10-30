@@ -8,7 +8,6 @@ import type {
   PaginatedResponse,
   UpdateKnowledgeSourcePayload,
 } from '@/types'
-
 import { apiClient } from './api-client'
 
 export type KnowledgeSourceListResponse = PaginatedResponse<KnowledgeSource>

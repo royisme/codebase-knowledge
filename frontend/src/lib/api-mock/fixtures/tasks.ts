@@ -5,8 +5,12 @@ const buildTask = (overrides: Partial<ParseTask>): ParseTask => {
     id: `task-${Math.random().toString(36).slice(2, 8)}` as Identifier,
     sourceId: 'source-1' as Identifier,
     status: 'queued',
-    createdAt: new Date('2025-01-16T06:00:00Z').toISOString() as ParseTask['createdAt'],
-    updatedAt: new Date('2025-01-16T06:00:00Z').toISOString() as ParseTask['updatedAt'],
+    createdAt: new Date(
+      '2025-01-16T06:00:00Z'
+    ).toISOString() as ParseTask['createdAt'],
+    updatedAt: new Date(
+      '2025-01-16T06:00:00Z'
+    ).toISOString() as ParseTask['updatedAt'],
     createdBy: 'user-1' as Identifier,
     updatedBy: 'user-1' as Identifier,
   }
@@ -42,8 +46,12 @@ const tasks: ParseTask[] = [
   buildTask({
     id: 'task-succeeded' as Identifier,
     status: 'succeeded',
-    startedAt: new Date('2025-01-15T07:00:00Z').toISOString() as ParseTask['startedAt'],
-    finishedAt: new Date('2025-01-15T07:05:00Z').toISOString() as ParseTask['finishedAt'],
+    startedAt: new Date(
+      '2025-01-15T07:00:00Z'
+    ).toISOString() as ParseTask['startedAt'],
+    finishedAt: new Date(
+      '2025-01-15T07:05:00Z'
+    ).toISOString() as ParseTask['finishedAt'],
   }),
 ]
 

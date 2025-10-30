@@ -1,11 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { type RagSession } from '@/types'
 import {
   Search,
   Plus,
@@ -17,10 +11,20 @@ import {
   Brain,
   Loader2,
   Info,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { type RagSession } from '@/types'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import { buildAssistantMessage, useRagChatStore } from './store'
 
 interface RAGConsoleProps {
@@ -32,7 +36,9 @@ export function RAGConsole({ className }: RAGConsoleProps) {
   const selectedSessionId = useRagChatStore((state) => state.selectedSessionId)
   const selectSession = useRagChatStore((state) => state.selectSession)
   const queueUserMessage = useRagChatStore((state) => state.queueUserMessage)
-  const completeAssistantMessage = useRagChatStore((state) => state.completeAssistantMessage)
+  const completeAssistantMessage = useRagChatStore(
+    (state) => state.completeAssistantMessage
+  )
   const registerFailure = useRagChatStore((state) => state.registerFailure)
   const retryLastMessage = useRagChatStore((state) => state.retryLastMessage)
   const isLoading = useRagChatStore((state) => state.isLoading)
@@ -58,7 +64,7 @@ export function RAGConsole({ className }: RAGConsoleProps) {
     return lastQueryIds[selectedSessionId] ?? null
   }, [lastQueryIds, selectedSessionId])
 
-  const filteredSessions = sessions.filter(session =>
+  const filteredSessions = sessions.filter((session) =>
     session.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -92,9 +98,17 @@ export function RAGConsole({ className }: RAGConsoleProps) {
         lastQueryId: nextQueryId,
       })
     } catch (err) {
-      registerFailure(err instanceof Error ? err.message : '请求失败，请稍后重试')
+      registerFailure(
+        err instanceof Error ? err.message : '请求失败，请稍后重试'
+      )
     }
-  }, [completeAssistantMessage, inputMessage, mockGraphQuery, queueUserMessage, registerFailure])
+  }, [
+    completeAssistantMessage,
+    inputMessage,
+    mockGraphQuery,
+    queueUserMessage,
+    registerFailure,
+  ])
 
   const handleRetry = useCallback(async () => {
     const pending = retryLastMessage()
@@ -113,27 +127,34 @@ export function RAGConsole({ className }: RAGConsoleProps) {
         lastQueryId: nextQueryId,
       })
     } catch (err) {
-      registerFailure(err instanceof Error ? err.message : '请求失败，请稍后重试')
+      registerFailure(
+        err instanceof Error ? err.message : '请求失败，请稍后重试'
+      )
     }
-  }, [completeAssistantMessage, mockGraphQuery, registerFailure, retryLastMessage])
+  }, [
+    completeAssistantMessage,
+    mockGraphQuery,
+    registerFailure,
+    retryLastMessage,
+  ])
 
   return (
     <div className={cn('flex h-full gap-4', className)}>
       {/* Left Sidebar - Session List */}
-      <div className='w-80 flex flex-col border-r'>
-        <div className='p-4 border-b'>
-          <div className='flex items-center justify-between mb-4'>
+      <div className='flex w-80 flex-col border-r'>
+        <div className='border-b p-4'>
+          <div className='mb-4 flex items-center justify-between'>
             <div className='flex items-center gap-2'>
               <Brain className='h-5 w-5' />
               <h2 className='font-semibold'>RAG 会话</h2>
             </div>
             <Button size='sm' variant='outline'>
-              <Plus className='h-4 w-4 mr-1' />
+              <Plus className='mr-1 h-4 w-4' />
               新建
             </Button>
           </div>
           <div className='relative'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground' />
+            <Search className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform' />
             <Input
               placeholder='搜索会话...'
               value={searchQuery}
@@ -149,19 +170,20 @@ export function RAGConsole({ className }: RAGConsoleProps) {
               key={session.id}
               onClick={() => selectSession(session.id)}
               className={cn(
-                'w-full text-left p-3 rounded-lg mb-2 transition-colors',
+                'mb-2 w-full rounded-lg p-3 text-left transition-colors',
                 'hover:bg-accent hover:text-accent-foreground',
-                selectedSession?.id === session.id && 'bg-accent text-accent-foreground'
+                selectedSession?.id === session.id &&
+                  'bg-accent text-accent-foreground'
               )}
             >
               <div className='flex items-start justify-between'>
-                <div className='flex-1 min-w-0'>
-                  <h3 className='font-medium truncate'>{session.title}</h3>
-                  <p className='text-sm text-muted-foreground mt-1'>
+                <div className='min-w-0 flex-1'>
+                  <h3 className='truncate font-medium'>{session.title}</h3>
+                  <p className='text-muted-foreground mt-1 text-sm'>
                     {session.messages.length} 条消息
                   </p>
                 </div>
-                <div className='flex flex-col items-end text-xs text-muted-foreground ml-2'>
+                <div className='text-muted-foreground ml-2 flex flex-col items-end text-xs'>
                   <Clock className='h-3 w-3' />
                   {new Date(session.updatedAt).toLocaleDateString()}
                 </div>
@@ -172,13 +194,15 @@ export function RAGConsole({ className }: RAGConsoleProps) {
       </div>
 
       {/* Middle Column - Chat Interface */}
-      <div className='flex-1 flex flex-col'>
+      <div className='flex flex-1 flex-col'>
         {selectedSession ? (
           <>
-            <div className='p-4 border-b flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between'>
+            <div className='flex flex-col gap-2 border-b p-4 lg:flex-row lg:items-center lg:justify-between'>
               <div>
-                <h1 className='text-xl font-semibold'>{selectedSession.title}</h1>
-                <p className='text-sm text-muted-foreground'>
+                <h1 className='text-xl font-semibold'>
+                  {selectedSession.title}
+                </h1>
+                <p className='text-muted-foreground text-sm'>
                   知识库: {selectedSession.repositoryId}
                 </p>
               </div>
@@ -189,20 +213,40 @@ export function RAGConsole({ className }: RAGConsoleProps) {
               )}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant='ghost' size='sm' className='gap-2 self-start lg:self-auto'>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    className='gap-2 self-start lg:self-auto'
+                  >
                     <Info className='h-4 w-4' />
                     使用说明
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align='end' className='w-80 text-sm leading-relaxed'>
-                  <p className='font-medium mb-2'>GraphRAG 多轮查询提示</p>
-                  <ol className='list-decimal list-inside space-y-2 text-muted-foreground'>
-                    <li>首轮提问后会返回 <code>query_id</code>，继续追问会自动回传该 ID。</li>
-                    <li>命中缓存时答案会参考上一轮的摘要和关联实体，帮助保持上下文。</li>
-                    <li>缓存默认保留 10 分钟，可在后端通过 <code>GRAPHRAG_QUERY_CACHE_TTL_SECONDS</code> 调整。</li>
-                    <li>若看到“上下文失效”提示，可重新开始或继续追问，系统会自动恢复。</li>
+                <PopoverContent
+                  align='end'
+                  className='w-80 text-sm leading-relaxed'
+                >
+                  <p className='mb-2 font-medium'>GraphRAG 多轮查询提示</p>
+                  <ol className='text-muted-foreground list-inside list-decimal space-y-2'>
+                    <li>
+                      首轮提问后会返回 <code>query_id</code>
+                      ，继续追问会自动回传该 ID。
+                    </li>
+                    <li>
+                      命中缓存时答案会参考上一轮的摘要和关联实体，帮助保持上下文。
+                    </li>
+                    <li>
+                      缓存默认保留 10 分钟，可在后端通过{' '}
+                      <code>GRAPHRAG_QUERY_CACHE_TTL_SECONDS</code> 调整。
+                    </li>
+                    <li>
+                      若看到“上下文失效”提示，可重新开始或继续追问，系统会自动恢复。
+                    </li>
                   </ol>
-                  <p className='mt-3 text-xs text-muted-foreground'>详见 <code>docs/frontend/graph-query.md</code> 获取完整指南。</p>
+                  <p className='text-muted-foreground mt-3 text-xs'>
+                    详见 <code>docs/frontend/graph-query.md</code>{' '}
+                    获取完整指南。
+                  </p>
                 </PopoverContent>
               </Popover>
             </div>
@@ -226,7 +270,7 @@ export function RAGConsole({ className }: RAGConsoleProps) {
                       )}
                     >
                       <p className='text-sm'>{message.content}</p>
-                      <p className='text-xs opacity-70 mt-1'>
+                      <p className='mt-1 text-xs opacity-70'>
                         {new Date(message.createdAt).toLocaleTimeString()}
                       </p>
                     </div>
@@ -242,9 +286,9 @@ export function RAGConsole({ className }: RAGConsoleProps) {
               </div>
             </ScrollArea>
 
-            <div className='p-4 border-t'>
+            <div className='border-t p-4'>
               {error && (
-                <div className='mb-3 flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive'>
+                <div className='border-destructive/40 bg-destructive/10 text-destructive mb-3 flex items-center justify-between rounded-md border px-3 py-2 text-sm'>
                   <div className='flex items-center gap-2'>
                     <AlertCircle className='h-4 w-4' />
                     <span>{error}</span>
@@ -271,11 +315,11 @@ export function RAGConsole({ className }: RAGConsoleProps) {
             </div>
           </>
         ) : (
-          <div className='flex-1 flex items-center justify-center'>
-            <div className='text-center space-y-4'>
-              <MessageSquare className='h-12 w-12 mx-auto text-muted-foreground' />
+          <div className='flex flex-1 items-center justify-center'>
+            <div className='space-y-4 text-center'>
+              <MessageSquare className='text-muted-foreground mx-auto h-12 w-12' />
               <h3 className='text-lg font-medium'>选择一个会话开始</h3>
-              <p className='text-sm text-muted-foreground'>
+              <p className='text-muted-foreground text-sm'>
                 从左侧选择一个现有会话，或创建新的会话开始 RAG 查询
               </p>
             </div>
@@ -284,8 +328,8 @@ export function RAGConsole({ className }: RAGConsoleProps) {
       </div>
 
       {/* Right Sidebar - Evidence Panel */}
-      <div className='w-80 flex flex-col border-l'>
-        <div className='p-4 border-b'>
+      <div className='flex w-80 flex-col border-l'>
+        <div className='border-b p-4'>
           <div className='flex items-center gap-2'>
             <FileText className='h-5 w-5' />
             <h2 className='font-semibold'>证据来源</h2>
@@ -294,21 +338,21 @@ export function RAGConsole({ className }: RAGConsoleProps) {
 
         <ScrollArea className='flex-1 p-4'>
           {selectedSession?.messages
-            .filter(msg => msg.citations && msg.citations.length > 0)
+            .filter((msg) => msg.citations && msg.citations.length > 0)
             .map((message) => (
               <div key={message.id} className='mb-6'>
-                <h4 className='font-medium text-sm mb-3 text-muted-foreground'>
+                <h4 className='text-muted-foreground mb-3 text-sm font-medium'>
                   回答证据
                 </h4>
                 <div className='space-y-2'>
                   {message.citations?.map((citation) => (
                     <Card key={citation.id} className='p-3'>
-                      <div className='flex items-start justify-between mb-2'>
-                        <div className='flex-1 min-w-0'>
-                          <p className='font-medium text-sm truncate'>
+                      <div className='mb-2 flex items-start justify-between'>
+                        <div className='min-w-0 flex-1'>
+                          <p className='truncate text-sm font-medium'>
                             {citation.label}
                           </p>
-                          <p className='text-xs text-muted-foreground mt-1 truncate'>
+                          <p className='text-muted-foreground mt-1 truncate text-xs'>
                             {citation.resourceUri}
                           </p>
                         </div>
@@ -316,7 +360,7 @@ export function RAGConsole({ className }: RAGConsoleProps) {
                           {Math.round(citation.score * 100)}%
                         </Badge>
                       </div>
-                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                      <div className='text-muted-foreground flex items-center gap-2 text-xs'>
                         <GitBranch className='h-3 w-3' />
                         <span>相关度: {citation.score.toFixed(2)}</span>
                       </div>
@@ -327,13 +371,14 @@ export function RAGConsole({ className }: RAGConsoleProps) {
               </div>
             ))}
 
-          {(!selectedSession || !selectedSession.messages.some(msg => msg.citations && msg.citations.length > 0)) && (
-            <div className='text-center space-y-3 py-8'>
-              <FileText className='h-8 w-8 mx-auto text-muted-foreground' />
-              <p className='text-sm text-muted-foreground'>
-                暂无证据来源
-              </p>
-              <p className='text-xs text-muted-foreground'>
+          {(!selectedSession ||
+            !selectedSession.messages.some(
+              (msg) => msg.citations && msg.citations.length > 0
+            )) && (
+            <div className='space-y-3 py-8 text-center'>
+              <FileText className='text-muted-foreground mx-auto h-8 w-8' />
+              <p className='text-muted-foreground text-sm'>暂无证据来源</p>
+              <p className='text-muted-foreground text-xs'>
                 AI 回答时会显示支撑证据和引用来源
               </p>
             </div>

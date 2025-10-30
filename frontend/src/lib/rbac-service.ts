@@ -7,7 +7,6 @@ import type {
   RoleAssignment,
   RoleDefinition,
 } from '@/types'
-
 import { apiClient } from './api-client'
 
 export interface ListRolesResponse {
@@ -28,7 +27,9 @@ export interface ListRoleMembersResponse {
 }
 
 export async function fetchRoles(): Promise<RoleDefinition[]> {
-  const data = await apiClient<ListRolesResponse>({ endpoint: '/api/admin/roles' })
+  const data = await apiClient<ListRolesResponse>({
+    endpoint: '/api/admin/roles',
+  })
   return data.roles
 }
 
@@ -37,11 +38,15 @@ export async function fetchPolicies(): Promise<ListPoliciesResponse> {
 }
 
 export async function fetchAuditLogs(): Promise<RbacAuditLog[]> {
-  const data = await apiClient<ListAuditsResponse>({ endpoint: '/api/admin/audit' })
+  const data = await apiClient<ListAuditsResponse>({
+    endpoint: '/api/admin/audit',
+  })
   return data.audits
 }
 
-export async function fetchRoleMembers(): Promise<ListRoleMembersResponse['members']> {
+export async function fetchRoleMembers(): Promise<
+  ListRoleMembersResponse['members']
+> {
   const data = await apiClient<ListRoleMembersResponse>({
     endpoint: '/api/admin/role-members',
   })

@@ -25,10 +25,7 @@ const formSchema = z.object({
   email: z.email({
     error: (iss) => (iss.input === '' ? '请输入邮箱地址' : undefined),
   }),
-  password: z
-    .string()
-    .min(1, '请输入密码')
-    .min(7, '密码长度至少7个字符'),
+  password: z.string().min(1, '请输入密码').min(7, '密码长度至少7个字符'),
 })
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -146,12 +143,16 @@ export function UserAuthForm({
               const company = email.includes('@') ? email.split('@')[1] : ''
               navigate({
                 to: '/ldap',
-                search: { email, company }
+                search: { email, company },
               })
             }}
+            className='relative'
           >
             <Shield className='mr-2 h-4 w-4' />
-            使用 LDAP 认证
+            体验 LDAP 认证
+            <span className='ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900 dark:text-blue-300'>
+              演示
+            </span>
           </Button>
           <Button
             variant='outline'

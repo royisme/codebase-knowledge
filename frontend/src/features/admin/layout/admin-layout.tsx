@@ -1,5 +1,4 @@
 import { Outlet } from '@tanstack/react-router'
-
 import { Main } from '@/components/layout/main'
 
 export function AdminLayout() {

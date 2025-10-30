@@ -15,7 +15,10 @@ export interface ApiClientError extends ApiError {
 }
 
 const RAW_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim()
-const BASE_URL = RAW_BASE_URL && RAW_BASE_URL.length > 0 ? RAW_BASE_URL : 'http://localhost'
+const BASE_URL =
+  RAW_BASE_URL && RAW_BASE_URL.length > 0
+    ? RAW_BASE_URL
+    : 'http://localhost:8000'
 
 export async function apiClient<T>({
   endpoint,

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 import { useAuthStore } from '@/stores/auth-store'
+import { AuthenticatedLayout } from '@/components/layout/authenticated-layout'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: () => {
@@ -8,13 +8,12 @@ export const Route = createFileRoute('/_authenticated')({
     const authStore = useAuthStore.getState()
     if (!authStore.auth.isAuthenticated || !authStore.auth.user) {
       // 获取当前路径用于重定向
-      const currentPath = typeof window !== 'undefined'
-        ? window.location.pathname
-        : '/sign-in'
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname : '/sign-in'
 
       throw redirect({
         to: '/sign-in',
-        search: { redirect: currentPath }
+        search: { redirect: currentPath },
       })
     }
 

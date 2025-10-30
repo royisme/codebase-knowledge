@@ -7,7 +7,6 @@ import type {
   UpdateUserRolePayload,
   UserActivity,
 } from '@/types'
-
 import { apiClient } from './api-client'
 
 function buildUserQueryParams(params?: AdminUserListParams) {

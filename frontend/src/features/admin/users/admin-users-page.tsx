@@ -1,11 +1,32 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { RefreshCw, Search as SearchIcon, SlidersHorizontal, User } from 'lucide-react'
+import type { AdminUser, Identifier, RoleDefinition, UserStatus } from '@/types'
+import {
+  RefreshCw,
+  Search as SearchIcon,
+  SlidersHorizontal,
+  User,
+} from 'lucide-react'
 import { toast } from 'sonner'
-
+import {
+  listAdminUsers,
+  resetUserPassword,
+  updateUserRole,
+  updateUserStatus,
+} from '@/lib/admin-users-service'
+import { fetchRoles } from '@/lib/rbac-service'
+import { ActionMenu } from '@/components/ui/action-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,9 +36,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -27,23 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ActionMenu } from '@/components/ui/action-menu'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-
-import type {
-  AdminUser,
-  Identifier,
-  RoleDefinition,
-  UserStatus,
-} from '@/types'
-import {
-  listAdminUsers,
-  resetUserPassword,
-  updateUserRole,
-  updateUserStatus,
-} from '@/lib/admin-users-service'
-import { fetchRoles } from '@/lib/rbac-service'
 
 type AdminUsersSearchParams = {
   page?: number
@@ -78,11 +88,18 @@ export function AdminUsersPage() {
   const deferredSearch = useDeferredValue(routeSearchParams.search || '')
   const page = routeSearchParams.page || 1
   const pageSize = routeSearchParams.pageSize || 10
-  const statusFilters = useMemo(() => routeSearchParams.statuses || [], [routeSearchParams.statuses])
+  const statusFilters = useMemo(
+    () => routeSearchParams.statuses || [],
+    [routeSearchParams.statuses]
+  )
 
   const queryKey = useMemo(() => {
     const normalizedStatuses = [...statusFilters].sort().join(',')
-    return ['admin', 'users', { page, pageSize, search: deferredSearch, statuses: normalizedStatuses }]
+    return [
+      'admin',
+      'users',
+      { page, pageSize, search: deferredSearch, statuses: normalizedStatuses },
+    ]
   }, [page, pageSize, deferredSearch, statusFilters])
 
   const usersQuery = useQuery({
@@ -137,7 +154,10 @@ export function AdminUsersPage() {
     },
   })
 
-  const isMutating = updateRoleMutation.isPending || resetPasswordMutation.isPending || updateStatusMutation.isPending
+  const isMutating =
+    updateRoleMutation.isPending ||
+    resetPasswordMutation.isPending ||
+    updateStatusMutation.isPending
 
   const updateSearchParam = (updates: Partial<AdminUsersSearchParams>) => {
     navigate({
@@ -177,12 +197,14 @@ export function AdminUsersPage() {
           // 角色切换将在下拉菜单中直接处理
           break
         case 'reset_password':
-          await resetPasswordMutation.mutateAsync({ userId: userAction.user.id })
+          await resetPasswordMutation.mutateAsync({
+            userId: userAction.user.id,
+          })
           break
         case 'change_status':
           await updateStatusMutation.mutateAsync({
             userId: userAction.user.id,
-            status: userAction.newStatus
+            status: userAction.newStatus,
           })
           break
       }
@@ -191,7 +213,10 @@ export function AdminUsersPage() {
     }
   }
 
-  const handleChangeRole = async (userId: Identifier, roleIds: Identifier[]) => {
+  const handleChangeRole = async (
+    userId: Identifier,
+    roleIds: Identifier[]
+  ) => {
     await updateRoleMutation.mutateAsync({ userId, roleIds })
   }
 
@@ -200,7 +225,7 @@ export function AdminUsersPage() {
       {/* 搜索和筛选区域 */}
       <div className='flex flex-wrap items-center gap-2'>
         <div className='relative w-full max-w-md'>
-          <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+          <SearchIcon className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
           <Input
             value={routeSearchParams.search || ''}
             onChange={(event) => {
@@ -245,7 +270,12 @@ export function AdminUsersPage() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button onClick={() => usersQuery.refetch()} variant='ghost' size='icon' className='ml-auto'>
+        <Button
+          onClick={() => usersQuery.refetch()}
+          variant='ghost'
+          size='icon'
+          className='ml-auto'
+        >
           <RefreshCw className='h-4 w-4' />
         </Button>
       </div>
@@ -254,13 +284,18 @@ export function AdminUsersPage() {
       <Card>
         <CardHeader>
           <CardTitle>用户管理</CardTitle>
-          <CardDescription>管理系统用户、分配角色和查看用户活动</CardDescription>
+          <CardDescription>
+            管理系统用户、分配角色和查看用户活动
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {usersQuery.isLoading ? (
             <div className='space-y-4'>
               {Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className='flex items-center space-x-4 p-4 border-b'>
+                <div
+                  key={index}
+                  className='flex items-center space-x-4 border-b p-4'
+                >
                   <Skeleton className='h-10 w-10 rounded-full' />
                   <div className='flex-1 space-y-2'>
                     <Skeleton className='h-4 w-48' />
@@ -274,12 +309,12 @@ export function AdminUsersPage() {
           ) : (
             <div className='space-y-4'>
               {usersQuery.data?.items.length === 0 ? (
-                <div className='text-center py-12'>
-                  <User className='mx-auto h-12 w-12 text-muted-foreground' />
-                  <h3 className='mt-2 text-sm font-semibold text-foreground'>
+                <div className='py-12 text-center'>
+                  <User className='text-muted-foreground mx-auto h-12 w-12' />
+                  <h3 className='text-foreground mt-2 text-sm font-semibold'>
                     暂无用户
                   </h3>
-                  <p className='mt-1 text-sm text-muted-foreground'>
+                  <p className='text-muted-foreground mt-1 text-sm'>
                     {deferredSearch || statusFilters.length > 0
                       ? '没有找到符合条件的用户，请尝试调整搜索条件或筛选器。'
                       : '还没有用户，请先添加用户。'}
@@ -314,7 +349,7 @@ export function AdminUsersPage() {
 
                   {/* 分页 */}
                   <div className='flex items-center justify-between pt-4'>
-                    <div className='text-sm text-muted-foreground'>
+                    <div className='text-muted-foreground text-sm'>
                       共 {usersQuery.data?.total || 0} 条记录 · 第 {page} 页
                     </div>
                     <div className='flex items-center gap-2'>
@@ -329,7 +364,11 @@ export function AdminUsersPage() {
                       <Button
                         variant='outline'
                         size='sm'
-                        disabled={!usersQuery.data || page >= Math.ceil(usersQuery.data.total / pageSize) || isMutating}
+                        disabled={
+                          !usersQuery.data ||
+                          page >= Math.ceil(usersQuery.data.total / pageSize) ||
+                          isMutating
+                        }
                         onClick={() => updateSearchParam({ page: page + 1 })}
                       >
                         下一页
@@ -365,7 +404,10 @@ export function AdminUsersPage() {
         }
         confirmText='确认'
         cancelBtnText='取消'
-        destructive={userAction?.type === 'change_status' && userAction.newStatus !== 'active'}
+        destructive={
+          userAction?.type === 'change_status' &&
+          userAction.newStatus !== 'active'
+        }
         handleConfirm={() => void handleConfirmAction()}
         isLoading={isMutating}
       />
@@ -381,9 +423,18 @@ interface UserRowProps {
   isMutating: boolean
 }
 
-function UserRow({ user, roles, onAction, onRoleChange, isMutating }: UserRowProps) {
+function UserRow({
+  user,
+  roles,
+  onAction,
+  onRoleChange,
+  isMutating,
+}: UserRowProps) {
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<
+      string,
+      'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
       active: 'default',
       inactive: 'secondary',
       suspended: 'destructive',
@@ -402,7 +453,6 @@ function UserRow({ user, roles, onAction, onRoleChange, isMutating }: UserRowPro
     )
   }
 
-  
   const formatDate = (dateString?: string) => {
     if (!dateString) return '从未'
     return new Date(dateString).toLocaleDateString()
@@ -414,11 +464,13 @@ function UserRow({ user, roles, onAction, onRoleChange, isMutating }: UserRowPro
         <div className='flex items-center space-x-3'>
           <Avatar className='h-8 w-8'>
             <AvatarImage src={user.avatar} alt={user.displayName} />
-            <AvatarFallback>{user.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>
+              {user.displayName.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div>
             <div className='font-medium'>{user.displayName}</div>
-            <div className='text-sm text-muted-foreground'>{user.email}</div>
+            <div className='text-muted-foreground text-sm'>{user.email}</div>
           </div>
         </div>
       </TableCell>
@@ -426,7 +478,9 @@ function UserRow({ user, roles, onAction, onRoleChange, isMutating }: UserRowPro
       <TableCell>
         <Select
           value={user.roleIds[0] || ''}
-          onValueChange={(value) => onRoleChange(user.id, [value as Identifier])}
+          onValueChange={(value) =>
+            onRoleChange(user.id, [value as Identifier])
+          }
           disabled={isMutating || user.status !== 'active'}
         >
           <SelectTrigger className='w-32'>
@@ -442,12 +496,12 @@ function UserRow({ user, roles, onAction, onRoleChange, isMutating }: UserRowPro
         </Select>
       </TableCell>
       <TableCell>
-        <div className='text-sm text-muted-foreground'>
+        <div className='text-muted-foreground text-sm'>
           {formatDate(user.lastLoginAt)}
         </div>
       </TableCell>
       <TableCell>
-        <div className='text-sm text-muted-foreground'>
+        <div className='text-muted-foreground text-sm'>
           {formatDate(user.createdAt)}
         </div>
       </TableCell>
@@ -462,11 +516,13 @@ function UserRow({ user, roles, onAction, onRoleChange, isMutating }: UserRowPro
                 },
                 {
                   label: user.status === 'active' ? '停用用户' : '激活用户',
-                  onSelect: () => onAction({
-                    type: 'change_status',
-                    user,
-                    newStatus: user.status === 'active' ? 'suspended' : 'active'
-                  }),
+                  onSelect: () =>
+                    onAction({
+                      type: 'change_status',
+                      user,
+                      newStatus:
+                        user.status === 'active' ? 'suspended' : 'active',
+                    }),
                   destructive: user.status === 'active',
                 },
               ],

@@ -10,7 +10,9 @@ export function cn(...inputs: ClassValue[]) {
  * Provides semantic color classes for the knowledge management system
  */
 
-export function getKnowledgeColor(type: 'file' | 'commit' | 'module' | 'person') {
+export function getKnowledgeColor(
+  type: 'file' | 'commit' | 'module' | 'person'
+) {
   switch (type) {
     case 'file':
       return 'text-knowledge border-knowledge bg-knowledge/10'
@@ -38,7 +40,9 @@ export function getImportanceColor(importance: 'high' | 'medium' | 'low') {
   }
 }
 
-export function getStatusColor(status: 'success' | 'warning' | 'error' | 'info') {
+export function getStatusColor(
+  status: 'success' | 'warning' | 'error' | 'info'
+) {
   switch (status) {
     case 'success':
       return 'text-success bg-success/10 border-success/20'

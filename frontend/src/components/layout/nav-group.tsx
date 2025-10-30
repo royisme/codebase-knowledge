@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
-import { toast } from 'sonner'
 import { ChevronRight } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Collapsible,
   CollapsibleContent,
@@ -186,7 +186,10 @@ function SidebarMenuCollapsedDropdown({
 
             if (sub.badge === '即将上线') {
               return (
-                <DropdownMenuItem key={`${sub.title}-${sub.url}`} onClick={handleDropdownClick}>
+                <DropdownMenuItem
+                  key={`${sub.title}-${sub.url}`}
+                  onClick={handleDropdownClick}
+                >
                   {sub.icon && <sub.icon />}
                   <span className='max-w-52 text-wrap'>{sub.title}</span>
                   {sub.badge && (

@@ -1,13 +1,10 @@
-import { HttpResponse, http } from 'msw'
-
 import type {
   ForgotPasswordPayload,
   OtpVerificationPayload,
   SignUpPayload,
 } from '@/types'
-
 import type { BearerResponseAPI, UserReadAPI } from '@/types/api'
-
+import { HttpResponse, http } from 'msw'
 import { authFixtures } from '../fixtures/auth'
 
 function extractBearerToken(headerValue: string | null): string | null {
@@ -36,7 +33,11 @@ export const authHandlers = [
 
     // Check credentials
     const credential = authFixtures.findCredentials(username)
-    if (!credential || credential.password !== password || authFixtures.shouldSimulateLoginFailure?.()) {
+    if (
+      !credential ||
+      credential.password !== password ||
+      authFixtures.shouldSimulateLoginFailure?.()
+    ) {
       return HttpResponse.json(
         {
           detail: 'LOGIN_BAD_CREDENTIALS',
@@ -47,7 +48,9 @@ export const authHandlers = [
 
     // Return BearerResponse format (backend format)
     // Pass the authenticated user to associate token correctly
-    const bearerResponse: BearerResponseAPI = authFixtures.createBearerResponse(credential.user)
+    const bearerResponse: BearerResponseAPI = authFixtures.createBearerResponse(
+      credential.user
+    )
     return HttpResponse.json(bearerResponse)
   }),
 
@@ -55,18 +58,12 @@ export const authHandlers = [
   http.get('*/api/v1/admin/users/me', ({ request }) => {
     const token = extractBearerToken(request.headers.get('authorization'))
     if (!token) {
-      return HttpResponse.json(
-        { detail: 'UNAUTHORIZED' },
-        { status: 401 }
-      )
+      return HttpResponse.json({ detail: 'UNAUTHORIZED' }, { status: 401 })
     }
 
     const user = authFixtures.findUserByToken(token)
     if (!user) {
-      return HttpResponse.json(
-        { detail: 'UNAUTHORIZED' },
-        { status: 401 }
-      )
+      return HttpResponse.json({ detail: 'UNAUTHORIZED' }, { status: 401 })
     }
 
     // Return backend format (snake_case)
@@ -77,7 +74,7 @@ export const authHandlers = [
   // POST /api/v1/auth/register - Returns UserRead
   http.post('*/api/v1/auth/register', async ({ request }) => {
     // Handle backend field names (full_name, company, department)
-    const payload = await request.json() as {
+    const payload = (await request.json()) as {
       email: string
       password: string
       full_name: string
@@ -96,7 +93,11 @@ export const authHandlers = [
     }
 
     // Basic validation
-    if (!signUpPayload?.email || !signUpPayload?.password || !signUpPayload?.fullName) {
+    if (
+      !signUpPayload?.email ||
+      !signUpPayload?.password ||
+      !signUpPayload?.fullName
+    ) {
       return HttpResponse.json(
         {
           detail: 'VALIDATION_ERROR',

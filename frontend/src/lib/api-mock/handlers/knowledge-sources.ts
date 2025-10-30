@@ -1,5 +1,3 @@
-import { HttpResponse, http } from 'msw'
-
 import type {
   BulkOperationPayload,
   CreateKnowledgeSourcePayload,
@@ -8,7 +6,7 @@ import type {
   KnowledgeSourceStatus,
   UpdateKnowledgeSourcePayload,
 } from '@/types'
-
+import { HttpResponse, http } from 'msw'
 import {
   bulkOperationFixture,
   createKnowledgeSourceFixture,
@@ -36,7 +34,8 @@ export const knowledgeSourceHandlers = [
   }),
 
   http.post('*/api/admin/sources', async ({ request }) => {
-    const payload = (await request.json()) as Partial<CreateKnowledgeSourcePayload>
+    const payload =
+      (await request.json()) as Partial<CreateKnowledgeSourcePayload>
     if (!payload?.name || !payload?.repositoryUrl) {
       return HttpResponse.json(
         {
@@ -46,7 +45,11 @@ export const knowledgeSourceHandlers = [
         { status: 400 }
       )
     }
-    if (!payload.defaultBranch || !payload.credentialMode || !payload.parserConfig) {
+    if (
+      !payload.defaultBranch ||
+      !payload.credentialMode ||
+      !payload.parserConfig
+    ) {
       return HttpResponse.json(
         {
           code: 'VALIDATION_ERROR',
@@ -56,13 +59,18 @@ export const knowledgeSourceHandlers = [
       )
     }
 
-    const entity = createKnowledgeSourceFixture(payload as CreateKnowledgeSourcePayload)
+    const entity = createKnowledgeSourceFixture(
+      payload as CreateKnowledgeSourcePayload
+    )
     return HttpResponse.json(entity, { status: 201 })
   }),
 
   http.patch('*/api/admin/sources/:id', async ({ params, request }) => {
     const payload = (await request.json()) as UpdateKnowledgeSourcePayload
-    const updated = updateKnowledgeSourceFixture(params.id as Identifier, payload)
+    const updated = updateKnowledgeSourceFixture(
+      params.id as Identifier,
+      payload
+    )
     if (!updated) {
       return HttpResponse.json(
         { code: 'NOT_FOUND', message: '知识源不存在或已删除' },
@@ -101,14 +109,21 @@ export const knowledgeSourceHandlers = [
   http.post('*/api/admin/sources/bulk', async ({ request }) => {
     const payload = (await request.json()) as BulkOperationPayload
 
-    if (!payload?.ids || !Array.isArray(payload.ids) || payload.ids.length === 0) {
+    if (
+      !payload?.ids ||
+      !Array.isArray(payload.ids) ||
+      payload.ids.length === 0
+    ) {
       return HttpResponse.json(
         { code: 'VALIDATION_ERROR', message: '请提供有效的知识源 ID 列表' },
         { status: 400 }
       )
     }
 
-    if (!payload?.operation || !['enable', 'disable', 'sync'].includes(payload.operation)) {
+    if (
+      !payload?.operation ||
+      !['enable', 'disable', 'sync'].includes(payload.operation)
+    ) {
       return HttpResponse.json(
         { code: 'VALIDATION_ERROR', message: '无效的操作类型' },
         { status: 400 }

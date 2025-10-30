@@ -1,6 +1,6 @@
+import type { Identifier, ISODateString, RagMessage, RagSession } from '@/types'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Identifier, ISODateString, RagMessage, RagSession } from '@/types'
 import { ragFixtures } from '@/lib/api-mock/fixtures/rag'
 
 type SessionIdentifier = RagSession['id']
@@ -14,14 +14,19 @@ interface RagChatState {
   pendingMessage: string | null
   pendingSessionId: SessionIdentifier | null
   selectSession: (sessionId: SessionIdentifier) => void
-  queueUserMessage: (content: string) => { sessionId: SessionIdentifier; message: RagMessage } | null
+  queueUserMessage: (
+    content: string
+  ) => { sessionId: SessionIdentifier; message: RagMessage } | null
   completeAssistantMessage: (input: {
     sessionId: SessionIdentifier
     message: RagMessage
     lastQueryId?: string | null
   }) => void
   registerFailure: (errorMessage: string) => void
-  retryLastMessage: () => { sessionId: SessionIdentifier; message: string } | null
+  retryLastMessage: () => {
+    sessionId: SessionIdentifier
+    message: string
+  } | null
   resetPending: () => void
   hydrateSessions: (sessions: RagSession[]) => void
 }
@@ -52,10 +57,13 @@ const createFallbackStorage = (): Storage => {
 const INITIAL_SESSIONS = ragFixtures.sessions
 const INITIAL_SELECTED = INITIAL_SESSIONS[0]?.id ?? null
 const buildLastQueryMap = (sessions: RagSession[]) =>
-  sessions.reduce<Record<SessionIdentifier, string | null>>((accumulator, session) => {
-    accumulator[session.id] = null
-    return accumulator
-  }, {} as Record<SessionIdentifier, string | null>)
+  sessions.reduce<Record<SessionIdentifier, string | null>>(
+    (accumulator, session) => {
+      accumulator[session.id] = null
+      return accumulator
+    },
+    {} as Record<SessionIdentifier, string | null>
+  )
 const INITIAL_LAST_QUERY_IDS = buildLastQueryMap(INITIAL_SESSIONS)
 
 const createMessageId = () => {

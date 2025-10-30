@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { ConfigDrawer } from '@/components/config-drawer'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { ConfigDrawer } from '@/components/config-drawer'
+import { ThemeSwitch } from '@/components/theme-switch'
 import { RAGConsole } from '@/features/rag-console'
 
 function RAGConsolePage() {
@@ -16,7 +16,7 @@ function RAGConsolePage() {
           <ProfileDropdown />
         </div>
       </Header>
-      <Main className="h-[calc(100vh-4rem)]">
+      <Main className='h-[calc(100vh-4rem)]'>
         <RAGConsole />
       </Main>
     </>

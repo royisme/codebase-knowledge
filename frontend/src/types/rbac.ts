@@ -2,10 +2,7 @@ import type { AuditMetadata, Identifier, ISODateString } from './common'
 
 export type PolicyEffect = 'allow' | 'deny'
 
-export type ResourceIdentifier =
-  | 'knowledge_sources'
-  | 'users'
-  | 'policies'
+export type ResourceIdentifier = 'knowledge_sources' | 'users' | 'policies'
 
 export type ActionVerb = 'read' | 'admin'
 

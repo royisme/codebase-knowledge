@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-
 import type {
   ActionVerb,
   Identifier,
@@ -10,6 +8,7 @@ import type {
   RoleAssignment,
   RoleDefinition,
 } from '@/types'
+import { toast } from 'sonner'
 import {
   assignRole,
   fetchAuditLogs,
@@ -19,7 +18,7 @@ import {
   updatePolicy,
   type ListPoliciesResponse,
 } from '@/lib/rbac-service'
-import { AdminUsersPage } from '../users/admin-users-page'
+import { cn } from '@/lib/utils'
 import {
   Card,
   CardContent,
@@ -27,7 +26,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -36,17 +44,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AdminUsersPage } from '../users/admin-users-page'
 
 type RolePolicyMap = Record<string, PolicyRule[]>
 
@@ -132,7 +131,8 @@ export function RbacDashboard() {
     rolesQuery.isLoading || policiesQuery.isLoading || auditsQuery.isLoading
 
   const resources =
-    policiesResponse?.resources ?? ({} as Record<ResourceIdentifier, ActionVerb[]>)
+    policiesResponse?.resources ??
+    ({} as Record<ResourceIdentifier, ActionVerb[]>)
 
   if (isLoading) {
     return (
@@ -191,25 +191,34 @@ export function RbacDashboard() {
             </CardHeader>
             <CardContent className='space-y-4'>
               {audits.length === 0 ? (
-                <p className='text-sm text-muted-foreground'>暂无审计记录。</p>
+                <p className='text-muted-foreground text-sm'>暂无审计记录。</p>
               ) : (
                 <div className='space-y-4'>
                   {audits.map((log) => (
                     <div key={log.id} className='space-y-1'>
                       <div className='flex items-center justify-between text-sm font-medium'>
                         <span>{log.action}</span>
-                        <span className={log.status === 'success' ? 'text-muted-foreground' : 'text-destructive'}>
+                        <span
+                          className={
+                            log.status === 'success'
+                              ? 'text-muted-foreground'
+                              : 'text-destructive'
+                          }
+                        >
                           {log.status === 'success' ? '成功' : '失败'}
                         </span>
                       </div>
-                      <div className='text-xs text-muted-foreground'>
+                      <div className='text-muted-foreground text-xs'>
                         目标：{log.target}
                       </div>
-                      <div className='text-xs text-muted-foreground'>
-                        操作人：{log.actor} · {new Date(log.timestamp).toLocaleString()}
+                      <div className='text-muted-foreground text-xs'>
+                        操作人：{log.actor} ·{' '}
+                        {new Date(log.timestamp).toLocaleString()}
                       </div>
                       {log.details ? (
-                        <div className='text-xs text-muted-foreground'>{log.details}</div>
+                        <div className='text-muted-foreground text-xs'>
+                          {log.details}
+                        </div>
                       ) : null}
                       <Separator className='mt-3' />
                     </div>
@@ -273,7 +282,9 @@ function RoleMembersCard({
               >
                 <div>
                   <div className='font-medium'>{member.displayName}</div>
-                  <div className='text-muted-foreground text-xs'>{member.email}</div>
+                  <div className='text-muted-foreground text-xs'>
+                    {member.email}
+                  </div>
                 </div>
                 <Select
                   value={member.roleId}
@@ -296,7 +307,7 @@ function RoleMembersCard({
               </div>
             ))}
             {members.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>暂无成员。</p>
+              <p className='text-muted-foreground text-sm'>暂无成员。</p>
             ) : null}
           </div>
         )}
@@ -343,46 +354,54 @@ function RolePolicyCard({
       </CardHeader>
       <CardContent className='space-y-4'>
         {resources.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>暂无可配置的资源。</p>
+          <p className='text-muted-foreground text-sm'>暂无可配置的资源。</p>
         ) : (
           <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>资源</TableHead>
-              {DISPLAY_ACTIONS.map((action) => (
-                <TableHead key={action} className='text-center'>
-                  {ACTION_LABELS[action]}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {resources.map(([resource, allowedActions]) => {
-              const currentActions = new Set(getActionsFor(resource as ResourceIdentifier))
-              return (
-                <TableRow key={resource}>
-                  <TableCell className='font-medium'>{resource}</TableCell>
-                  {DISPLAY_ACTIONS.map((verb) => {
-                    const disabled = !allowedActions.includes(verb)
-                    const checked = currentActions.has(verb)
-                    return (
-                      <TableCell key={verb} className='text-center'>
-                        <Switch
-                          disabled={disabled || isUpdating}
-                          checked={checked}
-                          onCheckedChange={(value) =>
-                            handleToggle(resource as ResourceIdentifier, verb, value)
-                          }
-                          aria-label={`${resource}:${verb}`}
-                          className={cn(disabled && 'opacity-30 cursor-not-allowed')}
-                        />
-                      </TableCell>
-                    )
-                  })}
-                </TableRow>
-              )
-            })}
-          </TableBody>
+            <TableHeader>
+              <TableRow>
+                <TableHead>资源</TableHead>
+                {DISPLAY_ACTIONS.map((action) => (
+                  <TableHead key={action} className='text-center'>
+                    {ACTION_LABELS[action]}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {resources.map(([resource, allowedActions]) => {
+                const currentActions = new Set(
+                  getActionsFor(resource as ResourceIdentifier)
+                )
+                return (
+                  <TableRow key={resource}>
+                    <TableCell className='font-medium'>{resource}</TableCell>
+                    {DISPLAY_ACTIONS.map((verb) => {
+                      const disabled = !allowedActions.includes(verb)
+                      const checked = currentActions.has(verb)
+                      return (
+                        <TableCell key={verb} className='text-center'>
+                          <Switch
+                            disabled={disabled || isUpdating}
+                            checked={checked}
+                            onCheckedChange={(value) =>
+                              handleToggle(
+                                resource as ResourceIdentifier,
+                                verb,
+                                value
+                              )
+                            }
+                            aria-label={`${resource}:${verb}`}
+                            className={cn(
+                              disabled && 'cursor-not-allowed opacity-30'
+                            )}
+                          />
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                )
+              })}
+            </TableBody>
           </Table>
         )}
       </CardContent>

@@ -1,6 +1,5 @@
-import { afterAll, afterEach, beforeAll } from 'vitest'
 import '@testing-library/jest-dom/vitest'
-
+import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from '@/lib/api-mock/msw/server'
 
 if (typeof window !== 'undefined' && !window.matchMedia) {

@@ -1,6 +1,5 @@
-import { create } from 'zustand'
-
 import type { AuthResponse, AuthUser, SessionToken } from '@/types'
+import { create } from 'zustand'
 import { getCookie, removeCookie, setCookie } from '@/lib/cookies'
 
 const AUTH_TOKEN_COOKIE = 'nau-auth-token'
