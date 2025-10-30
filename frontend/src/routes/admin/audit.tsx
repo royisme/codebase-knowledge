@@ -27,7 +27,7 @@ const auditSearchSchema = z.object({
   endDate: z.string().optional().catch(''),
 })
 
-export const Route = createFileRoute('/_authenticated/admin/audit')({
+export const Route = createFileRoute('/admin/audit')({
   validateSearch: auditSearchSchema,
   component: AuditPage,
 })

@@ -19,7 +19,7 @@ const knowledgeSourcesSearchSchema = z.object({
     .catch([]),
 })
 
-export const Route = createFileRoute('/_authenticated/admin/sources')({
+export const Route = createFileRoute('/admin/sources')({
   validateSearch: knowledgeSourcesSearchSchema,
   component: KnowledgeSourcesPage,
 })

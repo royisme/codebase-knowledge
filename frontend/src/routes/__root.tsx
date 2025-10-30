@@ -20,8 +20,10 @@ export const Route = createRootRouteWithContext<{
       try {
         const user = await fetchCurrentUser()
         authStore.auth.setUser(user)
-      } catch {
+      } catch (error) {
         // 如果获取用户信息失败（比如token过期），清除认证状态
+        // eslint-disable-next-line no-console
+        console.warn('Failed to restore user session:', error)
         authStore.auth.clear()
       }
     }

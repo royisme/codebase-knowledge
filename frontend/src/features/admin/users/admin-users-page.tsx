@@ -62,7 +62,7 @@ type AdminUsersSearchParams = {
   statuses?: UserStatus[]
 }
 
-const route = getRouteApi('/_authenticated/admin/rbac')
+const route = getRouteApi('/admin/rbac')
 
 const STATUS_OPTIONS: Array<{ value: UserStatus; label: string }> = [
   { value: 'active', label: '活跃' },

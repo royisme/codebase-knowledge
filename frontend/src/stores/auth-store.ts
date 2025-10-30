@@ -10,7 +10,9 @@ function persistToken(token: SessionToken | null): void {
     removeCookie(AUTH_TOKEN_COOKIE)
     return
   }
-  const encoded = encodeURIComponent(JSON.stringify(token))
+  // 使用 Base64 编码以避免特殊字符问题
+  const jsonStr = JSON.stringify(token)
+  const encoded = btoa(jsonStr)
   setCookie(AUTH_TOKEN_COOKIE, encoded, COOKIE_MAX_AGE_SECONDS)
 }
 
@@ -18,7 +20,9 @@ function readTokenFromCookie(): SessionToken | null {
   const rawCookie = getCookie(AUTH_TOKEN_COOKIE)
   if (!rawCookie) return null
   try {
-    return JSON.parse(decodeURIComponent(rawCookie)) as SessionToken
+    // 从 Base64 解码
+    const decoded = atob(rawCookie)
+    return JSON.parse(decoded) as SessionToken
   } catch {
     removeCookie(AUTH_TOKEN_COOKIE)
     return null

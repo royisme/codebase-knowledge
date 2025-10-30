@@ -81,7 +81,7 @@ function toParserConfig(
   }
 }
 
-const route = getRouteApi('/_authenticated/admin/sources')
+const route = getRouteApi('/admin/sources')
 
 export function KnowledgeSourcesPage() {
   const routeSearchParams = route.useSearch()

@@ -6,21 +6,21 @@ import { SearchProvider } from '@/context/search-provider'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { SkipToMain } from '@/components/skip-to-main'
-import { userSidebarData } from './data/user-sidebar-data'
+import { adminSidebarData } from './data/admin-sidebar-data'
 
-type AuthenticatedLayoutProps = {
+type AdminLayoutProps = {
   children?: React.ReactNode
 }
 
-export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
+export function AdminLayout({ children }: AdminLayoutProps) {
   const defaultOpen = getCookie('sidebar_state') !== 'false'
   return (
-    <div data-theme="user">
+    <div data-theme="admin">
       <SearchProvider>
         <LayoutProvider>
           <SidebarProvider defaultOpen={defaultOpen}>
             <SkipToMain />
-            <AppSidebar data={userSidebarData} />
+            <AppSidebar data={adminSidebarData} />
             <SidebarInset
               className={cn(
                 // Set content container, so we can use container queries

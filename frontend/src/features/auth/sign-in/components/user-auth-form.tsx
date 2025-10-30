@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { signIn } from '@/lib/auth-service'
 import { handleServerError } from '@/lib/handle-server-error'
 import { cn } from '@/lib/utils'
+import { isAdmin } from '@/lib/rbac'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -69,7 +70,13 @@ export function UserAuthForm({
 
       auth.setAuth(authResponse)
 
-      const targetPath = redirectTo || '/'
+      // 根据用户角色决定默认跳转页面
+      let defaultPath = '/'
+      if (isAdmin()) {
+        defaultPath = '/admin/sources'
+      }
+
+      const targetPath = redirectTo || defaultPath
       navigate({ to: targetPath, replace: true })
     } catch {
       // 错误已在 toast.promise 的 error 回调中处理，这里保持捕获避免控制台噪音

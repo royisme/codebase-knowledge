@@ -77,7 +77,7 @@ const STATUS_ICONS: Record<AuditStatus, React.ReactNode> = {
   failure: <AlertCircle className='h-4 w-4' />,
 }
 
-const route = getRouteApi('/_authenticated/admin/audit')
+const route = getRouteApi('/admin/audit')
 
 export function AuditPage() {
   const searchParams = route.useSearch()
