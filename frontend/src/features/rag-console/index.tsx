@@ -388,3 +388,6 @@ export function RAGConsole({ className }: RAGConsoleProps) {
     </div>
   )
 }
+
+// 导出新版本的 RAG Console 页面
+export { RagConsolePage } from './RagConsolePage'

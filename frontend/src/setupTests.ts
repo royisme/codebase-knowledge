@@ -4,7 +4,6 @@ import { server } from '@/lib/api-mock/msw/server'
 
 // Fix for MSW with vitest/node environment
 if (typeof global !== 'undefined' && !global.fetch) {
-  // @ts-expect-error - polyfill fetch for MSW
   global.fetch = fetch
 }
 

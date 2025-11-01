@@ -1,7 +1,7 @@
 import { Clock, Database, Zap, GitBranch } from 'lucide-react'
-import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { QueryMetadata } from '../types/mvp'
+import { Card } from '@/components/ui/card'
+import type { QueryMetadata } from '../types'
 
 interface SummaryCardProps {
   metadata: QueryMetadata
@@ -35,14 +35,14 @@ const getModeColor = (mode: string) => {
 
 export function SummaryCard({ metadata }: SummaryCardProps) {
   return (
-    <Card className="p-4">
-      <div className="flex flex-wrap items-center gap-4">
+    <Card className='p-4'>
+      <div className='flex flex-wrap items-center gap-4'>
         {/* 检索模式 */}
-        <div className="flex items-center gap-2">
-          <GitBranch className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">检索模式：</span>
+        <div className='flex items-center gap-2'>
+          <GitBranch className='text-muted-foreground h-4 w-4' />
+          <span className='text-muted-foreground text-sm'>检索模式：</span>
           <Badge
-            variant="secondary"
+            variant='secondary'
             className={getModeColor(metadata.retrievalMode)}
           >
             {getModeLabel(metadata.retrievalMode)}
@@ -50,25 +50,25 @@ export function SummaryCard({ metadata }: SummaryCardProps) {
         </div>
 
         {/* 执行耗时 */}
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">耗时：</span>
-          <span className="text-sm font-medium">
+        <div className='flex items-center gap-2'>
+          <Clock className='text-muted-foreground h-4 w-4' />
+          <span className='text-muted-foreground text-sm'>耗时：</span>
+          <span className='text-sm font-medium'>
             {metadata.executionTimeMs} ms
           </span>
         </div>
 
         {/* 缓存状态 */}
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           {metadata.fromCache ? (
             <>
-              <Database className="h-4 w-4 text-muted-foreground" />
-              <Badge variant="outline">从缓存</Badge>
+              <Database className='text-muted-foreground h-4 w-4' />
+              <Badge variant='outline'>从缓存</Badge>
             </>
           ) : (
             <>
-              <Zap className="h-4 w-4 text-muted-foreground" />
-              <Badge variant="outline">实时查询</Badge>
+              <Zap className='text-muted-foreground h-4 w-4' />
+              <Badge variant='outline'>实时查询</Badge>
             </>
           )}
         </div>

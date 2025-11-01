@@ -1,9 +1,9 @@
 /**
  * RAG 查询 API Service
  */
+import type { RetrievalMode } from '@/features/rag-console/types'
 import { apiClient } from './api-client'
 import { API_ENDPOINTS } from './api-endpoints'
-import type { RetrievalMode } from '@/features/rag-console/types/mvp'
 
 // ==================== 请求类型 ====================
 

@@ -1,5 +1,5 @@
 // RAG Console 查询的 Mock fixtures
-import type { RetrievalMode } from '@/features/rag-console/types/mvp'
+import type { RetrievalMode } from '@/features/rag-console/types'
 
 interface QueryRequest {
   query: string
@@ -38,11 +38,11 @@ const CODE_SNIPPETS_DB = {
     end_line: 28,
     content: `def validate_order_signature(order_id: str, signature: str) -> bool:
     """验证订单签名的有效性
-    
+
     Args:
         order_id: 订单 ID
         signature: HMAC 签名
-        
+
     Returns:
         签名是否有效
     """
@@ -59,17 +59,17 @@ const CODE_SNIPPETS_DB = {
     end_line: 58,
     content: `async def process_payment(order: Order, payment_method: PaymentMethod):
     """处理支付请求
-    
+
     包含签名验证、金额校验、支付网关调用等步骤
     """
     # 验证订单签名
     if not validate_order_signature(order.id, order.signature):
         raise InvalidSignatureError("订单签名验证失败")
-    
+
     # 验证订单金额
     if order.amount <= 0:
         raise InvalidAmountError("订单金额必须大于0")
-    
+
     # 调用支付网关
     result = await payment_gateway.charge(
         amount=order.amount,
@@ -85,11 +85,11 @@ const CODE_SNIPPETS_DB = {
     end_line: 35,
     content: `def create_access_token(user_id: str, expires_delta: timedelta = None) -> str:
     """创建 JWT 访问令牌
-    
+
     Args:
         user_id: 用户 ID
         expires_delta: 过期时间增量
-        
+
     Returns:
         编码后的 JWT 令牌
     """
@@ -97,7 +97,7 @@ const CODE_SNIPPETS_DB = {
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
-    
+
     to_encode = {"sub": user_id, "exp": expire}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt`,
@@ -138,7 +138,11 @@ function generateAnswerSummary(query: string, mode: RetrievalMode): string {
 请参考下方代码片段了解具体实现细节。`
   }
 
-  if (query.includes('认证') || query.includes('JWT') || query.includes('登录')) {
+  if (
+    query.includes('认证') ||
+    query.includes('JWT') ||
+    query.includes('登录')
+  ) {
     return `## JWT 认证实现
 
 通过${modeDesc}，找到了 JWT 认证相关实现。
@@ -178,37 +182,46 @@ JWT 令牌创建逻辑位于 \`core-api\` 的 \`backend/app/auth/jwt.py\`：
 // 根据查询选择相关代码片段
 function selectRelevantSnippets(query: string, maxResults: number) {
   const snippets = []
-  
-  if (query.includes('签名') || query.includes('验证') || query.includes('订单')) {
+
+  if (
+    query.includes('签名') ||
+    query.includes('验证') ||
+    query.includes('订单')
+  ) {
     snippets.push(CODE_SNIPPETS_DB['signature-validation'])
     snippets.push(CODE_SNIPPETS_DB['payment-processing'])
   }
-  
-  if (query.includes('认证') || query.includes('JWT') || query.includes('登录') || query.includes('token')) {
+
+  if (
+    query.includes('认证') ||
+    query.includes('JWT') ||
+    query.includes('登录') ||
+    query.includes('token')
+  ) {
     snippets.push(CODE_SNIPPETS_DB['user-authentication'])
   }
-  
+
   // 如果没有匹配，返回默认片段
   if (snippets.length === 0) {
     snippets.push(CODE_SNIPPETS_DB['signature-validation'])
   }
-  
+
   return snippets.slice(0, maxResults)
 }
 
 export function executeRagQueryFixture(request: QueryRequest): QueryResponse {
   // 模拟查询延迟
   const executionTimeMs = Math.floor(Math.random() * 1000) + 500 // 500-1500ms
-  
+
   // 选择相关代码片段
   const snippets = selectRelevantSnippets(request.query, request.max_results)
-  
+
   // 生成回答摘要
   const summary = generateAnswerSummary(request.query, request.mode)
-  
+
   // 模拟缓存命中（30% 概率）
   const fromCache = Math.random() < 0.3
-  
+
   return {
     answer: {
       summary,

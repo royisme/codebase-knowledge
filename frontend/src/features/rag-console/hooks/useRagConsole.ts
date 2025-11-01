@@ -1,47 +1,47 @@
 import { create } from 'zustand'
+import { executeRagQuery, type RagQueryRequest } from '@/lib/rag-query-service'
 import type {
   KnowledgeSource,
   QueryTurn,
   QueryResult,
   RetrievalMode,
-} from '../types/mvp'
-import { executeRagQuery, type RagQueryRequest } from '@/lib/rag-query-service'
+} from '../types'
 
 const MAX_HISTORY = 10 // LRU 最多保留 10 条查询历史
 
-interface RagConsoleMVPStore {
+interface RagConsoleStore {
   // 选中的知识源
   selectedSource: KnowledgeSource | null
-  
+
   // 查询历史（本地，最多 10 条）
   queryHistory: QueryTurn[]
-  
+
   // 当前查询状态
   isLoading: boolean
   error: string | null
-  
+
   // 当前结果
   currentResult: QueryResult | null
-  
+
   // Actions
   selectSource: (source: KnowledgeSource | null) => void
-  
+
   submitQuery: (params: {
     query: string
     mode: RetrievalMode
     maxResults: number
   }) => Promise<void>
-  
+
   addToHistory: (turn: QueryTurn) => void
-  
+
   clearHistory: () => void
-  
+
   setError: (error: string | null) => void
-  
+
   reset: () => void
 }
 
-export const useRagConsoleMVP = create<RagConsoleMVPStore>((set, get) => ({
+export const useRagConsole = create<RagConsoleStore>((set, get) => ({
   selectedSource: null,
   queryHistory: [],
   isLoading: false,
@@ -54,7 +54,7 @@ export const useRagConsoleMVP = create<RagConsoleMVPStore>((set, get) => ({
 
   submitQuery: async (params) => {
     const { selectedSource } = get()
-    
+
     if (!selectedSource) {
       set({ error: '请先选择知识源' })
       return
