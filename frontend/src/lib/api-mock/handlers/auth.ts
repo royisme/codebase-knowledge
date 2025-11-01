@@ -220,6 +220,23 @@ export const authHandlers = [
     }
   }),
 
+  // GET /api/v1/auth/me - Alias for /api/v1/admin/users/me
+  http.get('*/api/v1/auth/me', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token) {
+      return HttpResponse.json({ detail: 'UNAUTHORIZED' }, { status: 401 })
+    }
+
+    const user = authFixtures.findUserByToken(token)
+    if (!user) {
+      return HttpResponse.json({ detail: 'UNAUTHORIZED' }, { status: 401 })
+    }
+
+    // Return backend format (snake_case)
+    const userReadAPI: UserReadAPI = authFixtures.convertToUserReadAPI(user)
+    return HttpResponse.json(userReadAPI)
+  }),
+
   // POST /api/v1/auth/logout
   http.post('*/api/v1/auth/logout', ({ request }) => {
     const token = extractBearerToken(request.headers.get('authorization'))

@@ -1,0 +1,79 @@
+{
+  "summary": {
+    "activeSources": 6,
+    "queriesToday": 18,
+    "indexHealth": 0.92,
+    "savedEntries": 12,
+    "delta": {
+      "activeSources": 1,
+      "queriesToday": -3,
+      "indexHealth": 0.05,
+      "savedEntries": 2
+    }
+  },
+  "queryTrend": [
+    { "date": "2025-10-24", "count": 5 },
+    { "date": "2025-10-25", "count": 8 },
+    { "date": "2025-10-26", "count": 12 },
+    { "date": "2025-10-27", "count": 15 },
+    { "date": "2025-10-28", "count": 11 },
+    { "date": "2025-10-29", "count": 14 },
+    { "date": "2025-10-30", "count": 18 }
+  ],
+  "sourceStatus": [
+    {
+      "id": "src-001",
+      "name": "payments-service",
+      "alias": "支付服务",
+      "branch": "main",
+      "lastIndexed": "2025-10-30T08:00:00Z",
+      "status": "healthy",
+      "queryCount7d": 26
+    },
+    {
+      "id": "src-002",
+      "name": "order-service",
+      "alias": "订单服务",
+      "branch": "main",
+      "lastIndexed": "2025-10-29T23:30:00Z",
+      "status": "healthy",
+      "queryCount7d": 18
+    },
+    {
+      "id": "src-003",
+      "name": "user-service",
+      "alias": "用户服务",
+      "branch": "develop",
+      "lastIndexed": "2025-10-23T15:00:00Z",
+      "status": "outdated",
+      "queryCount7d": 9
+    },
+    {
+      "id": "src-004",
+      "name": "notification-service",
+      "alias": "通知服务",
+      "branch": "main",
+      "lastIndexed": "2025-10-30T07:15:00Z",
+      "status": "healthy",
+      "queryCount7d": 15
+    },
+    {
+      "id": "src-005",
+      "name": "analytics-service",
+      "alias": "数据分析服务",
+      "branch": "main",
+      "lastIndexed": "2025-10-28T10:00:00Z",
+      "status": "indexing",
+      "queryCount7d": 7
+    },
+    {
+      "id": "src-006",
+      "name": "auth-service",
+      "alias": "认证服务",
+      "branch": "main",
+      "lastIndexed": "2025-10-22T09:00:00Z",
+      "status": "failed",
+      "queryCount7d": 3
+    }
+  ]
+}

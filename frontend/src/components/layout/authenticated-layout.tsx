@@ -32,10 +32,17 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
 
                 // If layout is fixed and sidebar is inset,
                 // set the height to 100svh - spacing (total margins) to prevent overflow
-                'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]'
+                'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]',
+                
+                // 添加页面容器样式 - 固定高度，内部滚动
+                'flex flex-col h-screen'
               )}
             >
-              {children ?? <Outlet />}
+              <main className="flex-1 overflow-hidden">
+                <div className="h-full p-6">
+                  {children ?? <Outlet />}
+                </div>
+              </main>
             </SidebarInset>
           </SidebarProvider>
         </LayoutProvider>

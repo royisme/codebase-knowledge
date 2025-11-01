@@ -8,19 +8,13 @@ import {
   triggerKnowledgeSourceSync,
 } from '@/lib/knowledge-source-service'
 import { resetKnowledgeSourceFixtures } from '@/lib/api-mock/fixtures/knowledge-sources'
-import { authFixtures } from '@/lib/api-mock/fixtures/auth'
-import { useAuthStore } from '@/stores/auth-store'
+import { setupTestAuth } from '@/lib/test-utils'
 import type { CreateKnowledgeSourcePayload } from '@/types'
 
 describe('KnowledgeSources API Mock Tests', () => {
   beforeEach(() => {
     resetKnowledgeSourceFixtures()
-
-    // 设置认证token以便API调用能正常工作
-    useAuthStore.getState().auth.setAuth({
-      user: authFixtures.user,
-      token: authFixtures.createAuthResponse(authFixtures.user).token,
-    })
+    setupTestAuth()
   })
 
   describe('1. 知识源列表功能', () => {

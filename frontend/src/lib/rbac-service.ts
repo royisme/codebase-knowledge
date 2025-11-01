@@ -8,6 +8,7 @@ import type {
   RoleDefinition,
 } from '@/types'
 import { apiClient } from './api-client'
+import { API_ENDPOINTS } from './api-endpoints'
 
 export interface ListRolesResponse {
   roles: RoleDefinition[]
@@ -28,18 +29,18 @@ export interface ListRoleMembersResponse {
 
 export async function fetchRoles(): Promise<RoleDefinition[]> {
   const data = await apiClient<ListRolesResponse>({
-    endpoint: '/api/admin/roles',
+    endpoint: API_ENDPOINTS.rbac.roles,
   })
   return data.roles
 }
 
 export async function fetchPolicies(): Promise<ListPoliciesResponse> {
-  return apiClient<ListPoliciesResponse>({ endpoint: '/api/v1/admin/policies' })
+  return apiClient<ListPoliciesResponse>({ endpoint: API_ENDPOINTS.rbac.permissions })
 }
 
 export async function fetchAuditLogs(): Promise<RbacAuditLog[]> {
   const data = await apiClient<ListAuditsResponse>({
-    endpoint: '/api/admin/audit',
+    endpoint: API_ENDPOINTS.audit.list,
   })
   return data.audits
 }
@@ -48,7 +49,7 @@ export async function fetchRoleMembers(): Promise<
   ListRoleMembersResponse['members']
 > {
   const data = await apiClient<ListRoleMembersResponse>({
-    endpoint: '/api/admin/role-members',
+    endpoint: API_ENDPOINTS.rbac.roleMembers,
   })
   return data.members
 }
@@ -60,7 +61,7 @@ export async function assignRole(payload: {
   const data = await apiClient<{
     assignment: RoleAssignment & { email: string; displayName: string }
   }>({
-    endpoint: '/api/admin/role-members/assign',
+    endpoint: API_ENDPOINTS.rbac.assignRole,
     method: 'POST',
     body: payload,
   })
@@ -73,7 +74,7 @@ export async function updatePolicy(payload: {
   actions: ActionVerb[]
 }): Promise<PolicyRule> {
   const data = await apiClient<{ policy: PolicyRule }>({
-    endpoint: '/api/v1/admin/policies/update',
+    endpoint: API_ENDPOINTS.rbac.updatePolicy,
     method: 'POST',
     body: payload,
   })

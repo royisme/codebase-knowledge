@@ -1,18 +1,9 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
-import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
-import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/button'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
 import {
   Form,
   FormControl,
@@ -23,50 +14,65 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { DatePicker } from '@/components/date-picker'
-
-const languages = [
-  { label: 'English', value: 'en' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Russian', value: 'ru' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Korean', value: 'ko' },
-  { label: 'Chinese', value: 'zh' },
-] as const
 
 const accountFormSchema = z.object({
-  name: z
+  fullName: z
     .string()
-    .min(1, 'Please enter your name.')
-    .min(2, 'Name must be at least 2 characters.')
-    .max(30, 'Name must not be longer than 30 characters.'),
-  dob: z.date('Please select your date of birth.'),
-  language: z.string('Please select a language.'),
+    .min(1, '请输入姓名')
+    .min(2, '姓名至少需要 2 个字符')
+    .max(50, '姓名不能超过 50 个字符'),
+  email: z
+    .string()
+    .email('请输入有效的邮箱地址'),
+  company: z
+    .string()
+    .max(100, '公司名称不能超过 100 个字符')
+    .optional()
+    .or(z.literal('')),
+  department: z
+    .string()
+    .max(100, '部门名称不能超过 100 个字符')
+    .optional()
+    .or(z.literal('')),
 })
 
 type AccountFormValues = z.infer<typeof accountFormSchema>
 
-// This can come from your database or API.
-const defaultValues: Partial<AccountFormValues> = {
-  name: '',
-}
-
 export function AccountForm() {
+  const user = useAuthStore((state) => state.auth.user)
+  const setUser = useAuthStore((state) => state.auth.setUser)
+
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
-    defaultValues,
+    defaultValues: {
+      fullName: user?.fullName || '',
+      email: user?.email || '',
+      company: user?.company || '',
+      department: user?.department || '',
+    },
   })
 
-  function onSubmit(data: AccountFormValues) {
-    showSubmittedData(data)
+  async function onSubmit(data: AccountFormValues) {
+    try {
+      // TODO: 调用更新用户信息的 API
+      // const updatedUser = await updateUserProfile(data)
+      
+      // 暂时只更新本地状态
+      if (user) {
+        setUser({
+          ...user,
+          fullName: data.fullName,
+          company: data.company || null,
+          department: data.department || null,
+        })
+      }
+
+      toast.success('账号信息已更新')
+    } catch (error) {
+      toast.error('更新失败，请稍后重试')
+      // eslint-disable-next-line no-console
+      console.error('Failed to update profile:', error)
+    }
   }
 
   return (
@@ -74,16 +80,15 @@ export function AccountForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
         <FormField
           control={form.control}
-          name='name'
+          name='fullName'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>姓名</FormLabel>
               <FormControl>
-                <Input placeholder='Your name' {...field} />
+                <Input placeholder='请输入您的姓名' {...field} />
               </FormControl>
               <FormDescription>
-                This is the name that will be displayed on your profile and in
-                emails.
+                这是将在系统中显示的姓名
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -91,13 +96,15 @@ export function AccountForm() {
         />
         <FormField
           control={form.control}
-          name='dob'
+          name='email'
           render={({ field }) => (
-            <FormItem className='flex flex-col'>
-              <FormLabel>Date of birth</FormLabel>
-              <DatePicker selected={field.value} onSelect={field.onChange} />
+            <FormItem>
+              <FormLabel>邮箱</FormLabel>
+              <FormControl>
+                <Input {...field} disabled />
+              </FormControl>
               <FormDescription>
-                Your date of birth is used to calculate your age.
+                邮箱地址不可修改，用于登录系统
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -105,68 +112,37 @@ export function AccountForm() {
         />
         <FormField
           control={form.control}
-          name='language'
+          name='company'
           render={({ field }) => (
-            <FormItem className='flex flex-col'>
-              <FormLabel>Language</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant='outline'
-                      role='combobox'
-                      className={cn(
-                        'w-[200px] justify-between',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      {field.value
-                        ? languages.find(
-                            (language) => language.value === field.value
-                          )?.label
-                        : 'Select language'}
-                      <CaretSortIcon className='ms-2 h-4 w-4 shrink-0 opacity-50' />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className='w-[200px] p-0'>
-                  <Command>
-                    <CommandInput placeholder='Search language...' />
-                    <CommandEmpty>No language found.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandList>
-                        {languages.map((language) => (
-                          <CommandItem
-                            value={language.label}
-                            key={language.value}
-                            onSelect={() => {
-                              form.setValue('language', language.value)
-                            }}
-                          >
-                            <CheckIcon
-                              className={cn(
-                                'size-4',
-                                language.value === field.value
-                                  ? 'opacity-100'
-                                  : 'opacity-0'
-                              )}
-                            />
-                            {language.label}
-                          </CommandItem>
-                        ))}
-                      </CommandList>
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+            <FormItem>
+              <FormLabel>公司（可选）</FormLabel>
+              <FormControl>
+                <Input placeholder='请输入公司名称' {...field} />
+              </FormControl>
               <FormDescription>
-                This is the language that will be used in the dashboard.
+                您所在的公司或组织
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type='submit'>Update account</Button>
+        <FormField
+          control={form.control}
+          name='department'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>部门（可选）</FormLabel>
+              <FormControl>
+                <Input placeholder='请输入部门名称' {...field} />
+              </FormControl>
+              <FormDescription>
+                您所在的部门或团队
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type='submit'>保存更改</Button>
       </form>
     </Form>
   )

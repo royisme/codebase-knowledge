@@ -13,11 +13,6 @@ import {
 import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
-  user: {
-    name: '系统管理员',
-    email: 'admin@example.com',
-    avatar: '/avatars/admin.jpg',
-  },
   teams: [
     {
       name: '企业知识库',

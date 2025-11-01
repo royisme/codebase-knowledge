@@ -6,6 +6,7 @@ import type {
   UserStatus,
 } from '@/types'
 import { HttpResponse, http } from 'msw'
+import { authFixtures } from '../fixtures/auth'
 import {
   getUserActivityFixture,
   listAdminUsersFixture,
@@ -14,6 +15,13 @@ import {
   updateUserRoleFixture,
   updateUserStatusFixture,
 } from '../fixtures/admin-users'
+
+function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const [scheme, token] = headerValue.split(' ')
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null
+  return token
+}
 
 function parseUserListParams(url: URL): AdminUserListParams {
   const statuses = url.searchParams.getAll('statuses') as UserStatus[]
@@ -28,13 +36,21 @@ function parseUserListParams(url: URL): AdminUserListParams {
 }
 
 export const adminUserHandlers = [
-  http.get('*/api/admin/users', ({ request }) => {
+  http.get('*/api/v1/admin/users', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const params = parseUserListParams(new URL(request.url))
     const response = listAdminUsersFixture(params)
     return HttpResponse.json(response)
   }),
 
-  http.patch('*/api/admin/users/:userId/roles', async ({ params, request }) => {
+  http.patch('*/api/v1/admin/users/:userId/roles', async ({ params, request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const userId = params.userId as Identifier
     const payload = (await request.json()) as { roleIds: Identifier[] }
 
@@ -56,8 +72,12 @@ export const adminUserHandlers = [
   }),
 
   http.post(
-    '*/api/admin/users/:userId/reset-password',
+    '*/api/v1/admin/users/:userId/reset-password',
     async ({ params, request }) => {
+      const token = extractBearerToken(request.headers.get('authorization'))
+      if (!token || !authFixtures.findUserByToken(token)) {
+        return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+      }
       const userId = params.userId as Identifier
       const payload = (await request.json()) as ResetPasswordPayload
 
@@ -78,8 +98,12 @@ export const adminUserHandlers = [
   ),
 
   http.patch(
-    '*/api/admin/users/:userId/status',
+    '*/api/v1/admin/users/:userId/status',
     async ({ params, request }) => {
+      const token = extractBearerToken(request.headers.get('authorization'))
+      if (!token || !authFixtures.findUserByToken(token)) {
+        return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+      }
       const userId = params.userId as Identifier
       const payload = (await request.json()) as UpdateUserStatusPayload
 
@@ -101,14 +125,22 @@ export const adminUserHandlers = [
     }
   ),
 
-  http.get('*/api/admin/users/:userId/activity', ({ params }) => {
+  http.get('*/api/v1/admin/users/:userId/activity', ({ params, request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const userId = params.userId as Identifier
     const activities = getUserActivityFixture(userId)
     return HttpResponse.json(activities)
   }),
 
   // 管理端点：重置所有数据
-  http.post('*/api/admin/users/_reset', () => {
+  http.post('*/api/v1/admin/users/_reset', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     resetAdminUsersFixtures()
     return HttpResponse.json({ message: '用户数据已重置' })
   }),

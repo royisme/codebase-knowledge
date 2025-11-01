@@ -7,17 +7,56 @@ import type {
   UpdateKnowledgeSourcePayload,
 } from '@/types'
 import { HttpResponse, http } from 'msw'
+import { authFixtures } from '../fixtures/auth'
 import {
   bulkOperationFixture,
   createKnowledgeSourceFixture,
   deleteKnowledgeSourceFixture,
   listKnowledgeSourcesFixture,
+  listRepositoriesFixture,
   triggerKnowledgeSourceSyncFixture,
   updateKnowledgeSourceFixture,
 } from '../fixtures/knowledge-sources'
+import { isTestEnvironment, isValidTestToken } from '../test-helpers'
+
+function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const [scheme, token] = headerValue.split(' ')
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null
+  return token
+}
+
+function isAuthorized(request: Request): boolean {
+  const authHeader = request.headers.get('authorization')
+  const token = extractBearerToken(authHeader)
+
+  console.log('[DEBUG] isAuthorized check:', {
+    authHeader,
+    token,
+    isTestEnv: isTestEnvironment(),
+    isValidToken: isValidTestToken(token),
+  })
+
+  // 在测试环境中，允许 mock token
+  if (isTestEnvironment() && isValidTestToken(token)) {
+    console.log('[DEBUG] Test environment - token valid')
+    return true
+  }
+
+  // 正常环境检查 token
+  if (!token) {
+    console.log('[DEBUG] No token provided')
+    return false
+  }
+  const found = Boolean(authFixtures.findUserByToken(token))
+  console.log('[DEBUG] Token lookup result:', found)
+  return found
+}
 
 function parseListParams(url: URL): KnowledgeSourceListParams {
-  const statuses = url.searchParams.getAll('status') as KnowledgeSourceStatus[]
+  const statuses = url.searchParams.getAll(
+    'statuses'
+  ) as KnowledgeSourceStatus[]
   return {
     page: Number(url.searchParams.get('page') ?? undefined),
     pageSize: Number(url.searchParams.get('pageSize') ?? undefined),
@@ -27,13 +66,42 @@ function parseListParams(url: URL): KnowledgeSourceListParams {
 }
 
 export const knowledgeSourceHandlers = [
-  http.get('*/api/admin/sources', ({ request }) => {
-    const params = parseListParams(new URL(request.url))
-    const response = listKnowledgeSourcesFixture(params)
-    return HttpResponse.json(response)
+  http.get('*/api/v1/admin/sources', ({ request }) => {
+    if (!isAuthorized(request)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
+    const url = new URL(request.url)
+
+    // 检查是否是仓库管理页面请求（通过 referer 或特定参数判断）
+    // 如果有 page/size 参数，使用 repositories fixture（支持分页）
+    const hasPageParam =
+      url.searchParams.has('page') || url.searchParams.has('size')
+
+    if (hasPageParam) {
+      // 使用 repositories fixture（支持完整分页）
+      const params = {
+        statuses: url.searchParams.getAll('statuses'),
+        search: url.searchParams.get('search') ?? undefined,
+        page: Number(url.searchParams.get('page')) || 1,
+        size:
+          Number(
+            url.searchParams.get('size') || url.searchParams.get('pageSize')
+          ) || 20,
+      }
+      const response = listRepositoriesFixture(params)
+      return HttpResponse.json(response)
+    } else {
+      // 使用 knowledge sources fixture（原有逻辑）
+      const params = parseListParams(url)
+      const response = listKnowledgeSourcesFixture(params)
+      return HttpResponse.json(response)
+    }
   }),
 
-  http.post('*/api/admin/sources', async ({ request }) => {
+  http.post('*/api/v1/admin/sources', async ({ request }) => {
+    if (!isAuthorized(request)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const payload =
       (await request.json()) as Partial<CreateKnowledgeSourcePayload>
     if (!payload?.name || !payload?.repositoryUrl) {
@@ -65,7 +133,10 @@ export const knowledgeSourceHandlers = [
     return HttpResponse.json(entity, { status: 201 })
   }),
 
-  http.patch('*/api/admin/sources/:id', async ({ params, request }) => {
+  http.patch('*/api/v1/admin/sources/:id', async ({ params, request }) => {
+    if (!isAuthorized(request)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const payload = (await request.json()) as UpdateKnowledgeSourcePayload
     const updated = updateKnowledgeSourceFixture(
       params.id as Identifier,
@@ -80,7 +151,10 @@ export const knowledgeSourceHandlers = [
     return HttpResponse.json(updated)
   }),
 
-  http.delete('*/api/admin/sources/:id', ({ params }) => {
+  http.delete('*/api/v1/admin/sources/:id', ({ params, request }) => {
+    if (!isAuthorized(request)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const success = deleteKnowledgeSourceFixture(params.id as Identifier)
     if (!success) {
       return HttpResponse.json(
@@ -91,7 +165,10 @@ export const knowledgeSourceHandlers = [
     return HttpResponse.json(null, { status: 204 })
   }),
 
-  http.post('*/api/admin/sources/:id/sync', ({ params }) => {
+  http.post('*/api/v1/admin/sources/:id/sync', ({ params, request }) => {
+    if (!isAuthorized(request)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const updated = triggerKnowledgeSourceSyncFixture(params.id as Identifier)
     if (!updated) {
       return HttpResponse.json(
@@ -106,7 +183,10 @@ export const knowledgeSourceHandlers = [
     })
   }),
 
-  http.post('*/api/admin/sources/bulk', async ({ request }) => {
+  http.post('*/api/v1/admin/sources/bulk', async ({ request }) => {
+    if (!isAuthorized(request)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const payload = (await request.json()) as BulkOperationPayload
 
     if (

@@ -1,19 +1,15 @@
 import {
-  ListTodo,
   Settings,
   HelpCircle,
-  Search,
-  Eye,
   Brain,
+  LayoutDashboard,
+  Compass,
+  BookMarked,
+  MessageSquare,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
 export const userSidebarData: SidebarData = {
-  user: {
-    name: '普通用户',
-    email: 'user@example.com',
-    avatar: '/avatars/user.jpg',
-  },
   teams: [
     {
       name: '代码知识问答',
@@ -23,30 +19,27 @@ export const userSidebarData: SidebarData = {
   ],
   navGroups: [
     {
-      title: '工作台',
+      title: '知识探索',
       items: [
         {
-          title: '任务中心',
-          url: '/tasks',
-          icon: ListTodo,
-          badge: '即将上线',
+          title: '工作台概览',
+          url: '/',
+          icon: LayoutDashboard,
         },
         {
-          title: 'RAG 控制台',
-          url: '/rag-console',
-          icon: Search,
-          badge: '即将上线',
+          title: '知识源导航',
+          url: '/knowledge-explore',
+          icon: Compass,
         },
         {
-          title: 'GraphRAG 查询',
+          title: '智能问答',
           url: '/knowledge-graph-query',
-          icon: Brain,
+          icon: MessageSquare,
         },
         {
-          title: '数据分析',
-          url: '/analytics',
-          icon: Eye,
-          badge: '即将上线',
+          title: '知识摘录',
+          url: '/knowledge-library',
+          icon: BookMarked,
         },
       ],
     },

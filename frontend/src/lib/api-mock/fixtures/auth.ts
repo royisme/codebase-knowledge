@@ -35,9 +35,12 @@ const mockUser: AuthUser = {
 const MOCK_PASSWORD = 'Passw0rd!'
 const VALID_OTP_CODE = '123456'
 
+// 测试环境使用固定 token，避免认证失败
+export const MOCK_ACCESS_TOKEN = 'test-auth-token-12345'
+
 function createSessionToken(): SessionToken {
   return {
-    accessToken: `mock-access-token-${crypto.randomUUID?.() ?? Date.now()}`,
+    accessToken: MOCK_ACCESS_TOKEN,
     refreshToken: 'mock-refresh-token',
     expiresAt: new Date(
       Date.now() + 60 * 60 * 1000
@@ -62,6 +65,9 @@ const credentialStore = new Map<string, CredentialEntry>([
 ])
 
 const tokenStore = new Map<string, AuthUser>()
+
+// 初始化：将固定的测试 token 映射到 mockUser
+tokenStore.set(MOCK_ACCESS_TOKEN, mockUser)
 
 let pendingOtpEmail: string | null = null
 let simulateLoginFailureAfterRegistration = false

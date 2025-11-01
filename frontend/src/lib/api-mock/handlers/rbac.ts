@@ -1,6 +1,14 @@
 import type { ActionVerb, Identifier, ResourceIdentifier } from '@/types'
 import { HttpResponse, http } from 'msw'
+import { authFixtures } from '../fixtures/auth'
 import { rbacFixtures } from '../fixtures/rbac'
+
+function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const [scheme, token] = headerValue.split(' ')
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null
+  return token
+}
 
 interface UpdatePolicyPayload {
   roleId: Identifier
@@ -14,26 +22,46 @@ interface AssignRolePayload {
 }
 
 export const rbacHandlers = [
-  http.get('*/admin/roles', () => {
+  http.get('*/api/v1/admin/rbac/roles', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     return HttpResponse.json({ roles: rbacFixtures.getRoles() })
   }),
 
-  http.get('*/admin/policies', () => {
+  http.get('*/api/v1/admin/rbac/permissions', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     return HttpResponse.json({
       policies: rbacFixtures.getPolicies(),
       resources: rbacFixtures.listResourceActions(),
     })
   }),
 
-  http.get('*/admin/role-members', () => {
+  http.get('*/api/v1/admin/role-members', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     return HttpResponse.json({ members: rbacFixtures.getRoleMembers() })
   }),
 
-  http.get('*/admin/audit', () => {
+  http.get('*/api/v1/admin/audit/events', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     return HttpResponse.json({ audits: rbacFixtures.getAudits() })
   }),
 
-  http.post('*/admin/policies/update', async ({ request }) => {
+  http.post('*/api/v1/admin/policies/update', async ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const payload = (await request.json()) as Partial<UpdatePolicyPayload>
     if (!payload?.roleId || !payload?.resource || !payload?.actions) {
       return HttpResponse.json(
@@ -68,7 +96,11 @@ export const rbacHandlers = [
     return HttpResponse.json({ policy: updated })
   }),
 
-  http.post('*/admin/role-members/assign', async ({ request }) => {
+  http.post('*/api/v1/admin/rbac/assign-role', async ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const payload = (await request.json()) as Partial<AssignRolePayload>
     if (!payload?.userId || !payload?.roleId) {
       return HttpResponse.json(

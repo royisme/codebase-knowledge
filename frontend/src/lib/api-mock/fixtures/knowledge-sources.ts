@@ -11,7 +11,9 @@ import type {
   CreateKnowledgeSourcePayload,
   UpdateKnowledgeSourcePayload,
 } from '@/types'
+import type { RepositoryListResponse } from '@/types/repository'
 import { faker } from '@faker-js/faker'
+import { mockRepositories } from './repositories'
 
 const DEFAULT_PARSER_CONFIG: ParserConfig = {
   languages: ['python', 'typescript', 'sql'],
@@ -71,7 +73,7 @@ function createInitialSources(): MutableKnowledgeSource[] {
       repositoryUrl: 'git@github.com:enterprise/core-api.git',
       defaultBranch: 'main',
       credentialMode: 'ssh',
-      status: 'active',
+      status: 'syncing',
       parserConfig: {
         ...DEFAULT_PARSER_CONFIG,
         languages: ['python', 'sql'],
@@ -83,7 +85,7 @@ function createInitialSources(): MutableKnowledgeSource[] {
       repositoryUrl: 'git@github.com:enterprise/frontend-console.git',
       defaultBranch: 'develop',
       credentialMode: 'token',
-      status: 'syncing',
+      status: 'active',
       parserConfig: {
         ...DEFAULT_PARSER_CONFIG,
         languages: ['typescript', 'tsx'],
@@ -266,5 +268,60 @@ export function bulkOperationFixture(
     updated,
     failed,
     message,
+  }
+}
+
+/**
+ * 获取仓库列表（带分页）
+ * 复用 mockRepositories 数据
+ */
+export function listRepositoriesFixture(params?: {
+  statuses?: string[]
+  search?: string
+  page?: number
+  size?: number
+}): RepositoryListResponse {
+  const { statuses, search, page = 1, size = 20 } = params || {}
+
+  let filtered = [...mockRepositories]
+
+  // 搜索过滤
+  if (search) {
+    const query = search.toLowerCase()
+    filtered = filtered.filter(
+      (repo) =>
+        repo.name.toLowerCase().includes(query) ||
+        repo.connection_config.repo_url.toLowerCase().includes(query) ||
+        repo.description?.toLowerCase().includes(query)
+    )
+  }
+
+  // 状态过滤
+  if (statuses && statuses.length > 0) {
+    filtered = filtered.filter((repo) => {
+      const repoStatus = repo.source_metadata?.index_version
+        ? 'indexed'
+        : repo.source_metadata
+          ? 'indexing'
+          : repo.is_active
+            ? 'pending_index'
+            : 'failed'
+      return statuses.includes(repoStatus)
+    })
+  }
+
+  // 分页
+  const total = filtered.length
+  const pages = Math.ceil(total / size)
+  const start = (page - 1) * size
+  const end = start + size
+  const items = filtered.slice(start, end)
+
+  return {
+    items,
+    total,
+    page,
+    size,
+    pages,
   }
 }

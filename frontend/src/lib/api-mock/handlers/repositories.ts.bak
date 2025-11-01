@@ -1,0 +1,199 @@
+import { http, HttpResponse, delay } from 'msw'
+import { mockRepositories } from '../fixtures/repositories'
+import type {
+  Repository,
+  CreateRepositoryRequest,
+  UpdateRepositoryRequest,
+  ValidateRepositoryRequest,
+} from '@/types/repository'
+
+// 可变状态（用于模拟创建/更新/删除）
+const repositories = [...mockRepositories]
+
+export const repositoryHandlers = [
+  // 获取仓库列表
+  http.get('/api/v1/admin/sources', async ({ request }) => {
+    await delay(300)
+
+    const url = new URL(request.url)
+    const statuses = url.searchParams.getAll('statuses')
+    const search = url.searchParams.get('search')
+    const page = Number.parseInt(url.searchParams.get('page') || '1')
+    const pageSize = Number.parseInt(url.searchParams.get('pageSize') || '10')
+
+    let filtered = repositories.filter((r) => r.source_type === 'code')
+
+    // 状态过滤
+    if (statuses.length > 0) {
+      filtered = filtered.filter((r) => {
+        // 根据 source_metadata 判断状态
+        if (statuses.includes('indexed') && r.source_metadata?.index_version) {
+          return true
+        }
+        if (statuses.includes('indexing') && !r.source_metadata?.index_version) {
+          return true
+        }
+        if (statuses.includes('failed') && !r.is_active) {
+          return true
+        }
+        return false
+      })
+    }
+
+    // 搜索过滤
+    if (search) {
+      const searchLower = search.toLowerCase()
+      filtered = filtered.filter(
+        (r) =>
+          r.name.toLowerCase().includes(searchLower) ||
+          r.connection_config.repo_url.toLowerCase().includes(searchLower)
+      )
+    }
+
+    // 分页
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    const items = filtered.slice(start, end)
+
+    return HttpResponse.json({
+      items,
+      total: filtered.length,
+      page,
+      pageSize,
+    })
+  }),
+
+  // 获取仓库详情
+  http.get('/api/v1/admin/sources/:id', async ({ params }) => {
+    await delay(200)
+
+    const repository = repositories.find((r) => r.id === params.id)
+
+    if (!repository) {
+      return HttpResponse.json(
+        { detail: 'Repository not found' },
+        { status: 404 }
+      )
+    }
+
+    return HttpResponse.json(repository)
+  }),
+
+  // 验证仓库连接
+  http.post('/api/v1/admin/sources/validate', async ({ request }) => {
+    await delay(1000) // 模拟验证延迟
+
+    const body = (await request.json()) as ValidateRepositoryRequest
+
+    // 模拟验证逻辑
+    if (body.repo_url.includes('invalid')) {
+      return HttpResponse.json({
+        valid: false,
+        message: '无法访问该仓库，请检查 URL 和权限',
+      })
+    }
+
+    if (body.auth_type === 'token' && !body.access_token) {
+      return HttpResponse.json({
+        valid: false,
+        message: '使用 Token 认证时必须提供访问令牌',
+      })
+    }
+
+    // 成功
+    return HttpResponse.json({
+      valid: true,
+      accessible_branches: ['main', 'develop', 'feature/new-api'],
+    })
+  }),
+
+  // 创建仓库
+  http.post('/api/v1/admin/sources', async ({ request }) => {
+    await delay(500)
+
+    const body = (await request.json()) as CreateRepositoryRequest
+
+    const newRepo: Repository = {
+      id: crypto.randomUUID(),
+      name: body.name,
+      description: body.description,
+      source_type: body.source_type,
+      connection_config: body.connection_config,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    repositories.push(newRepo)
+
+    return HttpResponse.json(newRepo, { status: 201 })
+  }),
+
+  // 更新仓库
+  http.patch('/api/v1/admin/sources/:id', async ({ params, request }) => {
+    await delay(500)
+
+    const body = (await request.json()) as UpdateRepositoryRequest
+    const index = repositories.findIndex((r) => r.id === params.id)
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { detail: 'Repository not found' },
+        { status: 404 }
+      )
+    }
+
+    const updated: Repository = {
+      ...repositories[index],
+      ...body,
+      connection_config: {
+        ...repositories[index].connection_config,
+        ...body.connection_config,
+      },
+      updated_at: new Date().toISOString(),
+    }
+
+    repositories[index] = updated
+
+    return HttpResponse.json(updated)
+  }),
+
+  // 删除仓库（软删除）
+  http.delete('/api/v1/admin/sources/:id', async ({ params }) => {
+    await delay(300)
+
+    const index = repositories.findIndex((r) => r.id === params.id)
+
+    if (index === -1) {
+      return HttpResponse.json(
+        { detail: 'Repository not found' },
+        { status: 404 }
+      )
+    }
+
+    // 软删除：标记为不活跃
+    repositories[index].is_active = false
+    repositories[index].updated_at = new Date().toISOString()
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  // 触发索引
+  http.post('/api/v1/admin/sources/:id/index', async ({ params }) => {
+    await delay(500)
+
+    const repository = repositories.find((r) => r.id === params.id)
+
+    if (!repository) {
+      return HttpResponse.json(
+        { detail: 'Repository not found' },
+        { status: 404 }
+      )
+    }
+
+    return HttpResponse.json({
+      job_id: crypto.randomUUID(),
+      status: 'queued',
+    })
+  }),
+]

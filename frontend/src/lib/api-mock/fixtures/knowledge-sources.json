@@ -1,0 +1,141 @@
+[
+  {
+    "id": "src-001",
+    "name": "payments-service",
+    "alias": "支付服务",
+    "description": "处理支付订单、签名验证、审计记录的核心服务",
+    "branch": "main",
+    "language": "Python",
+    "last_full_index": "2025-10-27T08:00:00Z",
+    "last_incremental": "2025-10-29T21:00:00Z",
+    "status": "healthy",
+    "tags": ["支付", "审计", "核心服务"],
+    "maintainers": [
+      { "name": "Alice Wang", "email": "alice@example.com" },
+      { "name": "Bob Chen", "email": "bob@example.com" }
+    ],
+    "recommended_questions": [
+      "支付失败时如何记录审计？",
+      "订单签名验证在哪里实现？",
+      "支付回调的重试机制是怎样的？"
+    ],
+    "query_count_7d": 26,
+    "node_count": 1250,
+    "relation_count": 3420
+  },
+  {
+    "id": "src-002",
+    "name": "order-service",
+    "alias": "订单服务",
+    "description": "订单创建、状态管理、库存扣减等核心业务逻辑",
+    "branch": "main",
+    "language": "Java",
+    "last_full_index": "2025-10-26T10:00:00Z",
+    "last_incremental": "2025-10-29T23:30:00Z",
+    "status": "healthy",
+    "tags": ["订单", "核心服务"],
+    "maintainers": [
+      { "name": "Charlie Liu", "email": "charlie@example.com" }
+    ],
+    "recommended_questions": [
+      "订单状态机是如何设计的？",
+      "如何处理库存不足的场景？",
+      "订单取消后的退款流程是什么？"
+    ],
+    "query_count_7d": 18,
+    "node_count": 980,
+    "relation_count": 2560
+  },
+  {
+    "id": "src-003",
+    "name": "user-service",
+    "alias": "用户服务",
+    "description": "用户注册、登录、权限管理",
+    "branch": "develop",
+    "language": "TypeScript",
+    "last_full_index": "2025-10-23T15:00:00Z",
+    "last_incremental": "2025-10-23T15:00:00Z",
+    "status": "outdated",
+    "tags": ["用户", "认证"],
+    "maintainers": [
+      { "name": "David Zhang", "email": "david@example.com" }
+    ],
+    "recommended_questions": [
+      "用户权限是如何管理的？",
+      "JWT token 的过期策略是什么？",
+      "如何实现用户登录的限流？"
+    ],
+    "query_count_7d": 9,
+    "node_count": 560,
+    "relation_count": 1230
+  },
+  {
+    "id": "src-004",
+    "name": "notification-service",
+    "alias": "通知服务",
+    "description": "邮件、短信、站内消息的统一发送平台",
+    "branch": "main",
+    "language": "Python",
+    "last_full_index": "2025-10-29T08:00:00Z",
+    "last_incremental": "2025-10-30T07:15:00Z",
+    "status": "healthy",
+    "tags": ["通知", "消息"],
+    "maintainers": [
+      { "name": "Eva Li", "email": "eva@example.com" }
+    ],
+    "recommended_questions": [
+      "如何保证消息不重复发送？",
+      "短信发送的限流策略是什么？",
+      "消息模板是如何管理的？"
+    ],
+    "query_count_7d": 15,
+    "node_count": 420,
+    "relation_count": 890
+  },
+  {
+    "id": "src-005",
+    "name": "analytics-service",
+    "alias": "数据分析服务",
+    "description": "业务数据统计、报表生成、指标监控",
+    "branch": "main",
+    "language": "Python",
+    "last_full_index": "2025-10-28T10:00:00Z",
+    "last_incremental": "2025-10-28T10:00:00Z",
+    "status": "indexing",
+    "tags": ["数据分析", "报表"],
+    "maintainers": [
+      { "name": "Frank Wu", "email": "frank@example.com" }
+    ],
+    "recommended_questions": [
+      "用户行为数据是如何采集的？",
+      "报表生成的调度策略是什么？",
+      "如何实现实时数据大盘？"
+    ],
+    "query_count_7d": 7,
+    "node_count": 780,
+    "relation_count": 1650
+  },
+  {
+    "id": "src-006",
+    "name": "auth-service",
+    "alias": "认证服务",
+    "description": "OAuth2、SSO、第三方登录集成",
+    "branch": "main",
+    "language": "Go",
+    "last_full_index": "2025-10-22T09:00:00Z",
+    "last_incremental": "2025-10-22T09:00:00Z",
+    "status": "failed",
+    "tags": ["认证", "SSO"],
+    "maintainers": [
+      { "name": "Grace Huang", "email": "grace@example.com" }
+    ],
+    "recommended_questions": [
+      "OAuth2 的授权流程是如何实现的？",
+      "SSO 集成的步骤是什么？",
+      "如何处理第三方登录失败？"
+    ],
+    "query_count_7d": 3,
+    "node_count": 340,
+    "relation_count": 720
+  }
+]

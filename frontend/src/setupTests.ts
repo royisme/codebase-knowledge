@@ -2,6 +2,12 @@ import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from '@/lib/api-mock/msw/server'
 
+// Fix for MSW with vitest/node environment
+if (typeof global !== 'undefined' && !global.fetch) {
+  // @ts-expect-error - polyfill fetch for MSW
+  global.fetch = fetch
+}
+
 if (typeof window !== 'undefined' && !window.matchMedia) {
   window.matchMedia = (query: string): MediaQueryList => {
     return {
@@ -44,7 +50,8 @@ if (typeof Element !== 'undefined') {
 }
 
 beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'error' })
+  server.listen({ onUnhandledRequest: 'warn' })
+  console.log('[MSW] Server started')
 })
 
 afterEach(() => {
@@ -53,4 +60,5 @@ afterEach(() => {
 
 afterAll(() => {
   server.close()
+  console.log('[MSW] Server closed')
 })

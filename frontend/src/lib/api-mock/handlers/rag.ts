@@ -6,7 +6,15 @@ import type {
   ISODateString,
 } from '@/types'
 import { HttpResponse, http } from 'msw'
+import { authFixtures } from '../fixtures/auth'
 import { ragFixtures } from '../fixtures/rag'
+
+function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const [scheme, token] = headerValue.split(' ')
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null
+  return token
+}
 
 // Mock data store - in a real app this would be in a database
 const sessions = [...ragFixtures.sessions]
@@ -15,7 +23,11 @@ let sessionIdCounter = 10
 
 export const ragHandlers = [
   // Get all RAG sessions
-  http.get('/api/rag/sessions', () => {
+  http.get('*/api/v1/rag/sessions', ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     return HttpResponse.json({
       data: sessions.sort(
         (a, b) =>
@@ -26,7 +38,11 @@ export const ragHandlers = [
   }),
 
   // Get a specific RAG session
-  http.get('/api/rag/sessions/:sessionId', ({ params }) => {
+  http.get('*/api/v1/rag/sessions/:sessionId', ({ params, request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const { sessionId } = params
     const session = sessions.find((s) => s.id === sessionId)
 
@@ -44,7 +60,11 @@ export const ragHandlers = [
   }),
 
   // Create a new RAG session
-  http.post('/api/rag/sessions', async ({ request }) => {
+  http.post('*/api/v1/rag/sessions', async ({ request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const body = (await request.json()) as {
       title?: string
       repositoryId?: string
@@ -76,7 +96,11 @@ export const ragHandlers = [
   }),
 
   // Delete a RAG session
-  http.delete('/api/rag/sessions/:sessionId', ({ params }) => {
+  http.delete('*/api/v1/rag/sessions/:sessionId', ({ params, request }) => {
+    const token = extractBearerToken(request.headers.get('authorization'))
+    if (!token || !authFixtures.findUserByToken(token)) {
+      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+    }
     const { sessionId } = params
     const index = sessions.findIndex((s) => s.id === sessionId)
 
@@ -98,8 +122,12 @@ export const ragHandlers = [
 
   // Send a message and get AI response
   http.post(
-    '/api/rag/sessions/:sessionId/messages',
+    '*/api/v1/rag/sessions/:sessionId/messages',
     async ({ params, request }) => {
+      const token = extractBearerToken(request.headers.get('authorization'))
+      if (!token || !authFixtures.findUserByToken(token)) {
+        return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+      }
       const { sessionId } = params
       const body = (await request.json()) as { content: string }
 
@@ -151,7 +179,7 @@ export const ragHandlers = [
 
   // Get message citations/evidence
   http.get(
-    '/api/rag/sessions/:sessionId/messages/:messageId/citations',
+    '/api/v1/rag/sessions/:sessionId/messages/:messageId/citations',
     ({ params }) => {
       const { sessionId, messageId } = params
 
@@ -184,7 +212,7 @@ export const ragHandlers = [
   ),
 
   // Refresh/rebuild session context
-  http.post('/api/rag/sessions/:sessionId/refresh', async ({ params }) => {
+  http.post('/api/v1/rag/sessions/:sessionId/refresh', async ({ params }) => {
     const { sessionId } = params
 
     const session = sessions.find((s) => s.id === sessionId)
@@ -213,7 +241,7 @@ export const ragHandlers = [
   }),
 
   // Export session
-  http.get('/api/rag/sessions/:sessionId/export', ({ params }) => {
+  http.get('/api/v1/rag/sessions/:sessionId/export', ({ params }) => {
     const { sessionId } = params
 
     const session = sessions.find((s) => s.id === sessionId)
@@ -248,7 +276,7 @@ export const ragHandlers = [
   }),
 
   // Search within sessions
-  http.get('/api/rag/search', ({ request }) => {
+  http.get('/api/v1/rag/search', ({ request }) => {
     const url = new URL(request.url)
     const query = url.searchParams.get('q') || ''
 

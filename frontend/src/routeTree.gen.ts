@@ -12,12 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AdminTasksRouteImport } from './routes/admin/tasks'
 import { Route as AdminSourcesRouteImport } from './routes/admin/sources'
+import { Route as AdminRepositoriesRouteImport } from './routes/admin/repositories'
 import { Route as AdminRbacRouteImport } from './routes/admin/rbac'
+import { Route as AdminRagConsoleRouteImport } from './routes/admin/rag-console'
 import { Route as AdminPoliciesRouteImport } from './routes/admin/policies'
 import { Route as AdminAuditRouteImport } from './routes/admin/audit'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AuthenticatedRagConsoleRouteImport } from './routes/_authenticated/rag-console'
+import { Route as AuthenticatedKnowledgeLibraryRouteImport } from './routes/_authenticated/knowledge-library'
 import { Route as AuthenticatedKnowledgeGraphQueryRouteImport } from './routes/_authenticated/knowledge-graph-query'
+import { Route as AuthenticatedKnowledgeExploreRouteImport } from './routes/_authenticated/knowledge-explore'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
@@ -31,15 +37,14 @@ import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-p
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
-import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
 import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
-import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
-import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_authenticated/settings/display'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
+import { Route as AdminRepositoriesRepoIdJobsRouteImport } from './routes/admin/repositories/$repoId.jobs'
+import { Route as AdminRepositoriesRepoIdJobsJobIdRouteImport } from './routes/admin/repositories/$repoId.jobs.$jobId'
 
 const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
@@ -55,14 +60,29 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AdminTasksRoute = AdminTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminSourcesRoute = AdminSourcesRouteImport.update({
   id: '/sources',
   path: '/sources',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminRepositoriesRoute = AdminRepositoriesRouteImport.update({
+  id: '/repositories',
+  path: '/repositories',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminRbacRoute = AdminRbacRouteImport.update({
   id: '/rbac',
   path: '/rbac',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminRagConsoleRoute = AdminRagConsoleRouteImport.update({
+  id: '/rag-console',
+  path: '/rag-console',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminPoliciesRoute = AdminPoliciesRouteImport.update({
@@ -75,15 +95,32 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AuthenticatedRagConsoleRoute = AuthenticatedRagConsoleRouteImport.update({
   id: '/rag-console',
   path: '/rag-console',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedKnowledgeLibraryRoute =
+  AuthenticatedKnowledgeLibraryRouteImport.update({
+    id: '/knowledge-library',
+    path: '/knowledge-library',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedKnowledgeGraphQueryRoute =
   AuthenticatedKnowledgeGraphQueryRouteImport.update({
     id: '/knowledge-graph-query',
     path: '/knowledge-graph-query',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedKnowledgeExploreRoute =
+  AuthenticatedKnowledgeExploreRouteImport.update({
+    id: '/knowledge-explore',
+    path: '/knowledge-explore',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
@@ -152,12 +189,6 @@ const AuthenticatedTasksIndexRoute = AuthenticatedTasksIndexRouteImport.update({
   path: '/tasks/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsIndexRoute =
-  AuthenticatedSettingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedSettingsRouteRoute,
-  } as any)
 const AuthenticatedHelpCenterIndexRoute =
   AuthenticatedHelpCenterIndexRouteImport.update({
     id: '/help-center/',
@@ -174,18 +205,6 @@ const AuthenticatedAppsIndexRoute = AuthenticatedAppsIndexRouteImport.update({
   path: '/apps/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsNotificationsRoute =
-  AuthenticatedSettingsNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AuthenticatedSettingsRouteRoute,
-  } as any)
-const AuthenticatedSettingsDisplayRoute =
-  AuthenticatedSettingsDisplayRouteImport.update({
-    id: '/display',
-    path: '/display',
-    getParentRoute: () => AuthenticatedSettingsRouteRoute,
-  } as any)
 const AuthenticatedSettingsAppearanceRoute =
   AuthenticatedSettingsAppearanceRouteImport.update({
     id: '/appearance',
@@ -204,6 +223,18 @@ const AuthenticatedErrorsErrorRoute =
     path: '/errors/$error',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AdminRepositoriesRepoIdJobsRoute =
+  AdminRepositoriesRepoIdJobsRouteImport.update({
+    id: '/$repoId/jobs',
+    path: '/$repoId/jobs',
+    getParentRoute: () => AdminRepositoriesRoute,
+  } as any)
+const AdminRepositoriesRepoIdJobsJobIdRoute =
+  AdminRepositoriesRepoIdJobsJobIdRouteImport.update({
+    id: '/$jobId',
+    path: '/$jobId',
+    getParentRoute: () => AdminRepositoriesRepoIdJobsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
@@ -218,27 +249,33 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/knowledge-explore': typeof AuthenticatedKnowledgeExploreRoute
   '/knowledge-graph-query': typeof AuthenticatedKnowledgeGraphQueryRoute
+  '/knowledge-library': typeof AuthenticatedKnowledgeLibraryRoute
   '/rag-console': typeof AuthenticatedRagConsoleRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/policies': typeof AdminPoliciesRoute
+  '/admin/rag-console': typeof AdminRagConsoleRoute
   '/admin/rbac': typeof AdminRbacRoute
+  '/admin/repositories': typeof AdminRepositoriesRouteWithChildren
   '/admin/sources': typeof AdminSourcesRoute
+  '/admin/tasks': typeof AdminTasksRoute
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
-  '/settings/display': typeof AuthenticatedSettingsDisplayRoute
-  '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
-  '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsRouteWithChildren
+  '/admin/repositories/$repoId/jobs/$jobId': typeof AdminRepositoriesRepoIdJobsJobIdRoute
 }
 export interface FileRoutesByTo {
   '/admin': typeof AdminRouteRouteWithChildren
+  '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/ldap': typeof authLdapRoute
   '/sign-in': typeof authSignInRoute
@@ -249,24 +286,29 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/knowledge-explore': typeof AuthenticatedKnowledgeExploreRoute
   '/knowledge-graph-query': typeof AuthenticatedKnowledgeGraphQueryRoute
+  '/knowledge-library': typeof AuthenticatedKnowledgeLibraryRoute
   '/rag-console': typeof AuthenticatedRagConsoleRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/policies': typeof AdminPoliciesRoute
+  '/admin/rag-console': typeof AdminRagConsoleRoute
   '/admin/rbac': typeof AdminRbacRoute
+  '/admin/repositories': typeof AdminRepositoriesRouteWithChildren
   '/admin/sources': typeof AdminSourcesRoute
+  '/admin/tasks': typeof AdminTasksRoute
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
-  '/settings/display': typeof AuthenticatedSettingsDisplayRoute
-  '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
-  '/settings': typeof AuthenticatedSettingsIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsRouteWithChildren
+  '/admin/repositories/$repoId/jobs/$jobId': typeof AdminRepositoriesRepoIdJobsJobIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -283,24 +325,29 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/knowledge-explore': typeof AuthenticatedKnowledgeExploreRoute
   '/_authenticated/knowledge-graph-query': typeof AuthenticatedKnowledgeGraphQueryRoute
+  '/_authenticated/knowledge-library': typeof AuthenticatedKnowledgeLibraryRoute
   '/_authenticated/rag-console': typeof AuthenticatedRagConsoleRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/policies': typeof AdminPoliciesRoute
+  '/admin/rag-console': typeof AdminRagConsoleRoute
   '/admin/rbac': typeof AdminRbacRoute
+  '/admin/repositories': typeof AdminRepositoriesRouteWithChildren
   '/admin/sources': typeof AdminSourcesRoute
+  '/admin/tasks': typeof AdminTasksRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
-  '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayRoute
-  '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
-  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsRouteWithChildren
+  '/admin/repositories/$repoId/jobs/$jobId': typeof AdminRepositoriesRepoIdJobsJobIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -317,27 +364,33 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/analytics'
+    | '/knowledge-explore'
     | '/knowledge-graph-query'
+    | '/knowledge-library'
     | '/rag-console'
+    | '/admin/analytics'
     | '/admin/audit'
     | '/admin/policies'
+    | '/admin/rag-console'
     | '/admin/rbac'
+    | '/admin/repositories'
     | '/admin/sources'
+    | '/admin/tasks'
     | '/'
     | '/errors/$error'
     | '/settings/account'
     | '/settings/appearance'
-    | '/settings/display'
-    | '/settings/notifications'
     | '/apps'
     | '/chats'
     | '/help-center'
-    | '/settings/'
     | '/tasks'
     | '/users'
+    | '/admin/repositories/$repoId/jobs'
+    | '/admin/repositories/$repoId/jobs/$jobId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/admin'
+    | '/settings'
     | '/forgot-password'
     | '/ldap'
     | '/sign-in'
@@ -348,24 +401,29 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/analytics'
+    | '/knowledge-explore'
     | '/knowledge-graph-query'
+    | '/knowledge-library'
     | '/rag-console'
+    | '/admin/analytics'
     | '/admin/audit'
     | '/admin/policies'
+    | '/admin/rag-console'
     | '/admin/rbac'
+    | '/admin/repositories'
     | '/admin/sources'
+    | '/admin/tasks'
     | '/'
     | '/errors/$error'
     | '/settings/account'
     | '/settings/appearance'
-    | '/settings/display'
-    | '/settings/notifications'
     | '/apps'
     | '/chats'
     | '/help-center'
-    | '/settings'
     | '/tasks'
     | '/users'
+    | '/admin/repositories/$repoId/jobs'
+    | '/admin/repositories/$repoId/jobs/$jobId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -381,24 +439,29 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/analytics'
+    | '/_authenticated/knowledge-explore'
     | '/_authenticated/knowledge-graph-query'
+    | '/_authenticated/knowledge-library'
     | '/_authenticated/rag-console'
+    | '/admin/analytics'
     | '/admin/audit'
     | '/admin/policies'
+    | '/admin/rag-console'
     | '/admin/rbac'
+    | '/admin/repositories'
     | '/admin/sources'
+    | '/admin/tasks'
     | '/_authenticated/'
     | '/_authenticated/errors/$error'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
-    | '/_authenticated/settings/display'
-    | '/_authenticated/settings/notifications'
     | '/_authenticated/apps/'
     | '/_authenticated/chats/'
     | '/_authenticated/help-center/'
-    | '/_authenticated/settings/'
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/admin/repositories/$repoId/jobs'
+    | '/admin/repositories/$repoId/jobs/$jobId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -438,6 +501,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/admin/tasks': {
+      id: '/admin/tasks'
+      path: '/tasks'
+      fullPath: '/admin/tasks'
+      preLoaderRoute: typeof AdminTasksRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/sources': {
       id: '/admin/sources'
       path: '/sources'
@@ -445,11 +515,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSourcesRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/repositories': {
+      id: '/admin/repositories'
+      path: '/repositories'
+      fullPath: '/admin/repositories'
+      preLoaderRoute: typeof AdminRepositoriesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/rbac': {
       id: '/admin/rbac'
       path: '/rbac'
       fullPath: '/admin/rbac'
       preLoaderRoute: typeof AdminRbacRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/rag-console': {
+      id: '/admin/rag-console'
+      path: '/rag-console'
+      fullPath: '/admin/rag-console'
+      preLoaderRoute: typeof AdminRagConsoleRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/policies': {
@@ -466,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/_authenticated/rag-console': {
       id: '/_authenticated/rag-console'
       path: '/rag-console'
@@ -473,11 +564,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRagConsoleRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/knowledge-library': {
+      id: '/_authenticated/knowledge-library'
+      path: '/knowledge-library'
+      fullPath: '/knowledge-library'
+      preLoaderRoute: typeof AuthenticatedKnowledgeLibraryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/knowledge-graph-query': {
       id: '/_authenticated/knowledge-graph-query'
       path: '/knowledge-graph-query'
       fullPath: '/knowledge-graph-query'
       preLoaderRoute: typeof AuthenticatedKnowledgeGraphQueryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/knowledge-explore': {
+      id: '/_authenticated/knowledge-explore'
+      path: '/knowledge-explore'
+      fullPath: '/knowledge-explore'
+      preLoaderRoute: typeof AuthenticatedKnowledgeExploreRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/analytics': {
@@ -571,13 +676,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTasksIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/settings/': {
-      id: '/_authenticated/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
-      parentRoute: typeof AuthenticatedSettingsRouteRoute
-    }
     '/_authenticated/help-center/': {
       id: '/_authenticated/help-center/'
       path: '/help-center'
@@ -598,20 +696,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/apps'
       preLoaderRoute: typeof AuthenticatedAppsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/notifications': {
-      id: '/_authenticated/settings/notifications'
-      path: '/notifications'
-      fullPath: '/settings/notifications'
-      preLoaderRoute: typeof AuthenticatedSettingsNotificationsRouteImport
-      parentRoute: typeof AuthenticatedSettingsRouteRoute
-    }
-    '/_authenticated/settings/display': {
-      id: '/_authenticated/settings/display'
-      path: '/display'
-      fullPath: '/settings/display'
-      preLoaderRoute: typeof AuthenticatedSettingsDisplayRouteImport
-      parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
     '/_authenticated/settings/appearance': {
       id: '/_authenticated/settings/appearance'
@@ -634,25 +718,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedErrorsErrorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/admin/repositories/$repoId/jobs': {
+      id: '/admin/repositories/$repoId/jobs'
+      path: '/$repoId/jobs'
+      fullPath: '/admin/repositories/$repoId/jobs'
+      preLoaderRoute: typeof AdminRepositoriesRepoIdJobsRouteImport
+      parentRoute: typeof AdminRepositoriesRoute
+    }
+    '/admin/repositories/$repoId/jobs/$jobId': {
+      id: '/admin/repositories/$repoId/jobs/$jobId'
+      path: '/$jobId'
+      fullPath: '/admin/repositories/$repoId/jobs/$jobId'
+      preLoaderRoute: typeof AdminRepositoriesRepoIdJobsJobIdRouteImport
+      parentRoute: typeof AdminRepositoriesRepoIdJobsRoute
+    }
   }
 }
 
 interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsAccountRoute: typeof AuthenticatedSettingsAccountRoute
   AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
-  AuthenticatedSettingsDisplayRoute: typeof AuthenticatedSettingsDisplayRoute
-  AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
-  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteChildren =
   {
     AuthenticatedSettingsAccountRoute: AuthenticatedSettingsAccountRoute,
     AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
-    AuthenticatedSettingsDisplayRoute: AuthenticatedSettingsDisplayRoute,
-    AuthenticatedSettingsNotificationsRoute:
-      AuthenticatedSettingsNotificationsRoute,
-    AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   }
 
 const AuthenticatedSettingsRouteRouteWithChildren =
@@ -663,7 +754,9 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedKnowledgeExploreRoute: typeof AuthenticatedKnowledgeExploreRoute
   AuthenticatedKnowledgeGraphQueryRoute: typeof AuthenticatedKnowledgeGraphQueryRoute
+  AuthenticatedKnowledgeLibraryRoute: typeof AuthenticatedKnowledgeLibraryRoute
   AuthenticatedRagConsoleRoute: typeof AuthenticatedRagConsoleRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
@@ -677,7 +770,9 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedKnowledgeExploreRoute: AuthenticatedKnowledgeExploreRoute,
   AuthenticatedKnowledgeGraphQueryRoute: AuthenticatedKnowledgeGraphQueryRoute,
+  AuthenticatedKnowledgeLibraryRoute: AuthenticatedKnowledgeLibraryRoute,
   AuthenticatedRagConsoleRoute: AuthenticatedRagConsoleRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
@@ -691,18 +786,53 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AdminRepositoriesRepoIdJobsRouteChildren {
+  AdminRepositoriesRepoIdJobsJobIdRoute: typeof AdminRepositoriesRepoIdJobsJobIdRoute
+}
+
+const AdminRepositoriesRepoIdJobsRouteChildren: AdminRepositoriesRepoIdJobsRouteChildren =
+  {
+    AdminRepositoriesRepoIdJobsJobIdRoute:
+      AdminRepositoriesRepoIdJobsJobIdRoute,
+  }
+
+const AdminRepositoriesRepoIdJobsRouteWithChildren =
+  AdminRepositoriesRepoIdJobsRoute._addFileChildren(
+    AdminRepositoriesRepoIdJobsRouteChildren,
+  )
+
+interface AdminRepositoriesRouteChildren {
+  AdminRepositoriesRepoIdJobsRoute: typeof AdminRepositoriesRepoIdJobsRouteWithChildren
+}
+
+const AdminRepositoriesRouteChildren: AdminRepositoriesRouteChildren = {
+  AdminRepositoriesRepoIdJobsRoute:
+    AdminRepositoriesRepoIdJobsRouteWithChildren,
+}
+
+const AdminRepositoriesRouteWithChildren =
+  AdminRepositoriesRoute._addFileChildren(AdminRepositoriesRouteChildren)
+
 interface AdminRouteRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminPoliciesRoute: typeof AdminPoliciesRoute
+  AdminRagConsoleRoute: typeof AdminRagConsoleRoute
   AdminRbacRoute: typeof AdminRbacRoute
+  AdminRepositoriesRoute: typeof AdminRepositoriesRouteWithChildren
   AdminSourcesRoute: typeof AdminSourcesRoute
+  AdminTasksRoute: typeof AdminTasksRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminPoliciesRoute: AdminPoliciesRoute,
+  AdminRagConsoleRoute: AdminRagConsoleRoute,
   AdminRbacRoute: AdminRbacRoute,
+  AdminRepositoriesRoute: AdminRepositoriesRouteWithChildren,
   AdminSourcesRoute: AdminSourcesRoute,
+  AdminTasksRoute: AdminTasksRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(

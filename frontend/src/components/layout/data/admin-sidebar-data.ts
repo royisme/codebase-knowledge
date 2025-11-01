@@ -6,15 +6,14 @@ import {
   HelpCircle,
   Activity,
   Home,
+  GitBranch,
+  ListTodo,
+  Search,
+  Eye,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
 export const adminSidebarData: SidebarData = {
-  user: {
-    name: '系统管理员',
-    email: 'admin@example.com',
-    avatar: '/avatars/admin.jpg',
-  },
   teams: [
     {
       name: '系统管理控制台',
@@ -24,8 +23,33 @@ export const adminSidebarData: SidebarData = {
   ],
   navGroups: [
     {
-      title: '管理功能',
+      title: '运维监控',
       items: [
+        {
+          title: '任务中心',
+          url: '/admin/tasks',
+          icon: ListTodo,
+        },
+        {
+          title: '数据分析',
+          url: '/admin/analytics',
+          icon: Eye,
+        },
+        {
+          title: 'RAG 调试台',
+          url: '/admin/rag-console',
+          icon: Search,
+        },
+      ],
+    },
+    {
+      title: '系统配置',
+      items: [
+        {
+          title: '代码仓库',
+          url: '/admin/repositories',
+          icon: GitBranch,
+        },
         {
           title: '知识源',
           url: '/admin/sources',
