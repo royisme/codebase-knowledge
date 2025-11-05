@@ -7,6 +7,7 @@ import {
   fetchPolicies,
   fetchRoles,
   updatePolicyAction,
+  type ActionType,
   type RbacPolicy,
   type RbacRole,
 } from '@/lib/rbac-service'
@@ -36,14 +37,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const ACTION_OPTIONS = [
+const ACTION_OPTIONS: Array<{ value: ActionType; label: string }> = [
   { value: 'read', label: '读取' },
   { value: 'admin', label: '管理' },
 ]
 
 export function PoliciesPage() {
   const queryClient = useQueryClient()
-  const [newPolicy, setNewPolicy] = useState({
+  const [newPolicy, setNewPolicy] = useState<{
+    subject: string
+    resource: string
+    action: ActionType
+  }>({
     subject: '',
     resource: '',
     action: 'read',
@@ -72,7 +77,7 @@ export function PoliciesPage() {
   }, [policiesQuery.isError])
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, action }: { id: number; action: string }) =>
+    mutationFn: ({ id, action }: { id: number; action: ActionType }) =>
       updatePolicyAction(id, action),
     onSuccess: () => {
       toast.success('权限已更新')
@@ -109,7 +114,7 @@ export function PoliciesPage() {
   const roles = rolesQuery.data ?? []
   const policies = policiesQuery.data ?? []
 
-  const handleActionChange = (policy: RbacPolicy, action: string) => {
+  const handleActionChange = (policy: RbacPolicy, action: ActionType) => {
     if (policy.action === action) return
     updateMutation.mutate({ id: policy.id, action })
   }
@@ -174,7 +179,7 @@ export function PoliciesPage() {
 
               <Select
                 value={newPolicy.action}
-                onValueChange={(value) =>
+                onValueChange={(value: ActionType) =>
                   setNewPolicy((prev) => ({ ...prev, action: value }))
                 }
               >
@@ -236,7 +241,7 @@ export function PoliciesPage() {
                     <TableCell>
                       <Select
                         value={policy.action}
-                        onValueChange={(value) =>
+                        onValueChange={(value: ActionType) =>
                           handleActionChange(policy, value)
                         }
                         disabled={updateMutation.isPending}
