@@ -4,20 +4,48 @@
  * 用于知识图谱查询的 Server-Sent Events (SSE) 协议
  */
 import type { Entity } from './graph-query'
+import type { RagEvidence } from './rag'
 
 /**
  * 流式事件类型枚举
  */
-export type StreamEventType = 'text' | 'entity' | 'metadata' | 'done' | 'error'
+export type StreamEventType =
+  | 'text_delta'
+  | 'text'
+  | 'status'
+  | 'entity'
+  | 'evidence'
+  | 'metadata'
+  | 'done'
+  | 'error'
 
 /**
- * 文本块事件
+ * 文本增量事件（Token级别）
+ * 用于传输 LLM 生成的答案文本片段（真正的 streaming）
+ */
+export interface TextDeltaEvent {
+  type: 'text_delta'
+  content: string
+}
+
+/**
+ * 文本块事件（向后兼容）
  * 用于传输 LLM 生成的答案文本片段
  */
 export interface TextEvent {
   type: 'text'
   content: string
   delta?: boolean // 是否为增量文本（默认 true）
+}
+
+/**
+ * 状态事件
+ * 用于传输查询阶段状态
+ */
+export interface StatusEvent {
+  type: 'status'
+  stage: string // 'context' | 'llm' | 'finalizing'
+  message: string
 }
 
 /**
@@ -30,18 +58,32 @@ export interface EntityEvent {
 }
 
 /**
+ * 证据事件
+ * 用于传输可回溯的代码证据
+ */
+export interface EvidenceEvent {
+  type: 'evidence'
+  evidence: RagEvidence
+}
+
+/**
  * 元数据事件
  * 包含查询执行的统计信息
  */
 export interface MetadataEvent {
   type: 'metadata'
-  data: {
+  data?: {
     execution_time_ms: number
     sources_queried: string[]
     confidence_score?: number
     retrieval_mode?: string
     from_cache?: boolean
   }
+  // 支持扁平化字段（新格式）
+  confidence_score?: number
+  execution_time_ms?: number
+  sources_queried?: string[]
+  retrieval_mode?: string
 }
 
 /**
@@ -75,8 +117,11 @@ export interface ErrorEvent {
  * 流式事件联合类型
  */
 export type StreamEvent =
+  | TextDeltaEvent
   | TextEvent
+  | StatusEvent
   | EntityEvent
+  | EvidenceEvent
   | MetadataEvent
   | DoneEvent
   | ErrorEvent
@@ -123,6 +168,7 @@ export interface StreamQueryState {
 export interface StreamEventHandlers {
   onText?: (content: string) => void
   onEntity?: (entity: Entity) => void
+  onEvidence?: (evidence: RagEvidence) => void
   onMetadata?: (metadata: MetadataEvent['data']) => void
   onDone?: (event: DoneEvent) => void
   onError?: (error: ErrorEvent) => void

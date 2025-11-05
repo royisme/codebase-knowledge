@@ -83,7 +83,7 @@ export function Tasks() {
       const hasProcessing = query.state.data?.tasks.some(
         (task: QueueTask) => task.status === 'processing'
       )
-      return hasProcessing ? 5000 : false
+      return hasProcessing ? 8000 : false
     },
   })
 

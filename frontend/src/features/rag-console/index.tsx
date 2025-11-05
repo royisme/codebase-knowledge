@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react'
 import type { Entity } from '@/types/graph-query'
 import type { RagMessage, RagSession } from '@/types/rag'
 import type { DoneEvent } from '@/types/streaming'
@@ -16,6 +16,8 @@ import {
 import { useShallow } from 'zustand/react/shallow'
 import { cn } from '@/lib/utils'
 import { useStreamingQuery } from '@/hooks/useStreamingQuery'
+import { GraphRAGResponse } from '@/components/graphrag-response'
+import { EvidenceList } from '@/components/evidence-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,9 +28,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { useRagConsoleStore } from './store'
 
 const IMPORTANCE_STYLES: Record<NonNullable<Entity['importance']>, string> = {
-  high: 'border-destructive/40 bg-destructive/10 text-destructive',
-  medium: 'border-amber-300 bg-amber-50 text-amber-700',
+  high: 'border-emerald-400/40 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+  medium: 'border-amber-300/40 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
   low: 'border-muted-foreground/20 bg-muted text-muted-foreground',
+}
+
+// 置信度配色方案
+const getConfidenceBadgeStyle = (confidence?: number): string => {
+  if (!confidence) return 'border-muted-foreground/30 bg-muted/50 text-muted-foreground'
+  const score = Math.round(confidence * 100)
+  if (score >= 90) return 'border-emerald-400/40 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+  if (score >= 60) return 'border-blue-400/40 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
+  return 'border-muted-foreground/30 bg-muted text-muted-foreground'
 }
 
 const formatTime = (iso: string) =>
@@ -44,15 +55,9 @@ interface MessageBubbleProps {
   message: RagMessage
 }
 
-function MessageBubble({ message }: MessageBubbleProps) {
+const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user'
-  const bubbleClasses = cn(
-    'max-w-[70%] rounded-xl px-4 py-3 shadow-sm transition-all',
-    isUser
-      ? 'ml-auto bg-primary text-primary-foreground'
-      : 'bg-muted border border-muted-foreground/20 text-muted-foreground-foreground'
-  )
-
+  
   return (
     <div
       className={cn(
@@ -61,37 +66,73 @@ function MessageBubble({ message }: MessageBubbleProps) {
       )}
     >
       {!isUser && (
-        <div className='bg-primary/10 flex h-8 w-8 items-center justify-center rounded-full'>
-          <Sparkles className='text-primary h-4 w-4' />
+        <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/10'>
+          <Sparkles className='h-4 w-4 text-blue-600 dark:text-blue-400' />
         </div>
       )}
-      <div className={bubbleClasses}>
-        <div className='flex items-center gap-3'>
-          <span className='text-muted-foreground/80 text-xs font-medium tracking-wide uppercase'>
+      <div
+        className={cn(
+          'max-w-[70%] rounded-2xl px-4 py-3 shadow-sm',
+          isUser
+            ? 'bg-blue-600 text-white dark:bg-blue-500'
+            : 'border border-border bg-card'
+        )}
+      >
+        {/* 消息头部：角色 + 时间 + 置信度 */}
+        <div className='flex items-center gap-2 mb-2'>
+          <span
+            className={cn(
+              'text-xs font-medium uppercase tracking-wide',
+              isUser ? 'text-blue-100' : 'text-muted-foreground'
+            )}
+          >
             {isUser ? '用户' : 'GraphRAG'}
           </span>
-          <span className='text-muted-foreground/60 text-[11px]'>
+          <span
+            className={cn(
+              'text-[11px]',
+              isUser ? 'text-blue-200' : 'text-muted-foreground/60'
+            )}
+          >
             {formatTime(message.createdAt)}
           </span>
           {!isUser && message.metadata?.confidenceScore !== undefined && (
             <Badge
               variant='outline'
-              className='border-primary/40 bg-primary/5 text-primary'
+              className={getConfidenceBadgeStyle(message.metadata.confidenceScore)}
             >
-              置信度 {extractConfidence(message.metadata?.confidenceScore)}
+              置信度 {extractConfidence(message.metadata.confidenceScore)}
             </Badge>
           )}
         </div>
-        <p className='text-foreground mt-2 text-sm leading-relaxed whitespace-pre-wrap'>
-          {message.content ||
-            (message.status === 'streaming' ? '正在生成…' : '无内容')}
-        </p>
 
-        {!isUser && message.status === 'streaming' && (
-          <div className='text-muted-foreground mt-3 flex items-center gap-2 text-xs'>
-            <Loader2 className='h-3 w-3 animate-spin' />
-            <span>持续生成中…</span>
-          </div>
+        {/* 消息内容 */}
+        {!isUser && message.content ? (
+          <>
+            <div className='text-sm leading-relaxed text-card-foreground'>
+              <GraphRAGResponse
+                content={message.content}
+                streaming={!isUser && message.status === 'streaming'}
+              />
+            </div>
+            
+            {/* 证据来源 */}
+            {message.evidence && message.evidence.length > 0 && (
+              <div className='mt-4 pt-3 border-t border-border/50'>
+                <EvidenceList evidence={message.evidence} />
+              </div>
+            )}
+          </>
+        ) : (
+          <p
+            className={cn(
+              'text-sm leading-relaxed whitespace-pre-wrap',
+              isUser ? 'text-white' : 'text-foreground'
+            )}
+          >
+            {message.content ||
+              (message.status === 'streaming' ? '正在生成…' : '无内容')}
+          </p>
         )}
 
         {message.status === 'error' && message.error && (
@@ -103,7 +144,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
       </div>
     </div>
   )
-}
+})
 
 interface InsightPanelProps {
   message: RagMessage | null
@@ -111,7 +152,7 @@ interface InsightPanelProps {
   onQuickAction: (question: string) => void
 }
 
-function InsightPanel({
+const InsightPanel = memo(function InsightPanel({
   message,
   isStreaming,
   onQuickAction,
@@ -122,126 +163,122 @@ function InsightPanel({
 
   return (
     <div className='flex w-full flex-col gap-4'>
-      <Card>
-        <CardHeader className='pb-4'>
-          <CardTitle className='flex items-center gap-2 text-sm font-semibold'>
-            <Sparkles className='text-primary h-4 w-4' />
-            实时洞察
+      {/* 执行详情卡片 */}
+      <Card className='shadow-sm'>
+        <CardHeader className='pb-3'>
+          <CardTitle className='flex items-center gap-2 text-sm font-semibold text-foreground'>
+            <Sparkles className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+            执行详情
           </CardTitle>
         </CardHeader>
-        <CardContent className='space-y-6'>
-          <section>
-            <h3 className='text-muted-foreground mb-2 text-xs font-semibold uppercase'>
-              执行详情
-            </h3>
-            <div className='border-muted-foreground/20 bg-muted/30 space-y-3 rounded-lg border p-3 text-xs'>
-              <div className='flex items-center justify-between'>
-                <span className='text-muted-foreground'>置信度</span>
-                <span className='text-foreground font-medium'>
-                  {extractConfidence(metadata?.confidenceScore)}
-                </span>
-              </div>
-              <div className='flex items-center justify-between'>
-                <span className='text-muted-foreground'>耗时</span>
-                <span className='text-foreground font-medium'>
-                  {metadata?.processingTimeMs
-                    ? `${metadata.processingTimeMs} ms`
-                    : '—'}
-                </span>
-              </div>
-              <div>
-                <span className='text-muted-foreground'>命中知识源</span>
-                <div className='mt-2 flex flex-wrap gap-2'>
-                  {(metadata?.sourcesQueried ?? []).length > 0 ? (
-                    metadata?.sourcesQueried?.map((source) => (
-                      <Badge
-                        key={source}
-                        variant='outline'
-                        className='border-border text-xs'
-                      >
-                        {source}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className='text-muted-foreground/80'>暂无信息</span>
-                  )}
-                </div>
-              </div>
+        <CardContent className='space-y-2.5 text-xs'>
+          <div className='flex items-center justify-between'>
+            <span className='text-muted-foreground'>置信度</span>
+            <Badge
+              variant='outline'
+              className={getConfidenceBadgeStyle(metadata?.confidenceScore)}
+            >
+              {extractConfidence(metadata?.confidenceScore)}
+            </Badge>
+          </div>
+          <div className='flex items-center justify-between'>
+            <span className='text-muted-foreground'>耗时</span>
+            <span className='font-medium text-blue-600 dark:text-blue-400'>
+              {metadata?.processingTimeMs
+                ? `${metadata.processingTimeMs} ms`
+                : '—'}
+            </span>
+          </div>
+          <div className='flex items-center justify-between'>
+            <span className='text-muted-foreground'>命中知识源</span>
+            <span className='font-medium text-blue-600 dark:text-blue-400'>
+              {metadata?.sourcesQueried ?? '—'}
+            </span>
+          </div>
+          {isStreaming && (
+            <div className='mt-2 flex items-center gap-2 text-amber-600 dark:text-amber-400'>
+              <Loader2 className='h-3 w-3 animate-spin' />
+              <span>持续生成中…</span>
             </div>
-          </section>
+          )}
+        </CardContent>
+      </Card>
 
-          <section>
-            <div className='mb-2 flex items-center justify-between'>
-              <h3 className='text-muted-foreground text-xs font-semibold uppercase'>
-                快捷追问
-              </h3>
-              <Badge
-                variant='outline'
-                className='border-primary/30 text-primary text-[10px]'
-              >
-                智能推荐
-              </Badge>
-            </div>
-            <div className='flex flex-wrap gap-2'>
-              {actions.length > 0 ? (
-                actions.map((action) => (
-                  <Button
-                    key={action}
-                    variant='outline'
-                    size='sm'
-                    disabled={isStreaming}
-                    className='border-muted-foreground/40 h-auto border-dashed px-3 py-1 text-xs'
-                    onClick={() => onQuickAction(action)}
-                  >
-                    <Zap className='text-primary mr-2 h-3 w-3' />
-                    {action}
-                  </Button>
-                ))
-              ) : (
-                <p className='text-muted-foreground/80 text-xs'>
-                  当前暂无推荐问题，完成一次查询后将自动生成。
-                </p>
-              )}
-            </div>
-          </section>
+      {/* 快速提问卡片 */}
+      <Card className='shadow-sm'>
+        <CardHeader className='pb-3'>
+          <CardTitle className='flex items-center gap-2 text-sm font-semibold text-foreground'>
+            <Zap className='h-4 w-4 text-amber-600 dark:text-amber-400' />
+            快速提问
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='flex flex-col gap-2'>
+            {actions.length > 0 ? (
+              actions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant='outline'
+                  size='sm'
+                  className='justify-start text-left text-xs font-normal hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950/30 dark:hover:text-blue-400'
+                  onClick={() => onQuickAction(action)}
+                  disabled={isStreaming}
+                >
+                  <Zap className='mr-2 h-3 w-3 shrink-0' />
+                  <span className='line-clamp-2'>{action}</span>
+                </Button>
+              ))
+            ) : (
+              <p className='text-xs text-muted-foreground/80 px-1'>
+                当前暂无推荐问题，完成一次查询后将自动生成。
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-          <section>
-            <h3 className='text-muted-foreground mb-2 text-xs font-semibold uppercase'>
-              关联实体
-            </h3>
-            <div className='flex max-h-64 flex-col gap-3 overflow-y-auto pr-1'>
-              {entities.length > 0 ? (
+      {/* 关联实体卡片 */}
+      <Card className='shadow-sm'>
+        <CardHeader className='pb-3'>
+          <CardTitle className='flex items-center gap-2 text-sm font-semibold text-foreground'>
+            <FileText className='h-4 w-4 text-emerald-600 dark:text-emerald-400' />
+            关联实体
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='flex flex-col gap-3 pr-2 max-h-[400px] overflow-y-auto'>
+            {entities.length > 0 ? (
                 entities.map((entity, index) => (
                   <div
                     key={`${entity.type}-${entity.name}-${index}`}
-                    className='border-muted-foreground/20 bg-background rounded-lg border p-3 shadow-sm'
+                    className='rounded-lg border border-border bg-background p-3 shadow-sm hover:shadow-md transition-shadow'
                   >
                     <div className='flex items-start justify-between gap-2'>
-                      <div>
-                        <p className='text-foreground text-sm font-semibold'>
+                      <div className='flex-1'>
+                        <p className='text-sm font-semibold text-foreground'>
                           {entity.name || '-'}
                         </p>
-                        <p className='text-muted-foreground text-xs'>
+                        <p className='text-xs text-muted-foreground mt-0.5'>
                           {entity.type?.toUpperCase()}
                         </p>
                       </div>
                       {entity.importance && (
                         <span
                           className={cn(
-                            'rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase',
+                            'rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase shrink-0',
                             IMPORTANCE_STYLES[entity.importance]
                           )}
                         >
                           {entity.importance === 'high'
-                            ? '高优先级'
+                            ? '高'
                             : entity.importance === 'medium'
-                              ? '中等'
+                              ? '中'
                               : '低'}
                         </span>
                       )}
                     </div>
                     {entity.detail && (
-                      <p className='text-muted-foreground mt-2 text-xs leading-relaxed'>
+                      <p className='mt-2 text-xs leading-relaxed text-muted-foreground'>
                         {entity.detail}
                       </p>
                     )}
@@ -250,7 +287,7 @@ function InsightPanel({
                         asChild
                         variant='ghost'
                         size='sm'
-                        className='text-primary mt-2 h-auto px-0 text-xs'
+                        className='mt-2 h-auto px-0 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300'
                       >
                         <a href={entity.link}>查看详情 →</a>
                       </Button>
@@ -258,20 +295,19 @@ function InsightPanel({
                   </div>
                 ))
               ) : (
-                <div className='border-muted-foreground/30 bg-muted/30 flex flex-col items-center justify-center gap-2 rounded-md border border-dashed p-6 text-center'>
-                  <FileText className='text-muted-foreground/70 h-6 w-6' />
-                  <p className='text-muted-foreground text-xs'>
+                <div className='flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-6 text-center'>
+                  <FileText className='h-6 w-6 text-muted-foreground/70' />
+                  <p className='text-xs text-muted-foreground'>
                     等待查询完成后，将展示关联文件、提交与模块信息。
                   </p>
                 </div>
               )}
-            </div>
-          </section>
+          </div>
         </CardContent>
       </Card>
     </div>
   )
-}
+})
 
 interface SessionListProps {
   sessions: RagSession[]
@@ -282,7 +318,7 @@ interface SessionListProps {
   onSelect: (sessionId: string) => void
 }
 
-function SessionList({
+const SessionList = memo(function SessionList({
   sessions,
   activeSessionId,
   searchQuery,
@@ -300,21 +336,21 @@ function SessionList({
   }, [sessions, searchQuery])
 
   return (
-    <Card className='w-full'>
-      <CardHeader className='space-y-4'>
+    <Card className='shadow-sm bg-slate-50/50 dark:bg-slate-900/30'>
+      <CardHeader className='space-y-4 pb-4'>
         <div className='flex items-center justify-between'>
           <CardTitle className='text-base font-semibold'>对话列表</CardTitle>
           <Button
             variant='outline'
             size='icon'
-            className='h-8 w-8'
+            className='h-8 w-8 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950/30'
             onClick={onCreate}
           >
             <Plus className='h-4 w-4' />
           </Button>
         </div>
         <div className='relative'>
-          <Search className='text-muted-foreground absolute top-2.5 left-3 h-4 w-4' />
+          <Search className='absolute left-3 top-2.5 h-4 w-4 text-muted-foreground' />
           <Input
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
@@ -325,7 +361,7 @@ function SessionList({
       </CardHeader>
       <CardContent className='p-0'>
         <ScrollArea className='h-[calc(100vh-28rem)]'>
-          <div className='space-y-1 p-2'>
+          <div className='space-y-1.5 p-3'>
             {filteredSessions.length > 0 ? (
               filteredSessions.map((session) => {
                 const lastMessage =
@@ -336,29 +372,29 @@ function SessionList({
                     type='button'
                     onClick={() => onSelect(session.id)}
                     className={cn(
-                      'hover:border-primary/40 hover:bg-primary/5 w-full rounded-lg border border-transparent px-3 py-3 text-left transition',
+                      'w-full rounded-lg border border-transparent px-3 py-2.5 text-left transition-all hover:border-blue-200 hover:bg-blue-50/50 dark:hover:border-blue-800 dark:hover:bg-blue-950/20',
                       session.id === activeSessionId &&
-                        'border-primary/50 bg-primary/5'
+                        'border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/30'
                     )}
                   >
-                    <div className='flex items-center justify-between'>
-                      <span className='text-foreground text-sm font-semibold'>
+                    <div className='flex items-center justify-between mb-1.5'>
+                      <span className='text-sm font-semibold text-foreground line-clamp-1'>
                         {session.title || '未命名对话'}
                       </span>
-                      <span className='text-muted-foreground text-[11px]'>
+                      <span className='text-[11px] text-muted-foreground shrink-0 ml-2'>
                         {formatTime(session.updatedAt)}
                       </span>
                     </div>
-                    <p className='text-muted-foreground mt-2 line-clamp-2 text-xs'>
+                    <p className='text-xs text-muted-foreground line-clamp-2'>
                       {lastMessage?.content || '暂无对话内容'}
                     </p>
                   </button>
                 )
               })
             ) : (
-              <div className='border-muted-foreground/30 bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-3 py-6 text-center'>
-                <MessageSquare className='text-muted-foreground/70 h-6 w-6' />
-                <p className='text-muted-foreground text-sm'>
+              <div className='flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 px-3 py-6 text-center'>
+                <MessageSquare className='h-6 w-6 text-muted-foreground/70' />
+                <p className='text-sm text-muted-foreground'>
                   暂无匹配对话，创建新的交流吧。
                 </p>
                 <Button size='sm' onClick={onCreate}>
@@ -372,7 +408,7 @@ function SessionList({
       </CardContent>
     </Card>
   )
-}
+})
 
 export function RAGConsole() {
   const {
@@ -384,6 +420,7 @@ export function RAGConsole() {
     beginAssistantMessage,
     appendAssistantContent,
     appendAssistantEntity,
+    appendAssistantEvidence,
     updateAssistantMetadata,
     finalizeAssistantMessage,
     updateNextActions,
@@ -403,6 +440,7 @@ export function RAGConsole() {
       beginAssistantMessage: state.beginAssistantMessage,
       appendAssistantContent: state.appendAssistantContent,
       appendAssistantEntity: state.appendAssistantEntity,
+      appendAssistantEvidence: state.appendAssistantEvidence,
       updateAssistantMetadata: state.updateAssistantMetadata,
       finalizeAssistantMessage: state.finalizeAssistantMessage,
       updateNextActions: state.updateNextActions,
@@ -448,8 +486,12 @@ export function RAGConsole() {
       if (!sessionRef.current || !messageRef.current) return
       appendAssistantEntity(sessionRef.current, messageRef.current, entity)
     },
-    onMetadata: (metadata) => {
+    onEvidence: (evidence) => {
       if (!sessionRef.current || !messageRef.current) return
+      appendAssistantEvidence(sessionRef.current, messageRef.current, evidence)
+    },
+    onMetadata: (metadata) => {
+      if (!sessionRef.current || !messageRef.current || !metadata) return
       updateAssistantMetadata(sessionRef.current, messageRef.current, {
         confidenceScore: metadata.confidence_score,
         processingTimeMs: metadata.execution_time_ms,
@@ -527,7 +569,7 @@ export function RAGConsole() {
         source_ids: [],
         retrieval_mode: 'hybrid',
         top_k: 8,
-        timeout: 45,
+        timeout: 120, // 2 分钟超时
         session_id: queued.sessionId,
       })
     },
@@ -583,7 +625,8 @@ export function RAGConsole() {
 
   return (
     <div className='flex flex-col gap-4 lg:flex-row'>
-      <div className='w-full lg:w-72'>
+      {/* 左侧对话列表 */}
+      <div className='w-full lg:w-60'>
         <SessionList
           sessions={sessions}
           activeSessionId={activeSession?.id ?? null}
@@ -594,20 +637,27 @@ export function RAGConsole() {
         />
       </div>
 
+      {/* 中间主内容区 */}
       <div className='flex flex-1 flex-col gap-4'>
-        <Card className='flex flex-col'>
-          <CardHeader className='border-border/50 bg-muted/40 flex flex-col gap-2 border-b'>
+        <Card className='flex flex-col shadow-sm'>
+          {/* 顶部标题栏 */}
+          <CardHeader className='border-b border-border/50 bg-gradient-to-r from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20'>
             <div className='flex flex-wrap items-center justify-between gap-3'>
               <div>
-                <CardTitle className='text-foreground text-xl font-semibold'>
+                <CardTitle className='text-xl font-semibold text-foreground'>
                   GraphRAG 调试台
                 </CardTitle>
-                <p className='text-muted-foreground text-sm'>
+                <p className='text-sm text-muted-foreground mt-1'>
                   输入问题，实时查看生成过程与关联知识。
                 </p>
               </div>
               {isStreaming ? (
-                <Button variant='outline' size='sm' onClick={stopStreaming}>
+                <Button 
+                  variant='outline' 
+                  size='sm' 
+                  onClick={stopStreaming}
+                  className='border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30'
+                >
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   停止生成
                 </Button>
@@ -616,6 +666,7 @@ export function RAGConsole() {
                   variant='outline'
                   size='sm'
                   onClick={handleCreateSession}
+                  className='hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950/30'
                 >
                   <Plus className='mr-2 h-4 w-4' />
                   新建对话
@@ -624,21 +675,22 @@ export function RAGConsole() {
             </div>
           </CardHeader>
 
-          <CardContent className='flex flex-col gap-4 p-0 lg:flex-row'>
-            <div className='flex flex-1 flex-col'>
-              <ScrollArea className='h-[calc(100vh-28rem)] p-6'>
-                <div className='flex flex-col gap-4'>
+          <CardContent className='flex flex-col p-0'>
+            {/* 聊天区域 */}
+            <div className='flex flex-1 flex-col bg-background'>
+              <ScrollArea className='h-[calc(100vh-28rem)] px-6 py-4'>
+                <div className='flex flex-col gap-3'>
                   {activeMessages.length > 0 ? (
                     activeMessages.map((message) => (
                       <MessageBubble key={message.id} message={message} />
                     ))
                   ) : (
-                    <div className='border-muted-foreground/30 bg-muted/30 flex h-full flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center'>
-                      <Sparkles className='text-primary mb-4 h-10 w-10' />
-                      <h3 className='text-foreground text-lg font-semibold'>
+                    <div className='flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/30 bg-muted/30 py-20 text-center'>
+                      <Sparkles className='mb-4 h-10 w-10 text-blue-600 dark:text-blue-400' />
+                      <h3 className='text-lg font-semibold text-foreground'>
                         欢迎使用 GraphRAG 调试台
                       </h3>
-                      <p className='text-muted-foreground mt-2 max-w-md text-sm'>
+                      <p className='mt-2 max-w-md text-sm text-muted-foreground'>
                         输入任何关于代码或知识库的问题，即可实时获取图谱增强回答、关联证据与下一步建议。
                       </p>
                     </div>
@@ -648,9 +700,10 @@ export function RAGConsole() {
 
               <Separator />
 
-              <div className='space-y-3 p-6 pt-4'>
+              {/* 输入区域 - 优化间距 */}
+              <div className='space-y-3 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/30'>
                 {error && (
-                  <div className='border-destructive/40 bg-destructive/10 text-destructive flex items-center justify-between rounded-md border px-3 py-2 text-sm'>
+                  <div className='flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm text-destructive'>
                     <div className='flex items-center gap-2'>
                       <AlertCircle className='h-4 w-4' />
                       <span>{error}</span>
@@ -666,7 +719,7 @@ export function RAGConsole() {
                   </div>
                 )}
 
-                <div className='flex items-end gap-3'>
+                <div className='flex items-end gap-2.5'>
                   <Textarea
                     value={composerValue}
                     onChange={(event) => setComposerValue(event.target.value)}
@@ -677,13 +730,13 @@ export function RAGConsole() {
                         : '请输入问题，按 Enter 发送（Shift + Enter 换行）'
                     }
                     disabled={isStreaming}
-                    className='min-h-[90px] flex-1 resize-none'
+                    className='min-h-[80px] flex-1 resize-none'
                   />
                   <Button
                     size='lg'
                     disabled={isStreaming || !composerValue.trim()}
                     onClick={handleSubmit}
-                    className='h-[90px] px-4'
+                    className='h-[80px] w-[80px] rounded-xl'
                   >
                     {isStreaming ? (
                       <Loader2 className='h-5 w-5 animate-spin' />
@@ -694,18 +747,19 @@ export function RAGConsole() {
                 </div>
               </div>
             </div>
-
-            <Separator orientation='vertical' className='hidden lg:block' />
-
-            <div className='border-border/50 bg-muted/30 w-full overflow-y-auto border-t p-4 lg:w-80 lg:max-h-[calc(100vh-28rem)] lg:border-t-0 lg:border-l'>
-              <InsightPanel
-                message={latestAssistantMessage}
-                isStreaming={isStreaming}
-                onQuickAction={handleQuickAction}
-              />
-            </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* 右侧洞察面板 - 独立侧边栏 */}
+      <div className='w-full lg:w-80'>
+        <div className='sticky top-4'>
+          <InsightPanel
+            message={latestAssistantMessage}
+            isStreaming={isStreaming}
+            onQuickAction={handleQuickAction}
+          />
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 import type { Identifier, ISODateString } from '@/types/common'
 import type { Entity } from '@/types/graph-query'
-import type { RagMessage, RagSession } from '@/types/rag'
+import type { RagMessage, RagSession, RagEvidence } from '@/types/rag'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
@@ -35,6 +35,11 @@ interface RagConsoleState {
     sessionId: SessionIdentifier,
     messageId: MessageIdentifier,
     entity: Entity
+  ) => void
+  appendAssistantEvidence: (
+    sessionId: SessionIdentifier,
+    messageId: MessageIdentifier,
+    evidence: RagEvidence
   ) => void
   updateAssistantMetadata: (
     sessionId: SessionIdentifier,
@@ -288,6 +293,26 @@ export const useRagConsoleStore = create<RagConsoleState>()(
                       ? {
                           ...message,
                           entities: [...(message.entities ?? []), entity],
+                        }
+                      : message
+                  ),
+                }
+          ),
+        }))
+      },
+
+      appendAssistantEvidence: (sessionId, messageId, evidence) => {
+        set((state) => ({
+          sessions: state.sessions.map((session) =>
+            session.id !== sessionId
+              ? session
+              : {
+                  ...session,
+                  messages: session.messages.map((message) =>
+                    message.id === messageId
+                      ? {
+                          ...message,
+                          evidence: [...(message.evidence ?? []), evidence],
                         }
                       : message
                   ),

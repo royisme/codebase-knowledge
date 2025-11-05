@@ -85,3 +85,34 @@
     height: 0;
   }
 }
+
+/* Shiki code highlighting styles */
+.shiki-container pre {
+  margin: 0 !important;
+  padding: 1rem !important;
+  background: transparent !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+}
+
+.shiki-container code {
+  counter-reset: line;
+}
+
+.shiki-container code > .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 3em;
+  text-align: right;
+  margin-right: 1.5em;
+  color: hsl(var(--muted-foreground));
+  user-select: none;
+}
+
+.shiki-container code > .line.highlighted {
+  background-color: rgba(255, 255, 0, 0.1);
+  border-left: 3px solid rgba(255, 255, 0, 0.5);
+  padding-left: 0.5em;
+  margin-left: -0.5em;
+}

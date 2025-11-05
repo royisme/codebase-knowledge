@@ -19,6 +19,7 @@ import { apiClient } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
 import { upsertKnowledgeNote } from '@/lib/knowledge-notes-service'
 import { useStreamingQuery } from '@/hooks/useStreamingQuery'
+import { GraphRAGResponse } from '@/components/graphrag-response'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -70,7 +71,7 @@ export const KnowledgeQueryPage = () => {
     'graph' | 'vector' | 'hybrid'
   >('hybrid')
   const [topK, setTopK] = useState(8)
-  const [timeout, setTimeout] = useState(30)
+  const [timeout, setTimeout] = useState(120) // 增加到 120 秒
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   const { addNote, addToHistory } = useKnowledgeNoteStore()
@@ -272,7 +273,7 @@ export const KnowledgeQueryPage = () => {
                     </Select>
                   </div>
                   <div className='space-y-2'>
-                    <Label>超时(秒)</Label>
+                    <Label>超时时间 (秒)</Label>
                     <Select
                       value={timeout.toString()}
                       onValueChange={(v) => setTimeout(Number(v))}
@@ -282,9 +283,10 @@ export const KnowledgeQueryPage = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='15'>15</SelectItem>
-                        <SelectItem value='30'>30</SelectItem>
-                        <SelectItem value='60'>60</SelectItem>
+                        <SelectItem value='60'>60秒 (快速)</SelectItem>
+                        <SelectItem value='120'>120秒 (标准)</SelectItem>
+                        <SelectItem value='180'>180秒 (复杂)</SelectItem>
+                        <SelectItem value='300'>300秒 (详细)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -380,14 +382,7 @@ export const KnowledgeQueryPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className='prose prose-sm max-w-none'>
-                  <div className='text-base leading-relaxed whitespace-pre-wrap'>
-                    {text}
-                  </div>
-                  {isStreaming && (
-                    <span className='bg-primary ml-1 inline-block h-5 w-2 animate-pulse' />
-                  )}
-                </div>
+                <GraphRAGResponse content={text} streaming={isStreaming} />
               </CardContent>
             </Card>
 

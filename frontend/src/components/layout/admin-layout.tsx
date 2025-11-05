@@ -38,8 +38,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 'flex h-screen flex-col'
               )}
             >
-              <main className='flex-1 overflow-hidden'>
-                <div className='h-full p-6'>{children ?? <Outlet />}</div>
+              <main className='flex-1 overflow-y-auto'>
+                <div className='p-6'>{children ?? <Outlet />}</div>
               </main>
             </SidebarInset>
           </SidebarProvider>

@@ -447,8 +447,19 @@ export function AuditPage() {
                       </TableCell>
                       <TableCell>
                         <div className='flex items-center space-x-2'>
-                          <User className='text-muted-foreground h-4 w-4' />
-                          <span className='font-medium'>{audit.actor}</span>
+                          {audit.actor === 'system' ? (
+                            <>
+                              <Activity className='text-primary h-4 w-4' />
+                              <span className='text-muted-foreground font-medium'>
+                                系统
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <User className='text-muted-foreground h-4 w-4' />
+                              <span className='font-medium'>{audit.actor}</span>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>

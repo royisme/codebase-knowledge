@@ -64,4 +64,4 @@ dist-ssr
 *.sln
 *.sw?
 frontend/.tmp/
-
+.serena/

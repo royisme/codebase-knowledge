@@ -36,3 +36,24 @@ export function getJobDetail(id: string) {
     endpoint: API_ENDPOINTS.jobs.detail(id),
   })
 }
+
+export async function cancelJob(jobId: string): Promise<{ message: string; job_id: string; status: string }> {
+  return apiClient({
+    endpoint: API_ENDPOINTS.jobs.cancel(jobId),
+    method: 'POST',
+  })
+}
+
+export async function deleteJob(jobId: string): Promise<void> {
+  return apiClient({
+    endpoint: API_ENDPOINTS.jobs.delete(jobId),
+    method: 'DELETE',
+  })
+}
+
+export async function retryJob(jobId: string): Promise<{ message: string; job_id: string; task_id: string; status: string }> {
+  return apiClient({
+    endpoint: API_ENDPOINTS.jobs.retry(jobId),
+    method: 'POST',
+  })
+}

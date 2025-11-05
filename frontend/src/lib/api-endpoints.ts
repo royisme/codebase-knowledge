@@ -80,6 +80,9 @@ export const API_ENDPOINTS = {
   jobs: {
     listBySource: (id: string) => `/api/v1/admin/sources/${id}/jobs`,
     detail: (id: string) => `/api/v1/admin/sources/jobs/${id}`,
+    cancel: (id: string) => `/api/v1/admin/sources/jobs/${id}/cancel`,
+    delete: (id: string) => `/api/v1/admin/sources/jobs/${id}`,
+    retry: (id: string) => `/api/v1/admin/sources/jobs/${id}/retry`,
   },
 
   // ==================== 用户仪表盘 ====================

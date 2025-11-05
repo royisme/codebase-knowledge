@@ -67,7 +67,7 @@ export function JobDetailPage() {
     queryKey: ['job', jobId],
     queryFn: () => getJobDetail(jobId),
     refetchInterval: (query) =>
-      query.state.data?.status === 'running' ? 3000 : false,
+      query.state.data?.status === 'running' ? 8000 : false,
   })
 
   useEffect(() => {

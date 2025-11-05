@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, Link } from '@tanstack/react-router'
 import type { Job, JobListResponse, JobStatus } from '@/types/job'
 import { zhCN } from 'date-fns/locale'
-import { Loader2, RefreshCw, ArrowLeft } from 'lucide-react'
+import { Loader2, RefreshCw, ArrowLeft, XCircle, Trash2, RotateCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { listJobs } from '@/lib/job-service'
+import { listJobs, cancelJob, deleteJob, retryJob } from '@/lib/job-service'
 import { getRepository } from '@/lib/repository-service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const JOB_STATUS_CONFIG: Record<
   JobStatus,
@@ -60,6 +70,11 @@ const STAGE_LABELS: Record<string, string> = {
 export function JobListPage() {
   const { repoId } = useParams({ from: '/admin/repositories/$repoId/jobs' })
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [retryDialogOpen, setRetryDialogOpen] = useState(false)
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const queryClient = useQueryClient()
 
   // 获取仓库信息
   const { data: repository } = useQuery({
@@ -81,13 +96,68 @@ export function JobListPage() {
         status: statusFilter === 'all' ? undefined : statusFilter,
       }),
     refetchInterval: (query) => {
-      // 如果有运行中的任务，每3秒轮询一次
+      // 如果有运行中的任务，每8秒轮询一次，减少后台压力
       const hasRunning = query.state.data?.items.some(
         (job: Job) => job.status === 'running'
       )
-      return hasRunning ? 3000 : false
+      return hasRunning ? 8000 : false
     },
   })
+
+  // 取消任务
+  const cancelMutation = useMutation({
+    mutationFn: cancelJob,
+    onSuccess: () => {
+      toast.success('任务已取消')
+      queryClient.invalidateQueries({ queryKey: ['jobs', repoId] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || '取消任务失败')
+    },
+  })
+
+  // 删除任务
+  const deleteMutation = useMutation({
+    mutationFn: deleteJob,
+    onSuccess: () => {
+      toast.success('任务已删除')
+      setDeleteDialogOpen(false)
+      setSelectedJob(null)
+      queryClient.invalidateQueries({ queryKey: ['jobs', repoId] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || '删除任务失败')
+    },
+  })
+
+  // 重试任务
+  const retryMutation = useMutation({
+    mutationFn: retryJob,
+    onSuccess: () => {
+      toast.success('任务已重新提交')
+      setRetryDialogOpen(false)
+      setSelectedJob(null)
+      queryClient.invalidateQueries({ queryKey: ['jobs', repoId] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || '重试任务失败')
+    },
+  })
+
+  const handleCancelJob = (job: Job) => {
+    setSelectedJob(job)
+    setCancelDialogOpen(true)
+  }
+
+  const handleDeleteJob = (job: Job) => {
+    setSelectedJob(job)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleRetryJob = (job: Job) => {
+    setSelectedJob(job)
+    setRetryDialogOpen(true)
+  }
 
   useEffect(() => {
     if (isError) {
@@ -247,14 +317,56 @@ export function JobListPage() {
                     <TableCell>{formatTime(job.started_at)}</TableCell>
                     <TableCell>{formatDuration(job)}</TableCell>
                     <TableCell>
-                      <Button variant='ghost' size='sm' asChild>
-                        <Link
-                          to='/admin/repositories/$repoId/jobs/$jobId'
-                          params={{ repoId, jobId: job.id }}
-                        >
-                          查看详情
-                        </Link>
-                      </Button>
+                      <div className='flex items-center gap-1'>
+                        {/* 查看详情 */}
+                        <Button variant='ghost' size='sm' asChild>
+                          <Link
+                            to='/admin/repositories/$repoId/jobs/$jobId'
+                            params={{ repoId, jobId: job.id }}
+                          >
+                            详情
+                          </Link>
+                        </Button>
+
+                        {/* 取消任务 - 仅 pending 和 running 状态可用 */}
+                        {(job.status === 'pending' || job.status === 'running') && (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => handleCancelJob(job)}
+                            disabled={cancelMutation.isPending}
+                            title='取消任务'
+                          >
+                            <XCircle className='h-4 w-4' />
+                          </Button>
+                        )}
+
+                        {/* 重试任务 - 仅 failed 和 cancelled 状态可用 */}
+                        {(job.status === 'failed' || job.status === 'cancelled') && (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => handleRetryJob(job)}
+                            disabled={retryMutation.isPending}
+                            title='重试任务'
+                          >
+                            <RotateCw className='h-4 w-4' />
+                          </Button>
+                        )}
+
+                        {/* 删除任务 - 仅非运行状态可用 */}
+                        {job.status !== 'running' && job.status !== 'pending' && (
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => handleDeleteJob(job)}
+                            disabled={deleteMutation.isPending}
+                            title='删除任务'
+                          >
+                            <Trash2 className='h-4 w-4 text-destructive' />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -263,6 +375,75 @@ export function JobListPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除任务 <code className='font-mono'>{selectedJob?.id.slice(0, 8)}</code> 吗？
+              此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedJob && deleteMutation.mutate(selectedJob.id)}
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 取消确认对话框 */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认取消任务</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要取消任务 <code className='font-mono'>{selectedJob?.id.slice(0, 8)}</code> 吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedJob) {
+                  cancelMutation.mutate(selectedJob.id)
+                  setCancelDialogOpen(false)
+                  setSelectedJob(null)
+                }
+              }}
+            >
+              确认取消
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 重试确认对话框 */}
+      <AlertDialog open={retryDialogOpen} onOpenChange={setRetryDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认重试任务</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要重试任务 <code className='font-mono'>{selectedJob?.id.slice(0, 8)}</code> 吗？
+              任务将被重新提交到队列。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedJob && retryMutation.mutate(selectedJob.id)}
+            >
+              确认重试
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

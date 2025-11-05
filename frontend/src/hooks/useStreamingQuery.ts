@@ -57,12 +57,26 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
   const handleStreamEvent = useCallback(
     (event: StreamEvent) => {
       switch (event.type) {
-        case 'text':
+        case 'text_delta':
+          // Token-level streaming (新格式)
           setState((prev) => ({
             ...prev,
             text: prev.text + event.content,
           }))
           handlers?.onText?.(event.content)
+          break
+
+        case 'text':
+          // 向后兼容旧格式
+          setState((prev) => ({
+            ...prev,
+            text: prev.text + event.content,
+          }))
+          handlers?.onText?.(event.content)
+          break
+
+        case 'status':
+          // 状态事件（可选处理）
           break
 
         case 'entity':
@@ -73,19 +87,33 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
           handlers?.onEntity?.(event.entity)
           break
 
-        case 'metadata':
+        case 'evidence':
+          // 证据事件 - 不存储在state，直接传递给handler
+          handlers?.onEvidence?.(event.evidence)
+          break
+
+        case 'metadata': {
+          // 支持新旧两种格式
+          const metadataData = event.data || {
+            execution_time_ms: event.execution_time_ms || 0,
+            sources_queried: event.sources_queried || [],
+            confidence_score: event.confidence_score,
+            retrieval_mode: event.retrieval_mode,
+          }
+          
           setState((prev) => ({
             ...prev,
-            metadata: event.data,
+            metadata: metadataData,
             confidenceScore:
-              typeof event.data.confidence_score === 'number'
-                ? event.data.confidence_score
+              typeof metadataData.confidence_score === 'number'
+                ? metadataData.confidence_score
                 : prev.confidenceScore,
-            sourcesQueried: event.data.sources_queried,
-            processingTimeMs: event.data.execution_time_ms,
+            sourcesQueried: metadataData.sources_queried || prev.sourcesQueried,
+            processingTimeMs: metadataData.execution_time_ms || prev.processingTimeMs,
           }))
-          handlers?.onMetadata?.(event.data)
+          handlers?.onMetadata?.(metadataData)
           break
+        }
 
         case 'done':
           setState((prev) => ({
