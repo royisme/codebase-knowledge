@@ -121,8 +121,8 @@ function InsightPanel({
   const metadata = message?.metadata
 
   return (
-    <div className='flex h-full w-full flex-col gap-4 lg:w-80'>
-      <Card className='flex-1'>
+    <div className='flex w-full flex-col gap-4'>
+      <Card>
         <CardHeader className='pb-4'>
           <CardTitle className='flex items-center gap-2 text-sm font-semibold'>
             <Sparkles className='text-primary h-4 w-4' />
@@ -300,7 +300,7 @@ function SessionList({
   }, [sessions, searchQuery])
 
   return (
-    <Card className='h-full w-full lg:w-72'>
+    <Card className='w-full'>
       <CardHeader className='space-y-4'>
         <div className='flex items-center justify-between'>
           <CardTitle className='text-base font-semibold'>对话列表</CardTitle>
@@ -324,7 +324,7 @@ function SessionList({
         </div>
       </CardHeader>
       <CardContent className='p-0'>
-        <ScrollArea className='h-[calc(100vh-260px)] lg:h-[calc(100vh-220px)]'>
+        <ScrollArea className='h-[calc(100vh-28rem)]'>
           <div className='space-y-1 p-2'>
             {filteredSessions.length > 0 ? (
               filteredSessions.map((session) => {
@@ -582,7 +582,7 @@ export function RAGConsole() {
   }, [abort, registerFailure])
 
   return (
-    <div className='flex h-full flex-col gap-4 p-4 lg:flex-row'>
+    <div className='flex flex-col gap-4 lg:flex-row'>
       <div className='w-full lg:w-72'>
         <SessionList
           sessions={sessions}
@@ -594,8 +594,8 @@ export function RAGConsole() {
         />
       </div>
 
-      <div className='flex h-full flex-1 flex-col gap-4'>
-        <Card className='flex h-full flex-col'>
+      <div className='flex flex-1 flex-col gap-4'>
+        <Card className='flex flex-col'>
           <CardHeader className='border-border/50 bg-muted/40 flex flex-col gap-2 border-b'>
             <div className='flex flex-wrap items-center justify-between gap-3'>
               <div>
@@ -624,9 +624,9 @@ export function RAGConsole() {
             </div>
           </CardHeader>
 
-          <CardContent className='flex flex-1 flex-col gap-4 p-0 lg:flex-row'>
-            <div className='flex h-full flex-1 flex-col'>
-              <ScrollArea className='flex-1 p-6'>
+          <CardContent className='flex flex-col gap-4 p-0 lg:flex-row'>
+            <div className='flex flex-1 flex-col'>
+              <ScrollArea className='h-[calc(100vh-28rem)] p-6'>
                 <div className='flex flex-col gap-4'>
                   {activeMessages.length > 0 ? (
                     activeMessages.map((message) => (
@@ -697,7 +697,7 @@ export function RAGConsole() {
 
             <Separator orientation='vertical' className='hidden lg:block' />
 
-            <div className='border-border/50 bg-muted/30 w-full border-t p-4 lg:w-80 lg:border-t-0 lg:border-l'>
+            <div className='border-border/50 bg-muted/30 w-full overflow-y-auto border-t p-4 lg:w-80 lg:max-h-[calc(100vh-28rem)] lg:border-t-0 lg:border-l'>
               <InsightPanel
                 message={latestAssistantMessage}
                 isStreaming={isStreaming}
