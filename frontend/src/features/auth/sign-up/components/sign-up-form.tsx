@@ -85,10 +85,10 @@ export function SignUpForm({
 
               toast.success('登录成功！', { id: 'auto-login' })
               auth.setAuth(loginResponse)
-              navigate({ to: '/', replace: true })
-            } catch (_loginError) {
+              void navigate({ to: '/', replace: true })
+            } catch {
               toast.error('自动登录失败，请手动登录', { id: 'auto-login' })
-              navigate({ to: '/sign-in' })
+              void navigate({ to: '/sign-in' })
             }
           },
         },

@@ -2,7 +2,12 @@
  * 索引任务相关类型定义
  */
 
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type JobStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
 
 export type JobStage =
   | 'git_clone'
@@ -20,6 +25,13 @@ export interface JobConfig {
 }
 
 export interface JobResultSummary {
+  stage?: JobStage | string
+  stage_history?: Array<{
+    stage: JobStage | string
+    message?: string
+    timestamp?: string
+    [key: string]: unknown
+  }>
   files_scanned?: number
   files_parsed?: number
   files_failed?: number
@@ -32,6 +44,7 @@ export interface JobResultSummary {
     file: string
     error: string
   }>
+  [key: string]: unknown
 }
 
 export interface Job {
@@ -48,6 +61,7 @@ export interface Job {
   result_summary?: JobResultSummary
   created_at: string
   updated_at: string
+  logs?: JobLog[]
 }
 
 export interface JobListResponse {

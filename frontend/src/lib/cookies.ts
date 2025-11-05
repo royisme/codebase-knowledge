@@ -33,7 +33,7 @@ export function setCookie(
   // 添加 SameSite 和 Secure 属性以提高安全性和兼容性
   const isSecure = window.location.protocol === 'https:'
   const secureFlag = isSecure ? '; Secure' : ''
-  
+
   document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`
 }
 

@@ -121,7 +121,7 @@ export function LdapAuthForm({ email, company }: LdapAuthFormProps) {
       auth.setAuth(authResponse)
 
       // 登录成功后跳转
-      navigate({ to: '/', replace: true })
+      void navigate({ to: '/', replace: true })
     } catch {
       // 错误已在 toast.promise 的 error 回调中处理
       // 重置状态，允许用户重新尝试

@@ -82,10 +82,14 @@ export interface UpdateRepositoryRequest {
 }
 
 export interface TriggerIndexRequest {
-  force_full: boolean
+  force_full?: boolean
 }
 
 export interface TriggerIndexResponse {
-  job_id: string
-  status: 'queued'
+  message: string
+  job_id?: string
+  task_id?: string
+  status?: string
+  source_id?: string
+  source_name?: string
 }

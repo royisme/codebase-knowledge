@@ -15,7 +15,7 @@ type AdminLayoutProps = {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const defaultOpen = getCookie('sidebar_state') !== 'false'
   return (
-    <div data-theme="admin">
+    <div data-theme='admin'>
       <SearchProvider>
         <LayoutProvider>
           <SidebarProvider defaultOpen={defaultOpen}>
@@ -32,10 +32,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
                 // If layout is fixed and sidebar is inset,
                 // set the height to 100svh - spacing (total margins) to prevent overflow
-                'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]'
+                'peer-data-[variant=inset]:has-[[data-layout=fixed]]:h-[calc(100svh-(var(--spacing)*4))]',
+
+                // Align with authenticated user layout: flex column with full height
+                'flex h-screen flex-col'
               )}
             >
-              {children ?? <Outlet />}
+              <main className='flex-1 overflow-hidden'>
+                <div className='h-full p-6'>{children ?? <Outlet />}</div>
+              </main>
             </SidebarInset>
           </SidebarProvider>
         </LayoutProvider>

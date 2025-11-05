@@ -55,7 +55,7 @@ export function ForgotPasswordForm({
     try {
       await submission
       form.reset()
-      navigate({ to: '/sign-in' })
+      void navigate({ to: '/sign-in' })
     } catch {
       // 错误已在 toast 中处理
     } finally {

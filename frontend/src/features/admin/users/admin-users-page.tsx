@@ -1,7 +1,7 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import type { AdminUser, Identifier, RoleDefinition, UserStatus } from '@/types'
+import type { AdminUser, AdminUserListResponse, UserStatus } from '@/types'
 import {
   RefreshCw,
   Search as SearchIcon,
@@ -12,10 +12,8 @@ import { toast } from 'sonner'
 import {
   listAdminUsers,
   resetUserPassword,
-  updateUserRole,
   updateUserStatus,
 } from '@/lib/admin-users-service'
-import { fetchRoles } from '@/lib/rbac-service'
 import { ActionMenu } from '@/components/ui/action-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -36,14 +34,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -72,7 +64,6 @@ const STATUS_OPTIONS: Array<{ value: UserStatus; label: string }> = [
 ]
 
 type UserAction =
-  | { type: 'change_role'; user: AdminUser }
   | { type: 'reset_password'; user: AdminUser }
   | { type: 'change_status'; user: AdminUser; newStatus: UserStatus }
   | null
@@ -102,7 +93,7 @@ export function AdminUsersPage() {
     ]
   }, [page, pageSize, deferredSearch, statusFilters])
 
-  const usersQuery = useQuery({
+  const usersQuery = useQuery<AdminUserListResponse>({
     queryKey,
     queryFn: () =>
       listAdminUsers({
@@ -114,22 +105,11 @@ export function AdminUsersPage() {
     placeholderData: (previous) => previous,
   })
 
-  const rolesQuery = useQuery({
-    queryKey: ['rbac', 'roles'],
-    queryFn: fetchRoles,
-  })
-
-  const updateRoleMutation = useMutation({
-    mutationFn: updateUserRole,
-    onSuccess: () => {
-      toast.success('用户角色已更新')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
-      setUserAction(null)
-    },
-    onError: () => {
-      toast.error('更新用户角色失败')
-    },
-  })
+  useEffect(() => {
+    if (usersQuery.isError) {
+      toast.error('用户列表加载失败，请稍后重试')
+    }
+  }, [usersQuery.isError])
 
   const resetPasswordMutation = useMutation({
     mutationFn: resetUserPassword,
@@ -146,7 +126,7 @@ export function AdminUsersPage() {
     mutationFn: updateUserStatus,
     onSuccess: () => {
       toast.success('用户状态已更新')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setUserAction(null)
     },
     onError: () => {
@@ -155,9 +135,7 @@ export function AdminUsersPage() {
   })
 
   const isMutating =
-    updateRoleMutation.isPending ||
-    resetPasswordMutation.isPending ||
-    updateStatusMutation.isPending
+    resetPasswordMutation.isPending || updateStatusMutation.isPending
 
   const updateSearchParam = (updates: Partial<AdminUsersSearchParams>) => {
     navigate({
@@ -193,9 +171,6 @@ export function AdminUsersPage() {
 
     try {
       switch (userAction.type) {
-        case 'change_role':
-          // 角色切换将在下拉菜单中直接处理
-          break
         case 'reset_password':
           await resetPasswordMutation.mutateAsync({
             userId: userAction.user.id,
@@ -211,13 +186,6 @@ export function AdminUsersPage() {
     } catch {
       // 错误处理已在 mutations 中完成
     }
-  }
-
-  const handleChangeRole = async (
-    userId: Identifier,
-    roleIds: Identifier[]
-  ) => {
-    await updateRoleMutation.mutateAsync({ userId, roleIds })
   }
 
   return (
@@ -271,7 +239,7 @@ export function AdminUsersPage() {
         </DropdownMenu>
 
         <Button
-          onClick={() => usersQuery.refetch()}
+          onClick={() => void usersQuery.refetch()}
           variant='ghost'
           size='icon'
           className='ml-auto'
@@ -289,7 +257,13 @@ export function AdminUsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {usersQuery.isLoading ? (
+          {usersQuery.isError ? (
+            <ErrorState
+              title='无法加载用户列表'
+              description='请检查网络连接或稍后再试，如持续报错请联系平台团队。'
+              onRetry={() => void usersQuery.refetch()}
+            />
+          ) : usersQuery.isLoading ? (
             <div className='space-y-4'>
               {Array.from({ length: 5 }).map((_, index) => (
                 <div
@@ -338,9 +312,7 @@ export function AdminUsersPage() {
                         <UserRow
                           key={user.id}
                           user={user}
-                          roles={rolesQuery.data || []}
                           onAction={handleUserAction}
-                          onRoleChange={handleChangeRole}
                           isMutating={isMutating}
                         />
                       ))}
@@ -384,7 +356,7 @@ export function AdminUsersPage() {
 
       {/* 确认对话框 */}
       <ConfirmDialog
-        open={Boolean(userAction && userAction.type !== 'change_role')}
+        open={Boolean(userAction)}
         onOpenChange={(open) => {
           if (!open) setUserAction(null)
         }}
@@ -417,19 +389,11 @@ export function AdminUsersPage() {
 
 interface UserRowProps {
   user: AdminUser
-  roles: RoleDefinition[]
   onAction: (action: UserAction) => void
-  onRoleChange: (userId: Identifier, roleIds: Identifier[]) => void
   isMutating: boolean
 }
 
-function UserRow({
-  user,
-  roles,
-  onAction,
-  onRoleChange,
-  isMutating,
-}: UserRowProps) {
+function UserRow({ user, onAction, isMutating }: UserRowProps) {
   const getStatusBadge = (status: string) => {
     const variants: Record<
       string,
@@ -476,24 +440,9 @@ function UserRow({
       </TableCell>
       <TableCell>{getStatusBadge(user.status)}</TableCell>
       <TableCell>
-        <Select
-          value={user.roleIds[0] || ''}
-          onValueChange={(value) =>
-            onRoleChange(user.id, [value as Identifier])
-          }
-          disabled={isMutating || user.status !== 'active'}
-        >
-          <SelectTrigger className='w-32'>
-            <SelectValue placeholder='选择角色' />
-          </SelectTrigger>
-          <SelectContent>
-            {roles.map((role) => (
-              <SelectItem key={role.id} value={role.id}>
-                {role.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Badge variant='outline'>
+          {user.roleIds && user.roleIds.length > 0 ? user.roleIds[0] : '未配置'}
+        </Badge>
       </TableCell>
       <TableCell>
         <div className='text-muted-foreground text-sm'>

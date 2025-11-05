@@ -1,22 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type {
-  ActionVerb,
-  Identifier,
-  PolicyRule,
-  ResourceIdentifier,
-  RoleDefinition,
-} from '@/types'
-import { Plus, Settings, Shield, FolderOpen, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import {
+  createPolicy,
+  deletePolicy,
   fetchPolicies,
   fetchRoles,
-  updatePolicy,
-  type ListPoliciesResponse,
+  updatePolicyAction,
+  type RbacPolicy,
+  type RbacRole,
 } from '@/lib/rbac-service'
-import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -25,8 +18,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
+import { ErrorState } from '@/components/ui/error-state'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -36,303 +36,240 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const DISPLAY_ACTIONS = ['read', 'admin'] as const satisfies ActionVerb[]
-const ACTION_LABELS: Record<(typeof DISPLAY_ACTIONS)[number], string> = {
-  read: '读取',
-  admin: '管理',
-}
-const DISPLAY_ACTION_SET = new Set<ActionVerb>(DISPLAY_ACTIONS)
-
-const RESOURCE_LABELS: Record<ResourceIdentifier, string> = {
-  knowledge_sources: '知识源',
-  users: '用户',
-  policies: '策略',
-}
-
-const RESOURCE_ICONS: Record<ResourceIdentifier, React.ReactNode> = {
-  knowledge_sources: <FolderOpen className='h-4 w-4' />,
-  users: <Users className='h-4 w-4' />,
-  policies: <Shield className='h-4 w-4' />,
-}
+const ACTION_OPTIONS = [
+  { value: 'read', label: '读取' },
+  { value: 'admin', label: '管理' },
+]
 
 export function PoliciesPage() {
-  const [selectedRole, setSelectedRole] = useState<Identifier | null>(null)
   const queryClient = useQueryClient()
+  const [newPolicy, setNewPolicy] = useState({
+    subject: '',
+    resource: '',
+    action: 'read',
+  })
 
-  const rolesQuery = useQuery({
+  const rolesQuery = useQuery<RbacRole[]>({
     queryKey: ['rbac', 'roles'],
     queryFn: fetchRoles,
   })
 
-  const policiesQuery = useQuery({
+  const policiesQuery = useQuery<RbacPolicy[]>({
     queryKey: ['rbac', 'policies'],
     queryFn: fetchPolicies,
   })
 
-  const mutation = useMutation({
-    mutationFn: updatePolicy,
-    onSuccess: (updated) => {
-      queryClient.setQueryData<ListPoliciesResponse | undefined>(
-        ['rbac', 'policies'],
-        (existing) => {
-          if (!existing) return existing
-          return {
-            ...existing,
-            policies: existing.policies.map((policy) =>
-              policy.id === updated.id ? updated : policy
-            ),
-          }
-        }
-      )
+  useEffect(() => {
+    if (rolesQuery.isError) {
+      toast.error('角色数据加载失败，请稍后重试')
+    }
+  }, [rolesQuery.isError])
+
+  useEffect(() => {
+    if (policiesQuery.isError) {
+      toast.error('策略列表加载失败，请稍后再试')
+    }
+  }, [policiesQuery.isError])
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: string }) =>
+      updatePolicyAction(id, action),
+    onSuccess: () => {
       toast.success('权限已更新')
+      void queryClient.invalidateQueries({ queryKey: ['rbac', 'policies'] })
     },
     onError: () => {
-      toast.error('权限更新失败')
+      toast.error('更新权限失败')
     },
   })
 
-  const policiesResponse = policiesQuery.data
-  const resources =
-    policiesResponse?.resources ??
-    ({} as Record<ResourceIdentifier, ActionVerb[]>)
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deletePolicy(id),
+    onSuccess: () => {
+      toast.success('策略已删除')
+      void queryClient.invalidateQueries({ queryKey: ['rbac', 'policies'] })
+    },
+    onError: () => {
+      toast.error('删除策略失败')
+    },
+  })
 
-  const rolePolicyMap = useMemo(() => {
-    if (!policiesResponse) return {}
-    const acc: Record<string, PolicyRule[]> = {}
-    for (const policy of policiesResponse.policies) {
-      acc[policy.roleId] = acc[policy.roleId] ?? []
-      acc[policy.roleId].push(policy)
-    }
-    return acc
-  }, [policiesResponse])
-
-  const isLoading = rolesQuery.isLoading || policiesQuery.isLoading
-
-  if (isLoading) {
-    return (
-      <div className='space-y-6'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-2xl font-bold'>策略管理</h1>
-            <p className='text-muted-foreground'>管理角色与资源的权限策略</p>
-          </div>
-          <Button>
-            <Plus className='mr-2 h-4 w-4' />
-            新增策略
-          </Button>
-        </div>
-        <div className='grid gap-6 lg:grid-cols-2'>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className='min-h-64 rounded-lg' />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const createMutation = useMutation({
+    mutationFn: () => createPolicy(newPolicy),
+    onSuccess: () => {
+      toast.success('策略已创建')
+      void queryClient.invalidateQueries({ queryKey: ['rbac', 'policies'] })
+      setNewPolicy({ subject: '', resource: '', action: 'read' })
+    },
+    onError: () => {
+      toast.error('创建策略失败，请检查输入')
+    },
+  })
 
   const roles = rolesQuery.data ?? []
+  const policies = policiesQuery.data ?? []
+
+  const handleActionChange = (policy: RbacPolicy, action: string) => {
+    if (policy.action === action) return
+    updateMutation.mutate({ id: policy.id, action })
+  }
+
+  const handleCreatePolicy = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!newPolicy.subject || !newPolicy.resource) {
+      toast.error('请填写角色与资源')
+      return
+    }
+    createMutation.mutate()
+  }
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-2xl font-bold'>策略管理</h1>
-          <p className='text-muted-foreground'>管理角色与资源的权限策略</p>
-        </div>
-        <div className='flex gap-2'>
-          <Button variant='outline'>
-            <Settings className='mr-2 h-4 w-4' />
-            批量操作
-          </Button>
-          <Button>
-            <Plus className='mr-2 h-4 w-4' />
-            新增策略
-          </Button>
-        </div>
-      </div>
-
-      {/* 资源树概览 */}
       <Card>
         <CardHeader>
-          <CardTitle>资源权限概览</CardTitle>
-          <CardDescription>查看所有资源的权限分配情况</CardDescription>
+          <CardTitle>新增策略</CardTitle>
+          <CardDescription>为角色添加新的资源访问权限</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='grid gap-4 md:grid-cols-3'>
-            {Object.entries(resources).map(([resource, actions]) => (
-              <div
-                key={resource}
-                className='flex items-center justify-between rounded-lg border p-4'
+          {rolesQuery.isError ? (
+            <ErrorState
+              title='无法加载角色数据'
+              description='请刷新页面或稍后再试，若问题持续请联系平台团队。'
+              onRetry={() => void rolesQuery.refetch()}
+            />
+          ) : (
+            <form
+              className='grid gap-4 md:grid-cols-4'
+              onSubmit={handleCreatePolicy}
+            >
+              <Select
+                value={newPolicy.subject}
+                onValueChange={(value) =>
+                  setNewPolicy((prev) => ({ ...prev, subject: value }))
+                }
               >
-                <div className='flex items-center space-x-3'>
-                  {RESOURCE_ICONS[resource as ResourceIdentifier]}
-                  <div>
-                    <div className='font-medium'>
-                      {RESOURCE_LABELS[resource as ResourceIdentifier]}
-                    </div>
-                    <div className='text-muted-foreground text-sm'>
-                      {actions.length} 个可用操作
-                    </div>
-                  </div>
-                </div>
-                <div className='flex gap-1'>
-                  {actions.map((action) => (
-                    <Badge key={action} variant='secondary' className='text-xs'>
-                      {ACTION_LABELS[action]}
-                    </Badge>
+                <SelectTrigger>
+                  <SelectValue placeholder='选择角色' />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role: RbacRole) => (
+                    <SelectItem key={role.name} value={role.name}>
+                      {role.name}
+                    </SelectItem>
                   ))}
-                </div>
+                </SelectContent>
+              </Select>
+
+              <Input
+                placeholder='资源标识，如 knowledge_sources'
+                value={newPolicy.resource}
+                onChange={(event) =>
+                  setNewPolicy((prev) => ({
+                    ...prev,
+                    resource: event.target.value,
+                  }))
+                }
+                className='md:col-span-2'
+              />
+
+              <Select
+                value={newPolicy.action}
+                onValueChange={(value) =>
+                  setNewPolicy((prev) => ({ ...prev, action: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='选择动作' />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className='flex justify-end md:col-span-4'>
+                <Button type='submit' disabled={createMutation.isPending}>
+                  创建策略
+                </Button>
               </div>
-            ))}
-          </div>
+            </form>
+          )}
         </CardContent>
       </Card>
 
-      {/* 角色策略列表 */}
-      <div className='space-y-4'>
-        <h2 className='text-lg font-semibold'>角色策略详情</h2>
-        <div className='grid gap-6'>
-          {roles.map((role) => (
-            <RolePolicyCard
-              key={role.id}
-              role={role}
-              policies={rolePolicyMap[role.id] ?? []}
-              resourceActions={resources}
-              isUpdating={mutation.isPending}
-              isSelected={selectedRole === role.id}
-              onSelect={() =>
-                setSelectedRole(selectedRole === role.id ? null : role.id)
-              }
-              onToggle={(resource, nextActions) =>
-                mutation.mutate({
-                  roleId: role.id,
-                  resource,
-                  actions: nextActions,
-                })
-              }
+      <Card>
+        <CardHeader>
+          <CardTitle>策略列表</CardTitle>
+          <CardDescription>查看并调整角色与资源的权限映射</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {policiesQuery.isError ? (
+            <ErrorState
+              title='无法加载策略列表'
+              description='请检查网络或刷新重试，若多次失败请联系平台团队。'
+              onRetry={() => void policiesQuery.refetch()}
             />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface RolePolicyCardProps {
-  role: RoleDefinition
-  policies: PolicyRule[]
-  resourceActions: Record<ResourceIdentifier, ActionVerb[]>
-  isUpdating: boolean
-  isSelected: boolean
-  onSelect: () => void
-  onToggle: (resource: ResourceIdentifier, nextActions: ActionVerb[]) => void
-}
-
-function RolePolicyCard({
-  role,
-  policies,
-  resourceActions,
-  isUpdating,
-  isSelected,
-  onSelect,
-  onToggle,
-}: RolePolicyCardProps) {
-  const resources = Object.entries(resourceActions).filter(([, allowed]) =>
-    allowed.some((action) => DISPLAY_ACTION_SET.has(action))
-  )
-
-  const getActionsFor = (resource: ResourceIdentifier): ActionVerb[] => {
-    const record = policies.find((policy) => policy.resource === resource)
-    return record?.actions ?? []
-  }
-
-  const handleToggle = (
-    resource: ResourceIdentifier,
-    action: ActionVerb,
-    enabled: boolean
-  ) => {
-    const current = new Set(getActionsFor(resource))
-    if (enabled) {
-      current.add(action)
-    } else {
-      current.delete(action)
-    }
-    onToggle(resource, Array.from(current))
-  }
-
-  return (
-    <Card className={cn(isSelected && 'ring-primary ring-2')}>
-      <CardHeader>
-        <div className='flex items-center justify-between'>
-          <div>
-            <CardTitle>{role.name}</CardTitle>
-            <CardDescription>{role.description}</CardDescription>
-          </div>
-          <Button variant='ghost' size='sm' onClick={onSelect}>
-            {isSelected ? '收起' : '展开'}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        {resources.length === 0 ? (
-          <p className='text-muted-foreground text-sm'>暂无可配置的资源。</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>资源</TableHead>
-                {DISPLAY_ACTIONS.map((action) => (
-                  <TableHead key={action} className='text-center'>
-                    {ACTION_LABELS[action]}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {resources.map(([resource, allowedActions]) => {
-                const currentActions = new Set(
-                  getActionsFor(resource as ResourceIdentifier)
-                )
-                return (
-                  <TableRow key={resource}>
-                    <TableCell className='font-medium'>
-                      <div className='flex items-center space-x-2'>
-                        {RESOURCE_ICONS[resource as ResourceIdentifier]}
-                        <span>
-                          {RESOURCE_LABELS[resource as ResourceIdentifier]}
-                        </span>
-                      </div>
+          ) : policies.length === 0 ? (
+            <div className='text-muted-foreground py-12 text-center'>
+              暂无策略
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>角色</TableHead>
+                  <TableHead>资源</TableHead>
+                  <TableHead>动作</TableHead>
+                  <TableHead className='text-right'>操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {policies.map((policy) => (
+                  <TableRow key={policy.id}>
+                    <TableCell>{policy.subject}</TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {policy.resource}
                     </TableCell>
-                    {DISPLAY_ACTIONS.map((verb) => {
-                      const disabled = !allowedActions.includes(verb)
-                      const checked = currentActions.has(verb)
-                      return (
-                        <TableCell key={verb} className='text-center'>
-                          <Switch
-                            disabled={disabled || isUpdating}
-                            checked={checked}
-                            onCheckedChange={(value) =>
-                              handleToggle(
-                                resource as ResourceIdentifier,
-                                verb,
-                                value
-                              )
-                            }
-                            aria-label={`${resource}:${verb}`}
-                            className={cn(
-                              disabled && 'cursor-not-allowed opacity-30'
-                            )}
-                          />
-                        </TableCell>
-                      )
-                    })}
+                    <TableCell>
+                      <Select
+                        value={policy.action}
+                        onValueChange={(value) =>
+                          handleActionChange(policy, value)
+                        }
+                        disabled={updateMutation.isPending}
+                      >
+                        <SelectTrigger className='w-[120px]'>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ACTION_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className='text-right'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => deleteMutation.mutate(policy.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        删除
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

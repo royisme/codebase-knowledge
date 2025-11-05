@@ -1,5 +1,3 @@
-import { apiClient } from './api-client'
-import { API_ENDPOINTS, withQuery } from './api-endpoints'
 import type {
   Repository,
   RepositoryListResponse,
@@ -10,35 +8,33 @@ import type {
   TriggerIndexRequest,
   TriggerIndexResponse,
 } from '@/types/repository'
+import { apiClient } from './api-client'
+import { API_ENDPOINTS, withQuery } from './api-endpoints'
 
-/**
- * 获取仓库列表
- */
 export function listRepositories(params?: {
   statuses?: string[]
   search?: string
   page?: number
   pageSize?: number
 }) {
-  const endpoint = withQuery(
-    API_ENDPOINTS.repositories.list,
-    params as Record<string, unknown>
-  )
+  const queryParams: Record<string, unknown> = {
+    source_type: 'code',
+  }
+  if (params?.statuses) queryParams.statuses = params.statuses
+  if (params?.search) queryParams.search = params.search
+  if (params?.page) queryParams.page = params.page
+  if (params?.pageSize) queryParams.size = params.pageSize
+
+  const endpoint = withQuery(API_ENDPOINTS.repositories.list, queryParams)
   return apiClient<RepositoryListResponse>({ endpoint })
 }
 
-/**
- * 获取仓库详情
- */
 export function getRepository(id: string) {
   return apiClient<Repository>({
     endpoint: API_ENDPOINTS.repositories.detail(id),
   })
 }
 
-/**
- * 验证仓库连接
- */
 export function validateRepository(request: ValidateRepositoryRequest) {
   return apiClient<ValidateRepositoryResponse>({
     endpoint: API_ENDPOINTS.repositories.validate,
@@ -47,9 +43,6 @@ export function validateRepository(request: ValidateRepositoryRequest) {
   })
 }
 
-/**
- * 创建仓库
- */
 export function createRepository(request: CreateRepositoryRequest) {
   return apiClient<Repository>({
     endpoint: API_ENDPOINTS.repositories.create,
@@ -58,9 +51,6 @@ export function createRepository(request: CreateRepositoryRequest) {
   })
 }
 
-/**
- * 更新仓库
- */
 export function updateRepository(id: string, request: UpdateRepositoryRequest) {
   return apiClient<Repository>({
     endpoint: API_ENDPOINTS.repositories.update(id),
@@ -69,9 +59,6 @@ export function updateRepository(id: string, request: UpdateRepositoryRequest) {
   })
 }
 
-/**
- * 删除仓库（软删除）
- */
 export function deleteRepository(id: string) {
   return apiClient<void>({
     endpoint: API_ENDPOINTS.repositories.delete(id),
@@ -79,13 +66,10 @@ export function deleteRepository(id: string) {
   })
 }
 
-/**
- * 触发索引
- */
 export function triggerIndex(id: string, request: TriggerIndexRequest) {
   return apiClient<TriggerIndexResponse>({
-    endpoint: API_ENDPOINTS.repositories.triggerIndex(id),
+    endpoint: API_ENDPOINTS.repositories.triggerSync(id),
     method: 'POST',
-    body: request,
+    body: request.force_full ? { sync_config: { force_full: true } } : {},
   })
 }

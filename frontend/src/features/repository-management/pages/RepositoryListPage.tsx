@@ -1,6 +1,10 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Repository, RepositoryStatus } from '@/types/repository'
+import type {
+  Repository,
+  RepositoryListResponse,
+  RepositoryStatus,
+} from '@/types/repository'
 import {
   Plus,
   RefreshCw,
@@ -9,6 +13,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import type { ApiClientError } from '@/lib/api-client'
 import {
   listRepositories,
   deleteRepository,
@@ -23,10 +28,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { ServerPagination } from '@/components/ui/server-pagination'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { AddRepositoryDialog } from '../components/AddRepositoryDialog'
+import { EditRepositoryDialog } from '../components/EditRepositoryDialog'
 import { RepositoriesTable } from '../components/RepositoriesTable'
 
 const statusOptions: Array<{ value: RepositoryStatus; label: string }> = [
@@ -51,37 +58,46 @@ export function RepositoryListPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [editingRepo, setEditingRepo] = useState<Repository | null>(null)
+  const [isEditDialogOpen, setEditDialogOpen] = useState(false)
 
   const deferredSearch = useDeferredValue(searchQuery)
 
   const queryClient = useQueryClient()
 
   // 获取仓库列表
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: [
-      'repositories',
-      {
-        statuses: selectedStatuses,
-        search: deferredSearch,
-        page: currentPage,
-        size: pageSize,
-      },
-    ],
-    queryFn: () =>
-      listRepositories({
-        statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
-        search: deferredSearch || undefined,
-        page: currentPage,
-        pageSize: pageSize,
-      }),
-  })
+  const { data, isLoading, refetch, isError } =
+    useQuery<RepositoryListResponse>({
+      queryKey: [
+        'repositories',
+        {
+          statuses: selectedStatuses,
+          search: deferredSearch,
+          page: currentPage,
+          size: pageSize,
+        },
+      ],
+      queryFn: () =>
+        listRepositories({
+          statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+          search: deferredSearch || undefined,
+          page: currentPage,
+          pageSize: pageSize,
+        }),
+    })
+
+  useEffect(() => {
+    if (isError) {
+      toast.error('仓库列表加载失败，请稍后重试')
+    }
+  }, [isError])
 
   // 删除仓库
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteRepository(id),
     onSuccess: () => {
       toast.success('仓库已删除')
-      queryClient.invalidateQueries({ queryKey: ['repositories'] })
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] })
       setConfirmAction(null)
     },
     onError: () => {
@@ -94,12 +110,19 @@ export function RepositoryListPage() {
     mutationFn: ({ id, forceFull }: { id: string; forceFull: boolean }) =>
       triggerIndex(id, { force_full: forceFull }),
     onSuccess: (data) => {
-      toast.success(`索引任务已创建（ID: ${data.job_id.slice(0, 8)}）`)
-      queryClient.invalidateQueries({ queryKey: ['repositories'] })
+      const jobInfo = data.job_id ? `（ID: ${data.job_id.slice(0, 8)}）` : ''
+      toast.success(`${data.message ?? '索引任务已创建'}${jobInfo}`)
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] })
       setConfirmAction(null)
     },
-    onError: () => {
-      toast.error('触发索引失败，请重试')
+    onError: (error: unknown) => {
+      const apiError = error as ApiClientError | undefined
+      if (apiError?.status === 409) {
+        toast.error(apiError.message ?? '已有索引任务正在运行，请稍后再试')
+        setConfirmAction(null)
+        return
+      }
+      toast.error(apiError?.message ?? '触发索引失败，请重试')
     },
   })
 
@@ -115,6 +138,11 @@ export function RepositoryListPage() {
 
   const handleTriggerIndex = (repo: Repository, forceFull: boolean = false) => {
     setConfirmAction({ type: 'triggerIndex', repo, forceFull })
+  }
+
+  const handleEdit = (repo: Repository) => {
+    setEditingRepo(repo)
+    setEditDialogOpen(true)
   }
 
   const handlePageChange = (page: number) => {
@@ -219,27 +247,38 @@ export function RepositoryListPage() {
       </div>
 
       {/* 表格 */}
-      <RepositoriesTable
-        data={filteredData}
-        isLoading={isLoading}
-        onDelete={handleDelete}
-        onTriggerIndex={handleTriggerIndex}
-      />
-
-      {/* 分页控件 */}
-      {!isLoading && data && data.total > 0 && (
-        <div className='mt-4 flex items-center justify-between'>
-          <div className='text-muted-foreground text-sm'>
-            共 {data.total} 条记录，第 {currentPage} / {data.pages} 页
-          </div>
-          <ServerPagination
-            currentPage={currentPage}
-            totalPages={data.pages}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
+      {isError ? (
+        <ErrorState
+          title='无法加载仓库列表'
+          description='请刷新页面或稍后再试，若问题持续请联系平台团队。'
+          onRetry={() => refetch()}
+        />
+      ) : (
+        <>
+          <RepositoriesTable
+            data={filteredData}
+            isLoading={isLoading}
+            onDelete={handleDelete}
+            onTriggerIndex={handleTriggerIndex}
+            onEdit={handleEdit}
           />
-        </div>
+
+          {/* 分页控件 */}
+          {!isLoading && data && data.total > 0 && (
+            <div className='mt-4 flex items-center justify-between'>
+              <div className='text-muted-foreground text-sm'>
+                共 {data.total} 条记录，第 {currentPage} / {data.pages} 页
+              </div>
+              <ServerPagination
+                currentPage={currentPage}
+                totalPages={data.pages}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* 添加仓库对话框 */}
@@ -247,7 +286,7 @@ export function RepositoryListPage() {
         open={isAddDialogOpen}
         onOpenChange={setAddDialogOpen}
         onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['repositories'] })
+          void queryClient.invalidateQueries({ queryKey: ['repositories'] })
         }}
       />
 
@@ -275,6 +314,20 @@ export function RepositoryListPage() {
         }
         handleConfirm={handleConfirm}
         destructive={confirmAction?.type === 'delete'}
+      />
+
+      <EditRepositoryDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open)
+          if (!open) {
+            setEditingRepo(null)
+          }
+        }}
+        repository={editingRepo}
+        onSuccess={() => {
+          void queryClient.invalidateQueries({ queryKey: ['repositories'] })
+        }}
       />
     </div>
   )

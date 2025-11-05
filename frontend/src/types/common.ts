@@ -1,6 +1,6 @@
-export type Identifier = string & { readonly brand: unique symbol }
+export type Identifier = string
 
-export type ISODateString = string & { readonly isoDate: unique symbol }
+export type ISODateString = string
 
 export interface Pagination {
   page: number

@@ -36,6 +36,7 @@ export const knowledgeQueryHandlers = [
 
     // 使用第一个查询结果作为 Mock 数据源
     const mockData = queryData.queries[0]
+    const startedAt = Date.now()
     const encoder = new TextEncoder()
 
     const stream = new ReadableStream({
@@ -83,7 +84,7 @@ export const knowledgeQueryHandlers = [
 
           // 3. 发送元数据
           const metadata = {
-            execution_time_ms: 1234,
+            execution_time_ms: Date.now() - startedAt,
             sources_queried: body.source_ids || ['ks-1'],
             confidence_score: 0.92,
             retrieval_mode: body.retrieval_mode || 'hybrid',
@@ -100,6 +101,14 @@ export const knowledgeQueryHandlers = [
               createSSEEvent('done', {
                 query_id: queryId,
                 timestamp: new Date().toISOString(),
+                summary: mockData.answer,
+                next_actions: [
+                  '查看最近的相关提交',
+                  '继续追问具体模块的实现细节',
+                ],
+                confidence_score: metadata.confidence_score,
+                sources_queried: metadata.sources_queried,
+                processing_time_ms: metadata.execution_time_ms,
               })
             )
           )
@@ -112,6 +121,8 @@ export const knowledgeQueryHandlers = [
               createSSEEvent('error', {
                 message:
                   error instanceof Error ? error.message : 'Unknown error',
+                code: 'STREAM_ERROR',
+                processing_time_ms: Date.now() - startedAt,
               })
             )
           )

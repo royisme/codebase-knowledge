@@ -6,7 +6,6 @@ import type {
   UserStatus,
 } from '@/types'
 import { HttpResponse, http } from 'msw'
-import { authFixtures } from '../fixtures/auth'
 import {
   getUserActivityFixture,
   listAdminUsersFixture,
@@ -15,6 +14,7 @@ import {
   updateUserRoleFixture,
   updateUserStatusFixture,
 } from '../fixtures/admin-users'
+import { authFixtures } from '../fixtures/auth'
 
 function extractBearerToken(headerValue: string | null): string | null {
   if (!headerValue) return null
@@ -46,30 +46,33 @@ export const adminUserHandlers = [
     return HttpResponse.json(response)
   }),
 
-  http.patch('*/api/v1/admin/users/:userId/roles', async ({ params, request }) => {
-    const token = extractBearerToken(request.headers.get('authorization'))
-    if (!token || !authFixtures.findUserByToken(token)) {
-      return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
-    }
-    const userId = params.userId as Identifier
-    const payload = (await request.json()) as { roleIds: Identifier[] }
+  http.patch(
+    '*/api/v1/admin/users/:userId/roles',
+    async ({ params, request }) => {
+      const token = extractBearerToken(request.headers.get('authorization'))
+      if (!token || !authFixtures.findUserByToken(token)) {
+        return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
+      }
+      const userId = params.userId as Identifier
+      const payload = (await request.json()) as { roleIds: Identifier[] }
 
-    if (!payload?.roleIds || !Array.isArray(payload.roleIds)) {
-      return HttpResponse.json(
-        { code: 'VALIDATION_ERROR', message: '角色列表不能为空' },
-        { status: 400 }
-      )
-    }
+      if (!payload?.roleIds || !Array.isArray(payload.roleIds)) {
+        return HttpResponse.json(
+          { code: 'VALIDATION_ERROR', message: '角色列表不能为空' },
+          { status: 400 }
+        )
+      }
 
-    const updated = updateUserRoleFixture(userId, payload.roleIds)
-    if (!updated) {
-      return HttpResponse.json(
-        { code: 'NOT_FOUND', message: '用户不存在' },
-        { status: 404 }
-      )
+      const updated = updateUserRoleFixture(userId, payload.roleIds)
+      if (!updated) {
+        return HttpResponse.json(
+          { code: 'NOT_FOUND', message: '用户不存在' },
+          { status: 404 }
+        )
+      }
+      return HttpResponse.json(updated)
     }
-    return HttpResponse.json(updated)
-  }),
+  ),
 
   http.post(
     '*/api/v1/admin/users/:userId/reset-password',

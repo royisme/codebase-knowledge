@@ -3,7 +3,6 @@
  *
  * 用于知识图谱查询的 Server-Sent Events (SSE) 协议
  */
-
 import type { Entity } from './graph-query'
 
 /**
@@ -18,7 +17,7 @@ export type StreamEventType = 'text' | 'entity' | 'metadata' | 'done' | 'error'
 export interface TextEvent {
   type: 'text'
   content: string
-  delta?: boolean  // 是否为增量文本（默认 true）
+  delta?: boolean // 是否为增量文本（默认 true）
 }
 
 /**
@@ -53,6 +52,11 @@ export interface DoneEvent {
   type: 'done'
   query_id: string
   timestamp?: string
+  summary?: string
+  next_actions?: string[]
+  confidence_score?: number
+  sources_queried?: string[]
+  processing_time_ms?: number
 }
 
 /**
@@ -64,6 +68,7 @@ export interface ErrorEvent {
   message: string
   code?: string
   details?: unknown
+  processing_time_ms?: number
 }
 
 /**
@@ -106,6 +111,10 @@ export interface StreamQueryState {
   isStreaming: boolean
   error: string | null
   queryId: string | null
+  nextActions: string[]
+  confidenceScore?: number
+  sourcesQueried: string[]
+  processingTimeMs?: number
 }
 
 /**
@@ -115,6 +124,6 @@ export interface StreamEventHandlers {
   onText?: (content: string) => void
   onEntity?: (entity: Entity) => void
   onMetadata?: (metadata: MetadataEvent['data']) => void
-  onDone?: (queryId: string) => void
-  onError?: (error: string) => void
+  onDone?: (event: DoneEvent) => void
+  onError?: (error: ErrorEvent) => void
 }

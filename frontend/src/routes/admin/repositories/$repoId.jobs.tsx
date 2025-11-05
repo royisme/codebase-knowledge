@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { JobListPage } from '@/features/repository-management/pages/JobListPage'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/admin/repositories/$repoId/jobs')({
-  component: JobListPage,
+  component: () => <Outlet />,
 })

@@ -1,7 +1,7 @@
+import type { Job } from '@/types/job'
 import { http, HttpResponse, delay } from 'msw'
 import { authFixtures } from '../fixtures/auth'
 import { mockJobs, mockJobLogs } from '../fixtures/jobs'
-import type { Job } from '@/types/job'
 
 function extractBearerToken(headerValue: string | null): string | null {
   if (!headerValue) return null
@@ -41,8 +41,9 @@ export const jobHandlers = [
     }
 
     // 按创建时间倒序
-    filtered.sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    filtered.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
 
     // 分页
@@ -69,10 +70,7 @@ export const jobHandlers = [
     const job = jobs.find((j) => j.id === params.id)
 
     if (!job) {
-      return HttpResponse.json(
-        { detail: 'Job not found' },
-        { status: 404 }
-      )
+      return HttpResponse.json({ detail: 'Job not found' }, { status: 404 })
     }
 
     // 添加日志
@@ -95,10 +93,7 @@ export const jobHandlers = [
     const job = jobs.find((j) => j.id === params.id)
 
     if (!job) {
-      return HttpResponse.json(
-        { detail: 'Job not found' },
-        { status: 404 }
-      )
+      return HttpResponse.json({ detail: 'Job not found' }, { status: 404 })
     }
 
     if (job.status !== 'running') {
@@ -127,10 +122,7 @@ export const jobHandlers = [
     const originalJob = jobs.find((j) => j.id === params.id)
 
     if (!originalJob) {
-      return HttpResponse.json(
-        { detail: 'Job not found' },
-        { status: 404 }
-      )
+      return HttpResponse.json({ detail: 'Job not found' }, { status: 404 })
     }
 
     if (originalJob.status !== 'failed') {

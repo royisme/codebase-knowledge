@@ -1,6 +1,6 @@
 /**
  * API 端点集中管理
- * 
+ *
  * 所有后端 API 路径的单一真相源
  * 优点：
  * 1. 集中管理，易于维护
@@ -27,7 +27,6 @@ export const API_ENDPOINTS = {
     update: (id: string) => `/api/v1/admin/sources/${id}`,
     delete: (id: string) => `/api/v1/admin/sources/${id}`,
     sync: (id: string) => `/api/v1/admin/sources/${id}/sync`,
-    bulk: '/api/v1/admin/sources/bulk',
   },
 
   // ==================== RAG 查询 ====================
@@ -40,12 +39,8 @@ export const API_ENDPOINTS = {
 
   // ==================== 任务管理 ====================
   tasks: {
-    list: '/api/v1/admin/tasks',
-    create: '/api/v1/admin/tasks',
-    detail: (id: string) => `/api/v1/admin/tasks/${id}`,
-    cancel: (id: string) => `/api/v1/admin/tasks/${id}/cancel`,
-    retry: (id: string) => `/api/v1/admin/tasks/${id}/retry`,
-    logs: (id: string) => `/api/v1/admin/tasks/${id}/logs`,
+    list: '/api/v1/tasks',
+    detail: (id: string) => `/api/v1/tasks/${id}`,
   },
 
   // ==================== 用户管理 ====================
@@ -55,24 +50,19 @@ export const API_ENDPOINTS = {
     detail: (id: string) => `/api/v1/admin/users/${id}`,
     update: (id: string) => `/api/v1/admin/users/${id}`,
     delete: (id: string) => `/api/v1/admin/users/${id}`,
-    activate: (id: string) => `/api/v1/admin/users/${id}/activate`,
-    deactivate: (id: string) => `/api/v1/admin/users/${id}/deactivate`,
   },
 
   // ==================== RBAC 权限 ====================
   rbac: {
-    roles: '/api/v1/admin/rbac/roles',
-    roleDetail: (id: string) => `/api/v1/admin/rbac/roles/${id}`,
-    permissions: '/api/v1/admin/rbac/permissions',
-    assignRole: '/api/v1/admin/rbac/assign-role',
-    roleMembers: '/api/v1/admin/role-members',
-    updatePolicy: '/api/v1/admin/policies/update',
+    roles: '/api/v1/admin/roles',
+    policies: '/api/v1/admin/policies',
+    policyDetail: (id: number | string) => `/api/v1/admin/policies/${id}`,
+    audit: '/api/v1/admin/audit',
   },
 
   // ==================== 审计日志 ====================
   audit: {
-    list: '/api/v1/admin/audit/events',
-    detail: (id: string) => `/api/v1/admin/audit/events/${id}`,
+    list: '/api/v1/admin/audit',
   },
 
   // ==================== 代码仓库管理 ====================
@@ -83,15 +73,13 @@ export const API_ENDPOINTS = {
     update: (id: string) => `/api/v1/admin/sources/${id}`,
     delete: (id: string) => `/api/v1/admin/sources/${id}`,
     validate: '/api/v1/admin/sources/validate',
-    triggerIndex: (id: string) => `/api/v1/admin/sources/${id}/index`,
+    triggerSync: (id: string) => `/api/v1/admin/sources/${id}/sync`,
   },
 
   // ==================== 索引任务管理 ====================
   jobs: {
-    list: '/api/v1/admin/jobs',
-    detail: (id: string) => `/api/v1/admin/jobs/${id}`,
-    cancel: (id: string) => `/api/v1/admin/jobs/${id}/cancel`,
-    retry: (id: string) => `/api/v1/admin/jobs/${id}/retry`,
+    listBySource: (id: string) => `/api/v1/admin/sources/${id}/jobs`,
+    detail: (id: string) => `/api/v1/admin/sources/jobs/${id}`,
   },
 
   // ==================== 用户仪表盘 ====================
@@ -105,6 +93,8 @@ export const API_ENDPOINTS = {
   knowledge: {
     sources: '/api/v1/knowledge/sources',
     query: '/api/v1/knowledge/query',
+    notes: '/api/v1/knowledge/notes',
+    noteDetail: (id: string) => `/api/v1/knowledge/notes/${id}`,
   },
 } as const
 
@@ -118,17 +108,17 @@ export type ApiEndpoints = typeof API_ENDPOINTS
  */
 export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams()
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null) return
-    
+
     if (Array.isArray(value)) {
       value.forEach((item) => searchParams.append(key, String(item)))
     } else {
       searchParams.set(key, String(value))
     }
   })
-  
+
   const query = searchParams.toString()
   return query ? `?${query}` : ''
 }
@@ -136,7 +126,10 @@ export function buildQueryString(params: Record<string, unknown>): string {
 /**
  * 辅助函数：组合端点和查询参数
  */
-export function withQuery(endpoint: string, params?: Record<string, unknown>): string {
+export function withQuery(
+  endpoint: string,
+  params?: Record<string, unknown>
+): string {
   if (!params) return endpoint
   const query = buildQueryString(params)
   return `${endpoint}${query}`

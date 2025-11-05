@@ -1,82 +1,76 @@
-import type {
-  ActionVerb,
-  Identifier,
-  PolicyRule,
-  ResourceIdentifier,
-  RbacAuditLog,
-  RoleAssignment,
-  RoleDefinition,
-} from '@/types'
 import { apiClient } from './api-client'
 import { API_ENDPOINTS } from './api-endpoints'
 
-export interface ListRolesResponse {
-  roles: RoleDefinition[]
+export interface RbacRole {
+  name: string
+  description: string
+  permissions: string[]
 }
 
-export interface ListPoliciesResponse {
-  policies: PolicyRule[]
-  resources: Record<ResourceIdentifier, ActionVerb[]>
+export interface RbacPolicy {
+  id: number
+  subject: string
+  resource: string
+  action: string
 }
 
-export interface ListAuditsResponse {
-  audits: RbacAuditLog[]
+export interface AuditLogEntry {
+  id: string
+  actor: string
+  action: string
+  target: string
+  status: 'success' | 'failure'
+  timestamp: string
+  details?: string | null
 }
 
-export interface ListRoleMembersResponse {
-  members: Array<RoleAssignment & { email: string; displayName: string }>
+export async function fetchRoles(): Promise<RbacRole[]> {
+  return apiClient<RbacRole[]>({ endpoint: API_ENDPOINTS.rbac.roles })
 }
 
-export async function fetchRoles(): Promise<RoleDefinition[]> {
-  const data = await apiClient<ListRolesResponse>({
-    endpoint: API_ENDPOINTS.rbac.roles,
+export async function fetchPolicies(): Promise<RbacPolicy[]> {
+  return apiClient<RbacPolicy[]>({ endpoint: API_ENDPOINTS.rbac.policies })
+}
+
+export async function updatePolicyAction(policyId: number, action: string) {
+  return apiClient<RbacPolicy>({
+    endpoint: API_ENDPOINTS.rbac.policyDetail(policyId),
+    method: 'PATCH',
+    body: { action },
   })
-  return data.roles
 }
 
-export async function fetchPolicies(): Promise<ListPoliciesResponse> {
-  return apiClient<ListPoliciesResponse>({ endpoint: API_ENDPOINTS.rbac.permissions })
+export async function deletePolicy(policyId: number) {
+  await apiClient<void>({
+    endpoint: API_ENDPOINTS.rbac.policyDetail(policyId),
+    method: 'DELETE',
+  })
 }
 
-export async function fetchAuditLogs(): Promise<RbacAuditLog[]> {
-  const data = await apiClient<ListAuditsResponse>({
+export async function createPolicy(payload: {
+  subject: string
+  resource: string
+  action: string
+}) {
+  return apiClient<RbacPolicy>({
+    endpoint: API_ENDPOINTS.rbac.policies,
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export async function fetchAuditLogs(): Promise<{
+  audits: AuditLogEntry[]
+  total: number
+  page: number
+  limit: number
+}> {
+  return apiClient<{
+    audits: AuditLogEntry[]
+    total: number
+    page: number
+    limit: number
+  }>({
     endpoint: API_ENDPOINTS.audit.list,
   })
-  return data.audits
-}
-
-export async function fetchRoleMembers(): Promise<
-  ListRoleMembersResponse['members']
-> {
-  const data = await apiClient<ListRoleMembersResponse>({
-    endpoint: API_ENDPOINTS.rbac.roleMembers,
-  })
-  return data.members
-}
-
-export async function assignRole(payload: {
-  userId: Identifier
-  roleId: Identifier
-}): Promise<RoleAssignment & { email: string; displayName: string }> {
-  const data = await apiClient<{
-    assignment: RoleAssignment & { email: string; displayName: string }
-  }>({
-    endpoint: API_ENDPOINTS.rbac.assignRole,
-    method: 'POST',
-    body: payload,
-  })
-  return data.assignment
-}
-
-export async function updatePolicy(payload: {
-  roleId: Identifier
-  resource: ResourceIdentifier
-  actions: ActionVerb[]
-}): Promise<PolicyRule> {
-  const data = await apiClient<{ policy: PolicyRule }>({
-    endpoint: API_ENDPOINTS.rbac.updatePolicy,
-    method: 'POST',
-    body: payload,
-  })
-  return data.policy
 }

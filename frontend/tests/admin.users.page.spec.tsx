@@ -94,7 +94,7 @@ describe('用户管理页面（UI）', () => {
     let requestCount = 0
 
     server.use(
-      http.get('*/api/admin/users', ({ request }) => {
+      http.get('*/api/v1/admin/users', ({ request }) => {
         requestCount += 1
         const url = new URL(request.url)
         lastSearchParam = url.searchParams.get('search') ?? ''
@@ -319,7 +319,7 @@ describe('用户管理页面（UI）', () => {
   it('空数据状态正确显示', async () => {
     // Mock empty API response
     server.use(
-      http.get('*/api/admin/users', () => {
+      http.get('*/api/v1/admin/users', () => {
         return HttpResponse.json({
           items: [],
           total: 0,
@@ -349,7 +349,7 @@ describe('用户管理页面（UI）', () => {
     let requestCount = 0
 
     server.use(
-      http.get('*/api/admin/users', ({ request }) => {
+      http.get('*/api/v1/admin/users', ({ request }) => {
         requestCount += 1
         const url = new URL(request.url)
         lastSearchParam = url.searchParams.get('search') ?? ''

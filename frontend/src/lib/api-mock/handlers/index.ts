@@ -15,11 +15,11 @@ import { taskHandlers } from './tasks'
 export const handlers: HttpHandler[] = [
   ...authHandlers,
   ...dashboardHandlers,
-  ...knowledgeQueryHandlers,  // knowledge 查询相关（包含 /query, /search, /sessions, /notes）
-  ...knowledgeHandlers,  // knowledge 基础路由（/sources）
-  ...knowledgeSourceHandlers,  // admin 的知识源管理
+  ...knowledgeQueryHandlers, // knowledge 查询相关（包含 /query, /search, /sessions, /notes）
+  ...knowledgeHandlers, // knowledge 基础路由（/sources）
+  ...knowledgeSourceHandlers, // admin 的知识源管理
   ...taskHandlers,
-  ...ragQueryHandlers,  // rag-query 应该在 rag 之前，因为它更具体
+  ...ragQueryHandlers, // rag-query 应该在 rag 之前，因为它更具体
   ...ragHandlers,
   ...rbacHandlers,
   ...adminUserHandlers,

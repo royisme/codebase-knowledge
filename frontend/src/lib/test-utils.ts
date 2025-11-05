@@ -1,5 +1,5 @@
-import { authFixtures } from './api-mock/fixtures/auth'
 import { useAuthStore } from '@/stores/auth-store'
+import { authFixtures } from './api-mock/fixtures/auth'
 
 /**
  * 设置测试环境的认证状态

@@ -1,32 +1,10 @@
 import { useState } from 'react'
+import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { z } from 'zod'
-import { toast } from 'sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   validateRepository,
   createRepository,
@@ -42,6 +20,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Textarea } from '@/components/ui/textarea'
 
 const formSchema = z.object({
   name: z.string().min(1, '请输入仓库名称').max(100),
@@ -139,10 +139,10 @@ export function AddRepositoryDialog({
   })
 
   const triggerIndexMutation = useMutation({
-    mutationFn: (repoId: string) =>
-      triggerIndex(repoId, { force_full: true }),
+    mutationFn: (repoId: string) => triggerIndex(repoId, { force_full: true }),
     onSuccess: (data) => {
-      toast.success(`索引任务已创建（ID: ${data.job_id.slice(0, 8)}）`)
+      const jobInfo = data.job_id ? `（ID: ${data.job_id.slice(0, 8)}）` : ''
+      toast.success(`${data.message ?? '索引任务已创建'}${jobInfo}`)
       handleClose()
       onSuccess?.()
     },
@@ -156,7 +156,8 @@ export function AddRepositoryDialog({
     validateMutation.mutate({
       repo_url: values.repo_url,
       auth_type: values.auth_type,
-      access_token: values.auth_type === 'token' ? values.access_token : undefined,
+      access_token:
+        values.auth_type === 'token' ? values.access_token : undefined,
     })
   }
 
@@ -169,7 +170,8 @@ export function AddRepositoryDialog({
         repo_url: values.repo_url,
         branch: values.branch,
         auth_type: values.auth_type,
-        access_token: values.auth_type === 'token' ? values.access_token : undefined,
+        access_token:
+          values.auth_type === 'token' ? values.access_token : undefined,
         include_patterns: values.include_patterns
           .split(',')
           .map((s) => s.trim())
@@ -209,7 +211,7 @@ export function AddRepositoryDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className='max-h-[90vh] max-w-2xl overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>添加代码仓库</DialogTitle>
             <DialogDescription>
@@ -218,16 +220,16 @@ export function AddRepositoryDialog({
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
               {/* 基本信息 */}
               <FormField
                 control={form.control}
-                name="name"
+                name='name'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>仓库名称 *</FormLabel>
                     <FormControl>
-                      <Input placeholder="例：core-api" {...field} />
+                      <Input placeholder='例：core-api' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -236,13 +238,13 @@ export function AddRepositoryDialog({
 
               <FormField
                 control={form.control}
-                name="description"
+                name='description'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>描述</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="可选：描述仓库用途"
+                        placeholder='可选：描述仓库用途'
                         rows={2}
                         {...field}
                       />
@@ -253,18 +255,18 @@ export function AddRepositoryDialog({
               />
 
               {/* Git 配置 */}
-              <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="font-medium">Git 配置</h3>
+              <div className='space-y-4 rounded-lg border p-4'>
+                <h3 className='font-medium'>Git 配置</h3>
 
                 <FormField
                   control={form.control}
-                  name="repo_url"
+                  name='repo_url'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Git URL *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="https://github.com/org/repo.git"
+                          placeholder='https://github.com/org/repo.git'
                           {...field}
                         />
                       </FormControl>
@@ -275,7 +277,7 @@ export function AddRepositoryDialog({
 
                 <FormField
                   control={form.control}
-                  name="auth_type"
+                  name='auth_type'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>认证方式</FormLabel>
@@ -283,15 +285,17 @@ export function AddRepositoryDialog({
                         <RadioGroup
                           value={field.value}
                           onValueChange={field.onChange}
-                          className="flex gap-4"
+                          className='flex gap-4'
                         >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="none" id="auth-none" />
-                            <Label htmlFor="auth-none">公开仓库</Label>
+                          <div className='flex items-center space-x-2'>
+                            <RadioGroupItem value='none' id='auth-none' />
+                            <Label htmlFor='auth-none'>公开仓库</Label>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="token" id="auth-token" />
-                            <Label htmlFor="auth-token">Personal Access Token</Label>
+                          <div className='flex items-center space-x-2'>
+                            <RadioGroupItem value='token' id='auth-token' />
+                            <Label htmlFor='auth-token'>
+                              Personal Access Token
+                            </Label>
                           </div>
                         </RadioGroup>
                       </FormControl>
@@ -303,20 +307,18 @@ export function AddRepositoryDialog({
                 {authType === 'token' && (
                   <FormField
                     control={form.control}
-                    name="access_token"
+                    name='access_token'
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Access Token *</FormLabel>
                         <FormControl>
                           <Input
-                            type="password"
-                            placeholder="ghp_xxxxxxxxxxxx"
+                            type='password'
+                            placeholder='ghp_xxxxxxxxxxxx'
                             {...field}
                           />
                         </FormControl>
-                        <FormDescription>
-                          需要 repo 读取权限
-                        </FormDescription>
+                        <FormDescription>需要 repo 读取权限</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -325,12 +327,12 @@ export function AddRepositoryDialog({
 
                 <FormField
                   control={form.control}
-                  name="branch"
+                  name='branch'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>分支 *</FormLabel>
                       <FormControl>
-                        <Input placeholder="main" {...field} />
+                        <Input placeholder='main' {...field} />
                       </FormControl>
                       {accessibleBranches.length > 0 && (
                         <FormDescription>
@@ -343,10 +345,10 @@ export function AddRepositoryDialog({
                 />
 
                 {/* 验证按钮 */}
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <Button
-                    type="button"
-                    variant="outline"
+                    type='button'
+                    variant='outline'
                     onClick={handleValidate}
                     disabled={
                       !form.getValues('repo_url') ||
@@ -355,12 +357,12 @@ export function AddRepositoryDialog({
                     }
                   >
                     {validateMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                     )}
                     {validationState === 'success' ? (
-                      <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                      <CheckCircle2 className='mr-2 h-4 w-4 text-green-600' />
                     ) : validationState === 'error' ? (
-                      <AlertCircle className="mr-2 h-4 w-4 text-destructive" />
+                      <AlertCircle className='text-destructive mr-2 h-4 w-4' />
                     ) : null}
                     验证连接
                   </Button>
@@ -379,21 +381,19 @@ export function AddRepositoryDialog({
               </div>
 
               {/* 解析配置 */}
-              <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="font-medium">解析配置</h3>
+              <div className='space-y-4 rounded-lg border p-4'>
+                <h3 className='font-medium'>解析配置</h3>
 
                 <FormField
                   control={form.control}
-                  name="include_patterns"
+                  name='include_patterns'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>包含文件模式</FormLabel>
                       <FormControl>
-                        <Input placeholder="*.py,*.ts,*.js,*.go" {...field} />
+                        <Input placeholder='*.py,*.ts,*.js,*.go' {...field} />
                       </FormControl>
-                      <FormDescription>
-                        逗号分隔，支持通配符
-                      </FormDescription>
+                      <FormDescription>逗号分隔，支持通配符</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -401,13 +401,13 @@ export function AddRepositoryDialog({
 
                 <FormField
                   control={form.control}
-                  name="exclude_patterns"
+                  name='exclude_patterns'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>排除文件模式</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="node_modules/*,*.test.*"
+                          placeholder='node_modules/*,*.test.*'
                           {...field}
                         />
                       </FormControl>
@@ -418,17 +418,19 @@ export function AddRepositoryDialog({
 
                 <FormField
                   control={form.control}
-                  name="max_file_size_kb"
+                  name='max_file_size_kb'
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>最大文件大小（KB）</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
+                          type='number'
                           min={1}
                           max={5000}
                           {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -438,17 +440,17 @@ export function AddRepositoryDialog({
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleClose}>
+                <Button type='button' variant='outline' onClick={handleClose}>
                   取消
                 </Button>
                 <Button
-                  type="submit"
+                  type='submit'
                   disabled={
                     validationState !== 'success' || createMutation.isPending
                   }
                 >
                   {createMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   )}
                   创建仓库
                 </Button>
@@ -476,7 +478,7 @@ export function AddRepositoryDialog({
               disabled={triggerIndexMutation.isPending}
             >
               {triggerIndexMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               )}
               立即索引
             </AlertDialogAction>

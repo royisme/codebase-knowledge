@@ -1,4 +1,4 @@
-import type { AuditMetadata, Identifier, ISODateString } from './common'
+import type { Identifier, ISODateString } from './common'
 
 export type KnowledgeSourceStatus = 'active' | 'disabled' | 'syncing' | 'error'
 
@@ -11,9 +11,10 @@ export interface ParserConfig {
   enableIncrementalRefresh: boolean
 }
 
-export interface KnowledgeSource extends AuditMetadata {
+export interface KnowledgeSource {
   id: Identifier
   name: string
+  description?: string
   repositoryUrl: string
   defaultBranch: string
   credentialMode: RepositoryCredentialMode
@@ -21,6 +22,10 @@ export interface KnowledgeSource extends AuditMetadata {
   lastSyncedAt?: ISODateString
   lastTaskId?: Identifier
   parserConfig: ParserConfig
+  createdAt?: ISODateString
+  updatedAt?: ISODateString
+  createdBy?: Identifier | null
+  updatedBy?: Identifier | null
 }
 
 export interface CreateKnowledgeSourcePayload {

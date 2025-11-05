@@ -1,6 +1,6 @@
-import { Badge } from '@/components/ui/badge'
 import type { RepositoryStatus } from '@/types/repository'
 import { Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 interface RepositoryStatusBadgeProps {
   status: RepositoryStatus
@@ -55,7 +55,7 @@ export function RepositoryStatusBadge({ status }: RepositoryStatusBadgeProps) {
 
   return (
     <Badge variant={config.variant} className={config.className}>
-      {config.showSpinner && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+      {config.showSpinner && <Loader2 className='mr-1 h-3 w-3 animate-spin' />}
       {config.label}
     </Badge>
   )

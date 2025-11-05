@@ -1,24 +1,17 @@
-import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type {
-  ActionVerb,
-  Identifier,
-  PolicyRule,
-  ResourceIdentifier,
-  RoleAssignment,
-  RoleDefinition,
-} from '@/types'
+import { useEffect } from 'react'
+import { formatDistanceToNow } from 'date-fns'
+import { useQuery } from '@tanstack/react-query'
+import { zhCN } from 'date-fns/locale'
 import { toast } from 'sonner'
 import {
-  assignRole,
   fetchAuditLogs,
   fetchPolicies,
-  fetchRoleMembers,
   fetchRoles,
-  updatePolicy,
-  type ListPoliciesResponse,
+  type AuditLogEntry,
+  type RbacPolicy,
+  type RbacRole,
 } from '@/lib/rbac-service'
-import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
@@ -26,385 +19,206 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AdminUsersPage } from '../users/admin-users-page'
+import { ErrorState } from '@/components/ui/error-state'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
-type RolePolicyMap = Record<string, PolicyRule[]>
-
-const DISPLAY_ACTIONS = ['read', 'admin'] as const satisfies ActionVerb[]
-const ACTION_LABELS: Record<(typeof DISPLAY_ACTIONS)[number], string> = {
+const ACTION_LABEL: Record<string, string> = {
   read: '读取',
   admin: '管理',
 }
-const DISPLAY_ACTION_SET = new Set<ActionVerb>(DISPLAY_ACTIONS)
-
-type RoleMember = RoleAssignment & { email: string; displayName: string }
 
 export function RbacDashboard() {
-  const [activeTab, setActiveTab] = useState('overview')
-  const queryClient = useQueryClient()
-
-  const rolesQuery = useQuery({
+  const rolesQuery = useQuery<RbacRole[]>({
     queryKey: ['rbac', 'roles'],
     queryFn: fetchRoles,
   })
-
-  const policiesQuery = useQuery({
+  const policiesQuery = useQuery<RbacPolicy[]>({
     queryKey: ['rbac', 'policies'],
     queryFn: fetchPolicies,
   })
-
-  const auditsQuery = useQuery({
+  const auditQuery = useQuery<{
+    audits: AuditLogEntry[]
+    total: number
+    page: number
+    limit: number
+  }>({
     queryKey: ['rbac', 'audits'],
     queryFn: fetchAuditLogs,
   })
 
-  const membersQuery = useQuery({
-    queryKey: ['rbac', 'members'],
-    queryFn: fetchRoleMembers,
-  })
-
-  const mutation = useMutation({
-    mutationFn: updatePolicy,
-    onSuccess: (updated) => {
-      queryClient.setQueryData<ListPoliciesResponse | undefined>(
-        ['rbac', 'policies'],
-        (existing) => {
-          if (!existing) return existing
-          return {
-            ...existing,
-            policies: existing.policies.map((policy) =>
-              policy.id === updated.id ? updated : policy
-            ),
-          }
-        }
-      )
-      toast.success('权限已更新')
-    },
-    onError: () => {
-      toast.error('权限更新失败')
-    },
-  })
-
-  const policiesResponse = policiesQuery.data
-  const roleMembers = membersQuery.data ?? []
-  const assignMutation = useMutation({
-    mutationFn: assignRole,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rbac', 'members'] })
-      toast.success('角色已更新')
-    },
-    onError: () => {
-      toast.error('角色更新失败')
-    },
-  })
-
-  const rolePolicyMap = useMemo<RolePolicyMap>(() => {
-    if (!policiesResponse) return {}
-    const acc: RolePolicyMap = {}
-    for (const policy of policiesResponse.policies) {
-      acc[policy.roleId] = acc[policy.roleId] ?? []
-      acc[policy.roleId].push(policy)
+  useEffect(() => {
+    if (rolesQuery.isError) {
+      toast.error('角色数据加载失败')
     }
-    return acc
-  }, [policiesResponse])
+  }, [rolesQuery.isError])
 
-  const isLoading =
-    rolesQuery.isLoading || policiesQuery.isLoading || auditsQuery.isLoading
+  useEffect(() => {
+    if (policiesQuery.isError) {
+      toast.error('策略数据加载失败')
+    }
+  }, [policiesQuery.isError])
 
-  const resources =
-    policiesResponse?.resources ??
-    ({} as Record<ResourceIdentifier, ActionVerb[]>)
+  useEffect(() => {
+    if (auditQuery.isError) {
+      toast.error('审计日志加载失败')
+    }
+  }, [auditQuery.isError])
 
-  if (isLoading) {
+  const roles = rolesQuery.data ?? []
+  const policies = policiesQuery.data ?? []
+  const auditLogs = auditQuery.data?.audits ?? []
+
+  const policiesByRole = policies.reduce<Record<string, RbacPolicy[]>>(
+    (acc, policy) => {
+      acc[policy.subject] = acc[policy.subject] ?? []
+      acc[policy.subject].push(policy)
+      return acc
+    },
+    {}
+  )
+
+  const hasError =
+    rolesQuery.isError || policiesQuery.isError || auditQuery.isError
+
+  if (hasError) {
     return (
-      <div className='grid gap-6 lg:grid-cols-2'>
-        {Array.from({ length: 2 }).map((_, index) => (
-          <Skeleton key={index} className='min-h-64 rounded-lg' />
-        ))}
-      </div>
+      <ErrorState
+        title='无法加载 RBAC 概览数据'
+        description='请刷新页面或稍后再试，若问题持续请联系平台团队。'
+        onRetry={() => {
+          void rolesQuery.refetch()
+          void policiesQuery.refetch()
+          void auditQuery.refetch()
+        }}
+      />
     )
   }
 
-  const roles = rolesQuery.data ?? []
-  const audits = auditsQuery.data ?? []
-
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
-      <TabsList>
-        <TabsTrigger value='overview'>角色权限</TabsTrigger>
-        <TabsTrigger value='users'>用户管理</TabsTrigger>
-      </TabsList>
+    <div className='grid gap-6 lg:grid-cols-2'>
+      <Card>
+        <CardHeader>
+          <CardTitle>角色概览</CardTitle>
+          <CardDescription>系统中可用的角色及权限说明</CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          {roles.length === 0 ? (
+            <p className='text-muted-foreground text-sm'>暂无角色数据</p>
+          ) : (
+            roles.map((role: RbacRole) => (
+              <div key={role.name} className='space-y-2 rounded-lg border p-4'>
+                <div className='flex items-center justify-between'>
+                  <h3 className='text-lg font-semibold'>{role.name}</h3>
+                  <Badge variant='outline'>
+                    {role.permissions.length} 权限
+                  </Badge>
+                </div>
+                <p className='text-muted-foreground text-sm'>
+                  {role.description}
+                </p>
+                {role.permissions.length > 0 && (
+                  <div className='text-muted-foreground flex flex-wrap gap-2 text-xs'>
+                    {role.permissions.map((permission) => (
+                      <Badge key={permission} variant='secondary'>
+                        {permission}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
-      <TabsContent value='overview' className='space-y-6'>
-        <div className='grid gap-6 xl:grid-cols-[2fr,1fr]'>
-          <div className='space-y-6'>
-            <RoleMembersCard
-              members={roleMembers as RoleMember[]}
-              roles={roles}
-              isLoading={membersQuery.isLoading}
-              onAssign={(userId, roleId) =>
-                assignMutation.mutate({ userId, roleId })
-              }
-              isSaving={assignMutation.isPending}
-            />
-            {roles.map((role) => (
-              <RolePolicyCard
-                key={role.id}
-                role={role}
-                policies={rolePolicyMap[role.id] ?? []}
-                resourceActions={resources}
-                isUpdating={mutation.isPending}
-                onToggle={(resource, nextActions) =>
-                  mutation.mutate({
-                    roleId: role.id,
-                    resource,
-                    actions: nextActions,
-                  })
-                }
-              />
-            ))}
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>角色策略</CardTitle>
+          <CardDescription>查看当前角色与资源的权限配置</CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-3'>
+          {roles.length === 0 ? (
+            <p className='text-muted-foreground text-sm'>暂无角色信息</p>
+          ) : (
+            roles.map((role) => (
+              <div key={role.name} className='space-y-2 rounded-lg border p-3'>
+                <h3 className='text-sm font-medium'>{role.name}</h3>
+                <div className='space-y-1'>
+                  {(policiesByRole[role.name] ?? []).length === 0 ? (
+                    <p className='text-muted-foreground text-xs'>
+                      尚未配置策略
+                    </p>
+                  ) : (
+                    policiesByRole[role.name].map((policy) => (
+                      <div
+                        key={policy.id}
+                        className='flex items-center justify-between text-sm'
+                      >
+                        <span className='text-muted-foreground font-mono text-xs'>
+                          {policy.resource}
+                        </span>
+                        <Badge variant='outline'>
+                          {ACTION_LABEL[policy.action] ?? policy.action}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
-          <Card className='h-fit'>
-            <CardHeader>
-              <CardTitle>策略审计</CardTitle>
-              <CardDescription>最近的角色与策略变更记录</CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              {audits.length === 0 ? (
-                <p className='text-muted-foreground text-sm'>暂无审计记录。</p>
-              ) : (
-                <div className='space-y-4'>
-                  {audits.map((log) => (
-                    <div key={log.id} className='space-y-1'>
-                      <div className='flex items-center justify-between text-sm font-medium'>
+      <Card className='lg:col-span-2'>
+        <CardHeader>
+          <CardTitle>策略操作审计</CardTitle>
+          <CardDescription>最近的角色与策略变更记录</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {auditLogs.length === 0 ? (
+            <p className='text-muted-foreground text-sm'>暂无审计记录</p>
+          ) : (
+            <ScrollArea className='h-[320px] w-full rounded-md border p-4'>
+              <div className='space-y-3'>
+                {auditLogs.map((log: AuditLogEntry) => (
+                  <div
+                    key={log.id}
+                    className='flex items-start justify-between gap-4'
+                  >
+                    <div className='space-y-1'>
+                      <div className='flex items-center gap-2 text-sm font-medium'>
                         <span>{log.action}</span>
-                        <span
-                          className={
-                            log.status === 'success'
-                              ? 'text-muted-foreground'
-                              : 'text-destructive'
+                        <Badge
+                          variant={
+                            log.status === 'success' ? 'outline' : 'destructive'
                           }
                         >
                           {log.status === 'success' ? '成功' : '失败'}
-                        </span>
+                        </Badge>
                       </div>
-                      <div className='text-muted-foreground text-xs'>
-                        目标：{log.target}
-                      </div>
-                      <div className='text-muted-foreground text-xs'>
-                        操作人：{log.actor} ·{' '}
-                        {new Date(log.timestamp).toLocaleString()}
-                      </div>
-                      {log.details ? (
-                        <div className='text-muted-foreground text-xs'>
+                      <p className='text-muted-foreground text-xs'>
+                        {log.actor} → {log.target}
+                      </p>
+                      {log.details && (
+                        <p className='text-muted-foreground text-xs'>
                           {log.details}
-                        </div>
-                      ) : null}
-                      <Separator className='mt-3' />
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </TabsContent>
-
-      <TabsContent value='users'>
-        <AdminUsersPage />
-      </TabsContent>
-    </Tabs>
-  )
-}
-
-interface RolePolicyCardProps {
-  role: RoleDefinition
-  policies: PolicyRule[]
-  resourceActions: Record<ResourceIdentifier, ActionVerb[]>
-  isUpdating: boolean
-  onToggle: (resource: ResourceIdentifier, nextActions: ActionVerb[]) => void
-}
-
-interface RoleMembersCardProps {
-  members: RoleMember[]
-  roles: RoleDefinition[]
-  isLoading: boolean
-  isSaving: boolean
-  onAssign: (userId: Identifier, roleId: Identifier) => void
-}
-
-function RoleMembersCard({
-  members,
-  roles,
-  isLoading,
-  isSaving,
-  onAssign,
-}: RoleMembersCardProps) {
-  const roleOptions = roles.map((role) => ({ id: role.id, name: role.name }))
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>角色成员</CardTitle>
-        <CardDescription>查看并调整用户在 Mock 环境下的角色。</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className='space-y-2'>
-            <Skeleton className='h-9 w-full' />
-            <Skeleton className='h-9 w-full' />
-          </div>
-        ) : (
-          <div className='space-y-3'>
-            {members.map((member) => (
-              <div
-                key={member.userId}
-                className='flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm'
-              >
-                <div>
-                  <div className='font-medium'>{member.displayName}</div>
-                  <div className='text-muted-foreground text-xs'>
-                    {member.email}
+                    <span className='text-muted-foreground text-xs'>
+                      {formatDistanceToNow(new Date(log.timestamp), {
+                        addSuffix: true,
+                        locale: zhCN,
+                      })}
+                    </span>
                   </div>
-                </div>
-                <Select
-                  value={member.roleId}
-                  onValueChange={(value) =>
-                    onAssign(member.userId, value as Identifier)
-                  }
-                  disabled={isSaving}
-                >
-                  <SelectTrigger size='sm' aria-label='角色选择'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-            {members.length === 0 ? (
-              <p className='text-muted-foreground text-sm'>暂无成员。</p>
-            ) : null}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function RolePolicyCard({
-  role,
-  policies,
-  resourceActions,
-  isUpdating,
-  onToggle,
-}: RolePolicyCardProps) {
-  const resources = Object.entries(resourceActions).filter(([, allowed]) =>
-    allowed.some((action) => DISPLAY_ACTION_SET.has(action))
-  )
-
-  const getActionsFor = (resource: ResourceIdentifier): ActionVerb[] => {
-    const record = policies.find((policy) => policy.resource === resource)
-    return record?.actions ?? []
-  }
-
-  const handleToggle = (
-    resource: ResourceIdentifier,
-    action: ActionVerb,
-    enabled: boolean
-  ) => {
-    const current = new Set(getActionsFor(resource))
-    if (enabled) {
-      current.add(action)
-    } else {
-      current.delete(action)
-    }
-    onToggle(resource, Array.from(current))
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{role.name}</CardTitle>
-        <CardDescription>{role.description}</CardDescription>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        {resources.length === 0 ? (
-          <p className='text-muted-foreground text-sm'>暂无可配置的资源。</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>资源</TableHead>
-                {DISPLAY_ACTIONS.map((action) => (
-                  <TableHead key={action} className='text-center'>
-                    {ACTION_LABELS[action]}
-                  </TableHead>
                 ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {resources.map(([resource, allowedActions]) => {
-                const currentActions = new Set(
-                  getActionsFor(resource as ResourceIdentifier)
-                )
-                return (
-                  <TableRow key={resource}>
-                    <TableCell className='font-medium'>{resource}</TableCell>
-                    {DISPLAY_ACTIONS.map((verb) => {
-                      const disabled = !allowedActions.includes(verb)
-                      const checked = currentActions.has(verb)
-                      return (
-                        <TableCell key={verb} className='text-center'>
-                          <Switch
-                            disabled={disabled || isUpdating}
-                            checked={checked}
-                            onCheckedChange={(value) =>
-                              handleToggle(
-                                resource as ResourceIdentifier,
-                                verb,
-                                value
-                              )
-                            }
-                            aria-label={`${resource}:${verb}`}
-                            className={cn(
-                              disabled && 'cursor-not-allowed opacity-30'
-                            )}
-                          />
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

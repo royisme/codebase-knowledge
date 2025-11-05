@@ -21,9 +21,7 @@ const accountFormSchema = z.object({
     .min(1, '请输入姓名')
     .min(2, '姓名至少需要 2 个字符')
     .max(50, '姓名不能超过 50 个字符'),
-  email: z
-    .string()
-    .email('请输入有效的邮箱地址'),
+  email: z.string().email('请输入有效的邮箱地址'),
   company: z
     .string()
     .max(100, '公司名称不能超过 100 个字符')
@@ -56,7 +54,7 @@ export function AccountForm() {
     try {
       // TODO: 调用更新用户信息的 API
       // const updatedUser = await updateUserProfile(data)
-      
+
       // 暂时只更新本地状态
       if (user) {
         setUser({
@@ -87,9 +85,7 @@ export function AccountForm() {
               <FormControl>
                 <Input placeholder='请输入您的姓名' {...field} />
               </FormControl>
-              <FormDescription>
-                这是将在系统中显示的姓名
-              </FormDescription>
+              <FormDescription>这是将在系统中显示的姓名</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -103,9 +99,7 @@ export function AccountForm() {
               <FormControl>
                 <Input {...field} disabled />
               </FormControl>
-              <FormDescription>
-                邮箱地址不可修改，用于登录系统
-              </FormDescription>
+              <FormDescription>邮箱地址不可修改，用于登录系统</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -119,9 +113,7 @@ export function AccountForm() {
               <FormControl>
                 <Input placeholder='请输入公司名称' {...field} />
               </FormControl>
-              <FormDescription>
-                您所在的公司或组织
-              </FormDescription>
+              <FormDescription>您所在的公司或组织</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -135,9 +127,7 @@ export function AccountForm() {
               <FormControl>
                 <Input placeholder='请输入部门名称' {...field} />
               </FormControl>
-              <FormDescription>
-                您所在的部门或团队
-              </FormDescription>
+              <FormDescription>您所在的部门或团队</FormDescription>
               <FormMessage />
             </FormItem>
           )}

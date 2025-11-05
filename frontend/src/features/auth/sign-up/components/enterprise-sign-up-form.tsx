@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
+import type { SignUpPayload } from '@/types'
 import {
   ArrowRight,
   ArrowLeft,
@@ -16,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { signUp } from '@/lib/auth-service'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,8 +38,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
-import { signUp } from '@/lib/auth-service'
-import type { SignUpPayload } from '@/types'
 
 const step1Schema = z.object({
   fullName: z.string().min(1, '请输入姓名').max(60, '姓名过长'),
@@ -194,7 +194,7 @@ export function EnterpriseSignUpForm({
       await registrationPromise
 
       toast.success('企业账户创建成功！请使用新账户登录')
-      navigate({ to: '/sign-in' })
+      void navigate({ to: '/sign-in' })
     } catch {
       toast.error('注册过程中出现问题，请重试')
     } finally {
@@ -574,11 +574,7 @@ export function EnterpriseSignUpForm({
                     <ArrowLeft className='mr-2 h-4 w-4' />
                     上一步
                   </Button>
-                  <Button
-                    type='submit'
-                    disabled={isLoading}
-                    className='flex-1'
-                  >
+                  <Button type='submit' disabled={isLoading} className='flex-1'>
                     {isLoading ? (
                       <>
                         <Loader2 className='mr-2 h-4 w-4 animate-spin' />

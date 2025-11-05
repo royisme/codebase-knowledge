@@ -48,12 +48,12 @@ const roles: RoleDefinition[] = [
   },
 ]
 
-let policies: PolicyRule[] = [
+const createInitialPolicies = (): PolicyRule[] => [
   {
     id: 'policy-admin-knowledge' as Identifier,
     roleId: 'role-admin' as Identifier,
     resource: 'knowledge_sources',
-    actions: [...ALLOWED_ACTIONS],
+    actions: ['admin'],
     effect: 'allow',
     createdAt: new Date(
       '2025-01-02T00:00:00Z'
@@ -68,7 +68,7 @@ let policies: PolicyRule[] = [
     id: 'policy-admin-policies' as Identifier,
     roleId: 'role-admin' as Identifier,
     resource: 'policies',
-    actions: [...ALLOWED_ACTIONS],
+    actions: ['admin'],
     effect: 'allow',
     createdAt: new Date(
       '2025-01-02T00:00:00Z'
@@ -83,7 +83,7 @@ let policies: PolicyRule[] = [
     id: 'policy-admin-users' as Identifier,
     roleId: 'role-admin' as Identifier,
     resource: 'users',
-    actions: [...ALLOWED_ACTIONS],
+    actions: ['admin'],
     effect: 'allow',
     createdAt: new Date(
       '2025-01-02T00:00:00Z'
@@ -111,7 +111,7 @@ let policies: PolicyRule[] = [
   },
 ]
 
-const audits: RbacAuditLog[] = [
+const createInitialAudits = (): RbacAuditLog[] => [
   {
     id: 'audit-1' as Identifier,
     actor: 'admin@example.com',
@@ -132,7 +132,7 @@ const audits: RbacAuditLog[] = [
     timestamp: new Date(
       '2025-01-20T09:15:00Z'
     ).toISOString() as RbacAuditLog['timestamp'],
-    details: '权限设置: read, admin',
+    details: '权限设置: admin',
   },
   {
     id: 'audit-3' as Identifier,
@@ -188,7 +188,7 @@ const directory: DirectoryUser[] = [
   },
 ]
 
-let roleAssignments: RoleAssignment[] = [
+const createInitialAssignments = (): RoleAssignment[] => [
   {
     id: 'assign-1' as Identifier,
     userId: 'user-1' as Identifier,
@@ -211,6 +211,14 @@ let roleAssignments: RoleAssignment[] = [
   },
 ]
 
+let policies: PolicyRule[] = createInitialPolicies()
+let audits: RbacAuditLog[] = createInitialAudits()
+let roleAssignments: RoleAssignment[] = createInitialAssignments()
+
+let policyNumericCounter = 1
+const policyNumericMap = new Map<Identifier, number>()
+const numericToPolicyMap = new Map<number, Identifier>()
+
 const sanitizeActions = (
   actions: ActionVerb[],
   resource: ResourceIdentifier
@@ -223,6 +231,14 @@ const resolveUser = (userId: Identifier): DirectoryUser | undefined =>
   directory.find((user) => user.id === userId)
 
 export const rbacFixtures = {
+  reset() {
+    policies = createInitialPolicies()
+    audits = createInitialAudits()
+    roleAssignments = createInitialAssignments()
+    policyNumericCounter = 1
+    policyNumericMap.clear()
+    numericToPolicyMap.clear()
+  },
   getRoles(): RoleDefinition[] {
     return roles.map((role) => ({ ...role }))
   },
@@ -361,4 +377,75 @@ export const rbacFixtures = {
 
     return updated
   },
+  createPolicyRule(input: {
+    roleId: Identifier
+    resource: ResourceIdentifier
+    action: ActionVerb
+  }): PolicyRule {
+    const now = new Date().toISOString() as PolicyRule['createdAt']
+    const policy: PolicyRule = {
+      id: `policy-${crypto.randomUUID?.() ?? Date.now()}` as Identifier,
+      roleId: input.roleId,
+      resource: input.resource,
+      actions: [input.action],
+      effect: 'allow',
+      createdAt: now,
+      updatedAt: now,
+      createdBy: 'user-1' as Identifier,
+      updatedBy: 'user-1' as Identifier,
+    }
+    policies = [...policies, policy]
+    audits.unshift({
+      id: `audit-${crypto.randomUUID?.() ?? Date.now()}` as Identifier,
+      actor: 'admin@example.com',
+      action: 'create_policy',
+      target: `${input.roleId} / ${input.resource}`,
+      status: 'success',
+      timestamp: now,
+      details: `权限设置: ${input.action}`,
+    })
+    return policy
+  },
+  deletePolicy(policyId: Identifier): boolean {
+    const index = policies.findIndex((policy) => policy.id === policyId)
+    if (index === -1) {
+      return false
+    }
+    const [removed] = policies.splice(index, 1)
+    const numericId = policyNumericMap.get(policyId)
+    if (typeof numericId === 'number') {
+      numericToPolicyMap.delete(numericId)
+      policyNumericMap.delete(policyId)
+    }
+    const now = new Date().toISOString() as ISODateString
+    audits.unshift({
+      id: `audit-${crypto.randomUUID?.() ?? Date.now()}` as Identifier,
+      actor: 'admin@example.com',
+      action: 'delete_policy',
+      target: `${removed.roleId} / ${removed.resource}`,
+      status: 'success',
+      timestamp: now,
+      details: '策略已删除',
+    })
+    return true
+  },
+  ensureNumericPolicyId(policyId: Identifier): number {
+    if (!policyNumericMap.has(policyId)) {
+      const numericId = policyNumericCounter++
+      policyNumericMap.set(policyId, numericId)
+      numericToPolicyMap.set(numericId, policyId)
+    }
+    const numericId = policyNumericMap.get(policyId)
+    if (numericId === undefined) {
+      throw new Error('Failed to resolve policy numeric id')
+    }
+    return numericId
+  },
+  resolvePolicyIdentifier(numericId: number): Identifier | undefined {
+    return numericToPolicyMap.get(numericId)
+  },
+}
+
+export function resetRbacFixtures() {
+  rbacFixtures.reset()
 }

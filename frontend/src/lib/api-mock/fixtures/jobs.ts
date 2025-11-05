@@ -51,7 +51,10 @@ export const mockJobs: Job[] = [
       duration_seconds: 3600,
       errors: [
         { file: 'legacy/old_module.py', error: 'Syntax error on line 45' },
-        { file: 'utils/deprecated.py', error: 'Encoding issue: UnicodeDecodeError' },
+        {
+          file: 'utils/deprecated.py',
+          error: 'Encoding issue: UnicodeDecodeError',
+        },
       ],
     },
     created_at: '2025-10-30T13:00:00Z',

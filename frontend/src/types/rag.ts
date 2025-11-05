@@ -1,4 +1,5 @@
 import type { Identifier, ISODateString } from './common'
+import type { Entity } from './graph-query'
 
 export interface RagCitation {
   id: Identifier
@@ -13,6 +14,16 @@ export interface RagMessage {
   content: string
   createdAt: ISODateString
   citations?: RagCitation[]
+  entities?: Entity[]
+  queryId?: string | null
+  status?: 'streaming' | 'completed' | 'error'
+  error?: string | null
+  metadata?: {
+    confidenceScore?: number
+    processingTimeMs?: number
+    sourcesQueried?: string[]
+  }
+  nextActions?: string[]
 }
 
 export interface RagSession {
@@ -23,4 +34,6 @@ export interface RagSession {
   updatedAt: ISODateString
   participants: Identifier[]
   messages: RagMessage[]
+  lastQueryId?: string | null
+  quickActions?: string[]
 }

@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,9 +12,14 @@ import {
 
 export interface ActionMenuAction {
   label: string
-  onSelect: () => void
+  onSelect?: () => void
   destructive?: boolean
   disabled?: boolean
+  link?: {
+    to: string
+    params?: Record<string, unknown>
+    search?: Record<string, unknown>
+  }
 }
 
 export interface ActionMenuGroup {
@@ -64,7 +70,23 @@ export function ActionMenu({
             )}
             {group.actions.map(
               (action, actionIndex) =>
-                !action.disabled && (
+                !action.disabled &&
+                (action.link ? (
+                  <DropdownMenuItem key={actionIndex} asChild>
+                    <Link
+                      to={action.link.to as never}
+                      params={action.link.params as never}
+                      search={action.link.search as never}
+                      className={
+                        action.destructive
+                          ? 'text-destructive focus:text-destructive'
+                          : ''
+                      }
+                    >
+                      {action.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
                   <DropdownMenuItem
                     key={actionIndex}
                     onSelect={action.onSelect}
@@ -76,7 +98,7 @@ export function ActionMenu({
                   >
                     {action.label}
                   </DropdownMenuItem>
-                )
+                ))
             )}
             {groupIndex < groups.length - 1 &&
               group.actions.some((action) => !action.disabled) && (

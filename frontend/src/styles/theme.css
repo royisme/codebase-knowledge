@@ -58,7 +58,7 @@
 }
 
 /* User Workspace Theme - Friendly Blue */
-[data-theme="user"] {
+[data-theme='user'] {
   --sidebar: oklch(0.98 0.005 235);
   --sidebar-foreground: oklch(0.16 0.02 235);
   --sidebar-primary: oklch(0.55 0.09 235);
@@ -70,7 +70,7 @@
 }
 
 /* Admin Console Theme - Professional Dark with Orange Accent */
-[data-theme="admin"] {
+[data-theme='admin'] {
   --sidebar: oklch(0.16 0.02 235);
   --sidebar-foreground: oklch(0.92 0.01 235);
   --sidebar-primary: oklch(0.22 0.02 235);

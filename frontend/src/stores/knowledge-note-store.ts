@@ -1,39 +1,42 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface KnowledgeNote {
-  id: string;
-  question: string;
-  answer: string;
-  sourceId: string;
-  sourceName: string;
-  createdAt: string;
-  tags?: string[];
+  id: string
+  question: string
+  answerSummary: string
+  sourceId: string | null
+  sourceName?: string
+  createdAt: string
+  updatedAt: string
+  tags?: string[]
+  note?: string | null
 }
 
 export interface QueryHistory {
-  id: string;
-  question: string;
-  sourceId: string;
-  sourceName: string;
-  answer: string;
-  timestamp: string;
-  executionTimeMs: number;
+  id: string
+  question: string
+  sourceId: string
+  sourceName: string
+  answer: string
+  timestamp: string
+  executionTimeMs: number
 }
 
 interface KnowledgeNoteStore {
-  notes: KnowledgeNote[];
-  history: QueryHistory[];
-  
-  addNote: (note: Omit<KnowledgeNote, 'id' | 'createdAt'>) => void;
-  removeNote: (id: string) => void;
-  clearNotes: () => void;
-  
-  addToHistory: (query: Omit<QueryHistory, 'id' | 'timestamp'>) => void;
-  clearHistory: () => void;
-  
-  getNotesCount: () => number;
-  getHistoryCount: () => number;
+  notes: KnowledgeNote[]
+  history: QueryHistory[]
+
+  setNotes: (items: KnowledgeNote[]) => void
+  addNote: (note: KnowledgeNote) => void
+  removeNote: (id: string) => void
+  clearNotes: () => void
+
+  addToHistory: (query: Omit<QueryHistory, 'id' | 'timestamp'>) => void
+  clearHistory: () => void
+
+  getNotesCount: () => number
+  getHistoryCount: () => number
 }
 
 export const useKnowledgeNoteStore = create<KnowledgeNoteStore>()(
@@ -42,25 +45,24 @@ export const useKnowledgeNoteStore = create<KnowledgeNoteStore>()(
       notes: [],
       history: [],
 
+      setNotes: (items) => {
+        set({ notes: items })
+      },
+
       addNote: (note) => {
-        const newNote: KnowledgeNote = {
-          ...note,
-          id: `note-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          createdAt: new Date().toISOString(),
-        };
         set((state) => ({
-          notes: [newNote, ...state.notes],
-        }));
+          notes: [note, ...state.notes.filter((item) => item.id !== note.id)],
+        }))
       },
 
       removeNote: (id) => {
         set((state) => ({
           notes: state.notes.filter((note) => note.id !== id),
-        }));
+        }))
       },
 
       clearNotes: () => {
-        set({ notes: [] });
+        set({ notes: [] })
       },
 
       addToHistory: (query) => {
@@ -68,14 +70,14 @@ export const useKnowledgeNoteStore = create<KnowledgeNoteStore>()(
           ...query,
           id: `query-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           timestamp: new Date().toISOString(),
-        };
+        }
         set((state) => ({
-          history: [newQuery, ...state.history].slice(0, 100), // 只保留最近100条
-        }));
+          history: [newQuery, ...state.history].slice(0, 100),
+        }))
       },
 
       clearHistory: () => {
-        set({ history: [] });
+        set({ history: [] })
       },
 
       getNotesCount: () => get().notes.length,
@@ -89,4 +91,4 @@ export const useKnowledgeNoteStore = create<KnowledgeNoteStore>()(
       }),
     }
   )
-);
+)

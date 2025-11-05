@@ -20,17 +20,18 @@ export function JobStageIndicator({
   currentStage,
   status,
 }: JobStageIndicatorProps) {
-  const currentIndex = STAGES.findIndex((s) => s.key === currentStage)
+  const foundIndex = STAGES.findIndex((s) => s.key === currentStage)
+  const currentIndex = foundIndex === -1 ? 0 : foundIndex
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       {STAGES.map((stage, index) => {
         const isCompleted = index < currentIndex || status === 'completed'
         const isCurrent = index === currentIndex && status === 'running'
         const isFailed = status === 'failed' && index === currentIndex
 
         return (
-          <div key={stage.key} className="flex items-center gap-3">
+          <div key={stage.key} className='flex items-center gap-3'>
             <div
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-full border-2',
@@ -39,19 +40,20 @@ export function JobStageIndicator({
                     isCompleted,
                   'border-primary bg-background': isCurrent,
                   'border-destructive bg-destructive/10': isFailed,
-                  'border-muted bg-background': !isCompleted && !isCurrent && !isFailed,
+                  'border-muted bg-background':
+                    !isCompleted && !isCurrent && !isFailed,
                 }
               )}
             >
               {isCompleted ? (
-                <CheckCircle2 className="h-5 w-5" />
+                <CheckCircle2 className='h-5 w-5' />
               ) : isCurrent ? (
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <Loader2 className='text-primary h-5 w-5 animate-spin' />
               ) : (
-                <Circle className="h-5 w-5 text-muted-foreground" />
+                <Circle className='text-muted-foreground h-5 w-5' />
               )}
             </div>
-            <div className="flex-1">
+            <div className='flex-1'>
               <p
                 className={cn('text-sm font-medium', {
                   'text-foreground': isCompleted || isCurrent,
@@ -62,10 +64,10 @@ export function JobStageIndicator({
                 {stage.label}
               </p>
               {isCurrent && (
-                <p className="text-xs text-muted-foreground">进行中...</p>
+                <p className='text-muted-foreground text-xs'>进行中...</p>
               )}
               {isFailed && (
-                <p className="text-xs text-destructive">此阶段失败</p>
+                <p className='text-destructive text-xs'>此阶段失败</p>
               )}
             </div>
           </div>

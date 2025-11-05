@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
-import { afterAll, afterEach, beforeAll } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { server } from '@/lib/api-mock/msw/server'
+import { setupTestAuth, clearTestAuth } from '@/lib/test-utils'
 
 // Fix for MSW with vitest/node environment
 if (typeof global !== 'undefined' && !global.fetch) {
@@ -50,14 +51,22 @@ if (typeof Element !== 'undefined') {
 
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'warn' })
+  // eslint-disable-next-line no-console
   console.log('[MSW] Server started')
+})
+
+beforeEach(() => {
+  // 默认为每个测试注入管理员登录态，避免 RBAC 请求 401
+  setupTestAuth()
 })
 
 afterEach(() => {
   server.resetHandlers()
+  clearTestAuth()
 })
 
 afterAll(() => {
   server.close()
+  // eslint-disable-next-line no-console
   console.log('[MSW] Server closed')
 })

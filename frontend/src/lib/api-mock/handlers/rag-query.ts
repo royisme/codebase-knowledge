@@ -25,8 +25,8 @@ export const ragQueryHandlers = [
     if (!token || !authFixtures.findUserByToken(token)) {
       return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 })
     }
-    const payload = await request.json() as QueryPayload
-    
+    const payload = (await request.json()) as QueryPayload
+
     // 验证必填字段
     if (!payload?.query || !payload.query.trim()) {
       return HttpResponse.json(
@@ -37,8 +37,12 @@ export const ragQueryHandlers = [
         { status: 400 }
       )
     }
-    
-    if (!payload?.source_ids || !Array.isArray(payload.source_ids) || payload.source_ids.length === 0) {
+
+    if (
+      !payload?.source_ids ||
+      !Array.isArray(payload.source_ids) ||
+      payload.source_ids.length === 0
+    ) {
       return HttpResponse.json(
         {
           code: 'VALIDATION_ERROR',
@@ -47,10 +51,10 @@ export const ragQueryHandlers = [
         { status: 400 }
       )
     }
-    
+
     // 模拟网络延迟（500-1500ms）
     await delay(Math.floor(Math.random() * 1000) + 500)
-    
+
     try {
       const response = executeRagQueryFixture({
         query: payload.query,
@@ -60,9 +64,9 @@ export const ragQueryHandlers = [
         include_evidence: payload.include_evidence !== false,
         timeout_seconds: payload.timeout_seconds || 30,
       })
-      
+
       return HttpResponse.json(response)
-    } catch (_error) {
+    } catch {
       return HttpResponse.json(
         {
           code: 'QUERY_ERROR',

@@ -8,6 +8,7 @@ import type {
   UserActivity,
 } from '@/types'
 import { apiClient } from './api-client'
+import { API_ENDPOINTS } from './api-endpoints'
 
 function buildUserQueryParams(params?: AdminUserListParams) {
   const searchParams = new URLSearchParams()
@@ -33,13 +34,13 @@ function buildUserQueryParams(params?: AdminUserListParams) {
 export function listAdminUsers(params?: AdminUserListParams) {
   const query = buildUserQueryParams(params)
   return apiClient<AdminUserListResponse>({
-    endpoint: `/api/admin/users${query}`,
+    endpoint: `${API_ENDPOINTS.users.list}${query}`,
   })
 }
 
 export function updateUserRole(payload: UpdateUserRolePayload) {
   return apiClient<AdminUser>({
-    endpoint: `/api/admin/users/${payload.userId}/roles`,
+    endpoint: `${API_ENDPOINTS.users.detail(payload.userId)}/roles`,
     method: 'PATCH',
     body: { roleIds: payload.roleIds },
   })
@@ -47,7 +48,7 @@ export function updateUserRole(payload: UpdateUserRolePayload) {
 
 export function resetUserPassword(payload: ResetPasswordPayload) {
   return apiClient<{ temporaryPassword: string }>({
-    endpoint: `/api/admin/users/${payload.userId}/reset-password`,
+    endpoint: `${API_ENDPOINTS.users.detail(payload.userId)}/reset-password`,
     method: 'POST',
     body: { temporaryPassword: payload.temporaryPassword },
   })
@@ -55,7 +56,7 @@ export function resetUserPassword(payload: ResetPasswordPayload) {
 
 export function updateUserStatus(payload: UpdateUserStatusPayload) {
   return apiClient<AdminUser>({
-    endpoint: `/api/admin/users/${payload.userId}/status`,
+    endpoint: `${API_ENDPOINTS.users.detail(payload.userId)}/status`,
     method: 'PATCH',
     body: { status: payload.status },
   })
@@ -63,6 +64,6 @@ export function updateUserStatus(payload: UpdateUserStatusPayload) {
 
 export function getUserActivity(userId: string) {
   return apiClient<UserActivity[]>({
-    endpoint: `/api/admin/users/${userId}/activity`,
+    endpoint: `${API_ENDPOINTS.users.detail(userId)}/activity`,
   })
 }

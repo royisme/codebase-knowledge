@@ -69,9 +69,7 @@
       }
     ],
     "source_metadata": {
-      "selected_sources": [
-        { "id": "src-001", "name": "payments-service" }
-      ],
+      "selected_sources": [{ "id": "src-001", "name": "payments-service" }],
       "retrieval_mode": "hybrid",
       "execution_time_ms": 2100,
       "from_cache": false

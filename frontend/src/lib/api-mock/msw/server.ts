@@ -1,18 +1,27 @@
 import { setupServer } from 'msw/node'
 import { handlers } from '../handlers'
 
+const MSW_DEBUG = process.env.MSW_DEBUG === 'true'
+
+function debugLog(...args: unknown[]) {
+  if (MSW_DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log('[MSW]', ...args)
+  }
+}
+
 // 配置 MSW server
 export const server = setupServer(...handlers)
 
-// 添加事件监听器来调试
+// 添加事件监听器（仅在 debug 模式输出）
 server.events.on('request:start', ({ request }) => {
-  console.log('[MSW] Outgoing:', request.method, request.url)
+  debugLog('Outgoing:', request.method, request.url)
 })
 
 server.events.on('request:match', ({ request }) => {
-  console.log('[MSW] Matched:', request.method, request.url)
+  debugLog('Matched:', request.method, request.url)
 })
 
 server.events.on('request:unhandled', ({ request }) => {
-  console.log('[MSW] Unhandled:', request.method, request.url)
+  debugLog('Unhandled:', request.method, request.url)
 })

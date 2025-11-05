@@ -20,6 +20,7 @@ interface RepositoriesTableProps {
   isLoading: boolean
   onDelete: (repo: Repository) => void
   onTriggerIndex: (repo: Repository, forceFull?: boolean) => void
+  onEdit: (repo: Repository) => void
 }
 
 function formatLastSync(lastSyncedAt?: string) {
@@ -47,6 +48,7 @@ export function RepositoriesTable({
   isLoading,
   onDelete,
   onTriggerIndex,
+  onEdit,
 }: RepositoriesTableProps) {
   if (isLoading) {
     return (
@@ -90,17 +92,23 @@ export function RepositoriesTable({
         <TableBody>
           {data.map((repo) => {
             const languages = getTopLanguages(repo.source_metadata?.languages)
+            const repoUrl = repo.connection_config?.repo_url
+            const branch = repo.connection_config?.branch
 
             return (
               <TableRow key={repo.id}>
                 <TableCell className='font-medium'>{repo.name}</TableCell>
                 <TableCell className='text-muted-foreground max-w-[300px] truncate text-sm'>
-                  {repo.connection_config.repo_url}
+                  {repoUrl ?? '-'}
                 </TableCell>
                 <TableCell>
-                  <Badge variant='outline' className='font-mono text-xs'>
-                    {repo.connection_config.branch}
-                  </Badge>
+                  {branch ? (
+                    <Badge variant='outline' className='font-mono text-xs'>
+                      {branch}
+                    </Badge>
+                  ) : (
+                    <span className='text-muted-foreground text-xs'>-</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {languages.length > 0 ? (
@@ -149,6 +157,10 @@ export function RepositoriesTable({
                       {
                         actions: [
                           {
+                            label: '编辑',
+                            onSelect: () => onEdit(repo),
+                          },
+                          {
                             label: '同步',
                             onSelect: () => onTriggerIndex(repo, false),
                             disabled: !repo.source_metadata?.index_version,
@@ -163,8 +175,9 @@ export function RepositoriesTable({
                         actions: [
                           {
                             label: '查看任务',
-                            onSelect: () => {
-                              // TODO: 跳转到任务列表页
+                            link: {
+                              to: '/admin/repositories/$repoId/jobs',
+                              params: { repoId: repo.id },
                             },
                           },
                         ],

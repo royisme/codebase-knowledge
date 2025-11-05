@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import type { AuditAction, RbacAuditLog } from '@/types'
 import {
   Search as SearchIcon,
   SlidersHorizontal,
@@ -14,7 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { fetchAuditLogs } from '@/lib/rbac-service'
+import { fetchAuditLogs, type AuditLogEntry } from '@/lib/rbac-service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -38,7 +38,23 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-type AuditStatus = RbacAuditLog['status']
+type AuditStatus = AuditLogEntry['status']
+type AuditAction =
+  | 'assign_role'
+  | 'update_policy'
+  | 'create_policy'
+  | 'delete_policy'
+  | 'login_attempt'
+  | 'permission_denied'
+
+const ACTION_OPTIONS: readonly AuditAction[] = [
+  'assign_role',
+  'update_policy',
+  'create_policy',
+  'delete_policy',
+  'login_attempt',
+  'permission_denied',
+] as const
 
 const STATUS_OPTIONS: ReadonlyArray<{
   value: AuditStatus
@@ -49,21 +65,12 @@ const STATUS_OPTIONS: ReadonlyArray<{
   { value: 'failure', label: '失败', variant: 'destructive' },
 ]
 
-const ACTION_OPTIONS: ReadonlyArray<AuditAction> = [
-  'assign_role',
-  'update_policy',
-  'create_policy',
-  'delete_policy',
-  'login_attempt',
-  'permission_denied',
-]
-
 const STATUS_LABELS: Record<AuditStatus, string> = {
   success: '成功',
   failure: '失败',
 }
 
-const ACTION_LABELS: Record<AuditAction, string> = {
+const ACTION_LABELS: Record<string, string> = {
   assign_role: '分配角色',
   update_policy: '更新策略',
   create_policy: '创建策略',
@@ -86,13 +93,25 @@ export function AuditPage() {
   const pageSize = 20
 
   const {
-    data: audits,
+    data: auditResponse,
     isLoading,
+    isError,
     refetch,
-  } = useQuery({
+  } = useQuery<{
+    audits: AuditLogEntry[]
+    total: number
+    page: number
+    limit: number
+  }>({
     queryKey: ['rbac', 'audits'],
     queryFn: fetchAuditLogs,
   })
+
+  useEffect(() => {
+    if (isError) {
+      toast.error('审计日志加载失败，请稍后再试')
+    }
+  }, [isError])
 
   // 从路由参数获取过滤条件
   const search = searchParams.search ?? ''
@@ -108,9 +127,10 @@ export function AuditPage() {
 
   // Mock 分页和过滤逻辑
   const filteredAudits = useMemo(() => {
+    const audits = auditResponse?.audits ?? []
     if (!audits) return { items: [], total: 0 }
 
-    const filtered = audits.filter((audit: RbacAuditLog) => {
+    const filtered = audits.filter((audit: AuditLogEntry) => {
       // 搜索过滤
       if (search) {
         const searchLower = search.toLowerCase()
@@ -130,7 +150,10 @@ export function AuditPage() {
       }
 
       // 动作过滤
-      if (actionFilters.length > 0 && !actionFilters.includes(audit.action)) {
+      if (
+        actionFilters.length > 0 &&
+        !actionFilters.includes(audit.action as AuditAction)
+      ) {
         return false
       }
 
@@ -145,7 +168,14 @@ export function AuditPage() {
       items: paginatedItems,
       total: filtered.length,
     }
-  }, [audits, search, statusFilters, actionFilters, page, pageSize])
+  }, [
+    auditResponse?.audits,
+    search,
+    statusFilters,
+    actionFilters,
+    page,
+    pageSize,
+  ])
 
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleString()
@@ -165,7 +195,7 @@ export function AuditPage() {
     )
   }
 
-  const getActionLabel = (action: AuditAction) => {
+  const getActionLabel = (action: string) => {
     return ACTION_LABELS[action] || action
   }
 
@@ -210,6 +240,16 @@ export function AuditPage() {
           </CardContent>
         </Card>
       </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <ErrorState
+        title='无法加载审计日志'
+        description='请刷新页面或稍后再试，若问题持续请联系平台团队。'
+        onRetry={() => refetch()}
+      />
     )
   }
 
@@ -413,7 +453,7 @@ export function AuditPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant='outline'>
-                          {getActionLabel(audit.action)}
+                          {ACTION_LABELS[audit.action] || audit.action}
                         </Badge>
                       </TableCell>
                       <TableCell>

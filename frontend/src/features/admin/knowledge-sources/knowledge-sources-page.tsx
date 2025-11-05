@@ -1,9 +1,8 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type {
   CreateKnowledgeSourcePayload,
-  Identifier,
   KnowledgeSource,
   KnowledgeSourceStatus,
 } from '@/types'
@@ -15,13 +14,11 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  bulkOperationOnKnowledgeSources,
   createKnowledgeSource,
   deleteKnowledgeSource,
   listKnowledgeSources,
   triggerKnowledgeSourceSync,
   updateKnowledgeSource,
-  type KnowledgeSourceListResponse,
 } from '@/lib/knowledge-source-service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
@@ -44,19 +42,14 @@ import { KnowledgeSourcesTable } from './components/knowledge-sources-table'
 
 const statusOptions: Array<{ value: KnowledgeSourceStatus; label: string }> = [
   { value: 'active', label: '已启用' },
-  { value: 'syncing', label: '同步中' },
   { value: 'disabled', label: '已禁用' },
-  { value: 'error', label: '异常' },
 ]
 
-type ConfirmAction =
-  | { type: 'delete'; source: KnowledgeSource }
-  | { type: 'toggle'; source: KnowledgeSource }
-  | null
+const route = getRouteApi('/admin/sources')
 
-function toParserConfig(
+const mapFormToPayload = (
   values: KnowledgeSourceFormValues
-): CreateKnowledgeSourcePayload['parserConfig'] {
+): CreateKnowledgeSourcePayload => {
   const languages = values.languages
     .split(',')
     .map((item) => item.trim())
@@ -67,75 +60,83 @@ function toParserConfig(
     .map((item) => item.trim())
     .filter(Boolean)
 
-  const maxDepth =
-    values.maxDepth && values.maxDepth.length > 0
-      ? Number(values.maxDepth)
-      : undefined
-
   return {
-    languages: languages.length > 0 ? languages : ['python'],
-    pathAllowList:
-      pathAllowList && pathAllowList.length > 0 ? pathAllowList : undefined,
-    maxDepth,
-    enableIncrementalRefresh: values.enableIncrementalRefresh,
+    name: values.name,
+    repositoryUrl: values.repositoryUrl,
+    defaultBranch: values.defaultBranch,
+    credentialMode: values.credentialMode,
+    parserConfig: {
+      languages: languages.length > 0 ? languages : ['python', 'typescript'],
+      pathAllowList:
+        pathAllowList && pathAllowList.length > 0 ? pathAllowList : undefined,
+      maxDepth: values.maxDepth ? Number(values.maxDepth) : undefined,
+      enableIncrementalRefresh: values.enableIncrementalRefresh,
+    },
   }
 }
 
-const route = getRouteApi('/admin/sources')
-
 export function KnowledgeSourcesPage() {
-  const routeSearchParams = route.useSearch()
+  const routeSearch = route.useSearch() as {
+    page?: number
+    pageSize?: number
+    search?: string
+    statuses?: KnowledgeSourceStatus[]
+  }
   const navigate = route.useNavigate()
+  const queryClient = useQueryClient()
 
   const [isDialogOpen, setDialogOpen] = useState(false)
   const [mode, setMode] = useState<'create' | 'edit'>('create')
   const [editing, setEditing] = useState<KnowledgeSource | undefined>(undefined)
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
-  const [selectedIds, setSelectedIds] = useState<Identifier[]>([])
+  const [confirmAction, setConfirmAction] = useState<
+    | { type: 'delete'; source: KnowledgeSource }
+    | { type: 'toggle'; source: KnowledgeSource }
+    | null
+  >(null)
 
-  const [bulkConfirmAction, setBulkConfirmAction] = useState<{
-    type: 'enable' | 'disable' | 'sync'
-    ids: string[]
-  } | null>(null)
-
-  const queryClient = useQueryClient()
-
-  // 使用 deferred value 优化搜索输入
-  const deferredSearch = useDeferredValue(routeSearchParams.search || '')
-  const page = routeSearchParams.page || 1
-  const pageSize = routeSearchParams.pageSize || 10
+  const page = routeSearch.page ?? 1
+  const pageSize = routeSearch.pageSize ?? 10
+  const searchValue = routeSearch.search ?? ''
   const statusFilters = useMemo(
-    () => routeSearchParams.statuses || [],
-    [routeSearchParams.statuses]
+    () => routeSearch.statuses ?? [],
+    [routeSearch.statuses]
   )
 
-  const queryKey = useMemo(() => {
-    const normalizedStatuses = [...statusFilters].sort().join(',')
-    return [
+  const listQuery = useQuery<Awaited<ReturnType<typeof listKnowledgeSources>>>({
+    queryKey: [
       'admin',
       'knowledge-sources',
-      { page, pageSize, search: deferredSearch, statuses: normalizedStatuses },
-    ]
-  }, [page, pageSize, deferredSearch, statusFilters])
-
-  const listQuery = useQuery<KnowledgeSourceListResponse>({
-    queryKey,
+      {
+        page,
+        pageSize,
+        search: searchValue,
+        statuses: statusFilters,
+      },
+    ],
     queryFn: () =>
       listKnowledgeSources({
         page,
         pageSize,
-        search: deferredSearch,
-        statuses: statusFilters.length > 0 ? statusFilters : undefined,
+        search: searchValue,
+        statuses: statusFilters,
       }),
     placeholderData: (previous) => previous,
   })
+
+  useEffect(() => {
+    if (listQuery.isError) {
+      toast.error('知识源列表加载失败，请稍后重试')
+    }
+  }, [listQuery.isError])
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateKnowledgeSourcePayload) =>
       createKnowledgeSource(payload),
     onSuccess: () => {
       toast.success('知识源已创建')
-      queryClient.invalidateQueries({ queryKey })
+      void queryClient.invalidateQueries({
+        queryKey: ['admin', 'knowledge-sources'],
+      })
       setDialogOpen(false)
     },
     onError: () => {
@@ -148,15 +149,18 @@ export function KnowledgeSourcesPage() {
       id,
       payload,
     }: {
-      id: Identifier
+      id: string
       payload: Partial<CreateKnowledgeSourcePayload> & {
         status?: KnowledgeSourceStatus
       }
     }) => updateKnowledgeSource(id, payload),
     onSuccess: () => {
       toast.success('知识源已更新')
-      queryClient.invalidateQueries({ queryKey })
+      void queryClient.invalidateQueries({
+        queryKey: ['admin', 'knowledge-sources'],
+      })
       setDialogOpen(false)
+      setConfirmAction(null)
     },
     onError: () => {
       toast.error('更新知识源失败，请稍后重试')
@@ -164,10 +168,12 @@ export function KnowledgeSourcesPage() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: Identifier) => deleteKnowledgeSource(id),
+    mutationFn: (id: string) => deleteKnowledgeSource(id),
     onSuccess: () => {
       toast.success('知识源已删除')
-      queryClient.invalidateQueries({ queryKey })
+      void queryClient.invalidateQueries({
+        queryKey: ['admin', 'knowledge-sources'],
+      })
       setConfirmAction(null)
     },
     onError: () => {
@@ -176,52 +182,15 @@ export function KnowledgeSourcesPage() {
   })
 
   const syncMutation = useMutation({
-    mutationFn: (id: Identifier) => triggerKnowledgeSourceSync(id),
+    mutationFn: (id: string) => triggerKnowledgeSourceSync(id),
     onSuccess: (response) => {
       toast.success(response.message ?? '已触发同步')
-      queryClient.invalidateQueries({ queryKey })
+      void queryClient.invalidateQueries({
+        queryKey: ['admin', 'knowledge-sources'],
+      })
     },
     onError: () => {
       toast.error('触发同步失败')
-    },
-  })
-
-  const bulkEnableMutation = useMutation({
-    mutationFn: (ids: string[]) =>
-      bulkOperationOnKnowledgeSources({ ids, operation: 'enable' }),
-    onSuccess: (response) => {
-      toast.success(response.message)
-      setSelectedIds([])
-      queryClient.invalidateQueries({ queryKey })
-    },
-    onError: () => {
-      toast.error('批量启用失败')
-    },
-  })
-
-  const bulkDisableMutation = useMutation({
-    mutationFn: (ids: string[]) =>
-      bulkOperationOnKnowledgeSources({ ids, operation: 'disable' }),
-    onSuccess: (response) => {
-      toast.success(response.message)
-      setSelectedIds([])
-      queryClient.invalidateQueries({ queryKey })
-    },
-    onError: () => {
-      toast.error('批量禁用失败')
-    },
-  })
-
-  const bulkSyncMutation = useMutation({
-    mutationFn: (ids: string[]) =>
-      bulkOperationOnKnowledgeSources({ ids, operation: 'sync' }),
-    onSuccess: (response) => {
-      toast.success(response.message)
-      setSelectedIds([])
-      queryClient.invalidateQueries({ queryKey })
-    },
-    onError: () => {
-      toast.error('批量同步失败')
     },
   })
 
@@ -229,10 +198,53 @@ export function KnowledgeSourcesPage() {
     createMutation.isPending ||
     updateMutation.isPending ||
     deleteMutation.isPending ||
-    syncMutation.isPending ||
-    bulkEnableMutation.isPending ||
-    bulkDisableMutation.isPending ||
-    bulkSyncMutation.isPending
+    syncMutation.isPending
+
+  const updateSearchParam = (updates: Partial<typeof routeSearch>) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        ...updates,
+      }),
+    })
+  }
+
+  const handleSubmit = async (values: KnowledgeSourceFormValues) => {
+    const payload = mapFormToPayload(values)
+    if (mode === 'create') {
+      await createMutation.mutateAsync(payload)
+      return
+    }
+
+    if (!editing) return
+    await updateMutation.mutateAsync({
+      id: editing.id,
+      payload,
+    })
+  }
+
+  const handleToggleStatus = async (source: KnowledgeSource) => {
+    const nextStatus: KnowledgeSourceStatus =
+      source.status === 'active' ? 'disabled' : 'active'
+    await updateMutation.mutateAsync({
+      id: source.id,
+      payload: { status: nextStatus },
+    })
+  }
+
+  const handleDelete = async (source: KnowledgeSource) => {
+    await deleteMutation.mutateAsync(source.id)
+  }
+
+  const handleSync = async (source: KnowledgeSource) => {
+    await syncMutation.mutateAsync(source.id)
+  }
+
+  const handleEdit = (source: KnowledgeSource) => {
+    setMode('edit')
+    setEditing(source)
+    setDialogOpen(true)
+  }
 
   const onCreate = () => {
     setMode('create')
@@ -240,123 +252,21 @@ export function KnowledgeSourcesPage() {
     setDialogOpen(true)
   }
 
-  const onEdit = (source: KnowledgeSource) => {
-    setMode('edit')
-    setEditing(source)
-    setDialogOpen(true)
-  }
-
-  const onToggle = (source: KnowledgeSource) => {
-    setConfirmAction({ type: 'toggle', source })
-  }
-
   const onDeleteRequest = (source: KnowledgeSource) => {
     setConfirmAction({ type: 'delete', source })
   }
 
-  const handleSubmit = async (values: KnowledgeSourceFormValues) => {
-    const parserConfig = toParserConfig(values)
-
-    if (mode === 'create') {
-      await createMutation.mutateAsync({
-        name: values.name,
-        repositoryUrl: values.repositoryUrl,
-        defaultBranch: values.defaultBranch,
-        credentialMode: values.credentialMode,
-        parserConfig,
-      })
-      return
-    }
-
-    if (!editing) return
-    await updateMutation.mutateAsync({
-      id: editing.id,
-      payload: {
-        name: values.name,
-        repositoryUrl: values.repositoryUrl,
-        defaultBranch: values.defaultBranch,
-        credentialMode: values.credentialMode,
-        parserConfig,
-      },
-    })
+  const onToggleRequest = (source: KnowledgeSource) => {
+    setConfirmAction({ type: 'toggle', source })
   }
 
   const handleConfirm = async () => {
     if (!confirmAction) return
-    const source = confirmAction.source
-
     if (confirmAction.type === 'delete') {
-      await deleteMutation.mutateAsync(source.id)
+      await handleDelete(confirmAction.source)
       return
     }
-
-    const nextStatus = source.status === 'disabled' ? 'active' : 'disabled'
-    await updateMutation.mutateAsync({
-      id: source.id,
-      payload: { status: nextStatus },
-    })
-    toast.success(nextStatus === 'active' ? '已启用知识源' : '已禁用知识源')
-    setConfirmAction(null)
-  }
-
-  const updateSearchParam = (updates: Partial<typeof routeSearchParams>) => {
-    navigate({
-      search: (prev: typeof routeSearchParams) => ({ ...prev, ...updates }),
-    })
-  }
-
-  const toggleStatusFilter = (status: KnowledgeSourceStatus) => {
-    const newFilters = statusFilters.includes(status)
-      ? statusFilters.filter((item: KnowledgeSourceStatus) => item !== status)
-      : [...statusFilters, status]
-
-    updateSearchParam({
-      statuses: newFilters,
-      page: 1,
-    })
-  }
-
-  const resetFilters = () => {
-    updateSearchParam({
-      search: '',
-      statuses: [],
-      page: 1,
-    })
-  }
-
-  const handleBulkEnable = (ids: string[]) => {
-    setBulkConfirmAction({ type: 'enable', ids })
-  }
-
-  const handleBulkDisable = (ids: string[]) => {
-    setBulkConfirmAction({ type: 'disable', ids })
-  }
-
-  const handleBulkSync = (ids: string[]) => {
-    setBulkConfirmAction({ type: 'sync', ids })
-  }
-
-  const handleBulkConfirm = async () => {
-    if (!bulkConfirmAction) return
-
-    const { type, ids } = bulkConfirmAction
-
-    try {
-      switch (type) {
-        case 'enable':
-          await bulkEnableMutation.mutateAsync(ids)
-          break
-        case 'disable':
-          await bulkDisableMutation.mutateAsync(ids)
-          break
-        case 'sync':
-          await bulkSyncMutation.mutateAsync(ids)
-          break
-      }
-      setBulkConfirmAction(null)
-    } catch {
-      // Error handling is done in mutations
-    }
+    await handleToggleStatus(confirmAction.source)
   }
 
   return (
@@ -365,15 +275,13 @@ export function KnowledgeSourcesPage() {
         <div className='relative w-full max-w-md'>
           <SearchIcon className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
           <Input
-            value={routeSearchParams.search || ''}
-            onChange={(event) => {
-              updateSearchParam({
-                search: event.target.value,
-                page: 1,
-              })
-            }}
+            value={searchValue}
+            onChange={(event) =>
+              updateSearchParam({ search: event.target.value, page: 1 })
+            }
             placeholder='搜索知识源名称或仓库地址'
             className='pl-9'
+            disabled={isMutating}
           />
         </div>
 
@@ -396,132 +304,100 @@ export function KnowledgeSourcesPage() {
               <DropdownMenuCheckboxItem
                 key={option.value}
                 checked={statusFilters.includes(option.value)}
-                onCheckedChange={() => toggleStatusFilter(option.value)}
+                onCheckedChange={() => {
+                  const exists = statusFilters.includes(option.value)
+                  const next = exists
+                    ? statusFilters.filter((item) => item !== option.value)
+                    : [...statusFilters, option.value]
+                  updateSearchParam({ statuses: next, page: 1 })
+                }}
               >
                 {option.label}
               </DropdownMenuCheckboxItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem inset onSelect={resetFilters}>
-              重置筛选
-            </DropdownMenuItem>
+            {statusFilters.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => updateSearchParam({ statuses: [], page: 1 })}
+                >
+                  清除筛选
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button
-          onClick={() => listQuery.refetch()}
-          variant='ghost'
-          size='icon'
-          className='ml-auto'
-        >
-          <RefreshCw className='h-4 w-4' />
-        </Button>
-
-        <Button onClick={onCreate} className='ml-auto'>
+        <Button className='ml-auto' onClick={onCreate} disabled={isMutating}>
           <Plus className='mr-2 h-4 w-4' />
           新增知识源
         </Button>
+        <Button
+          variant='outline'
+          onClick={() =>
+            void queryClient.invalidateQueries({
+              queryKey: ['admin', 'knowledge-sources'],
+            })
+          }
+          disabled={listQuery.isLoading}
+        >
+          <RefreshCw className='mr-2 h-4 w-4' />
+          刷新
+        </Button>
       </div>
 
-      <KnowledgeSourcesTable
-        data={listQuery.data?.items ?? []}
-        isLoading={listQuery.isLoading}
-        page={page}
-        pageSize={pageSize}
-        total={listQuery.data?.total ?? 0}
-        onPageChange={(next) => updateSearchParam({ page: Math.max(1, next) })}
-        onPageSizeChange={(size) => {
-          updateSearchParam({
-            pageSize: size,
-            page: 1,
-          })
-        }}
-        onEdit={onEdit}
-        onToggle={onToggle}
-        onDelete={onDeleteRequest}
-        onSync={(source) => {
-          void syncMutation.mutateAsync(source.id)
-        }}
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        onBulkEnable={handleBulkEnable}
-        onBulkDisable={handleBulkDisable}
-        onBulkSync={handleBulkSync}
-        isMutating={isMutating}
-        searchParams={{
-          search: routeSearchParams.search,
-          statuses: routeSearchParams.statuses,
-        }}
-      />
+      {listQuery.isError ? (
+        <ErrorState
+          title='无法加载知识源列表'
+          description='请检查网络或稍后再试，若问题持续请联系平台团队。'
+          onRetry={() => listQuery.refetch()}
+        />
+      ) : (
+        <KnowledgeSourcesTable
+          data={listQuery.data?.items ?? []}
+          isLoading={listQuery.isLoading}
+          page={page}
+          pageSize={pageSize}
+          total={listQuery.data?.total ?? 0}
+          onPageChange={(nextPage) => updateSearchParam({ page: nextPage })}
+          onPageSizeChange={(nextSize) =>
+            updateSearchParam({ pageSize: nextSize, page: 1 })
+          }
+          onEdit={handleEdit}
+          onToggle={onToggleRequest}
+          onDelete={onDeleteRequest}
+          onSync={handleSync}
+          isMutating={isMutating}
+        />
+      )}
 
       <KnowledgeSourceFormDialog
         open={isDialogOpen}
         onOpenChange={setDialogOpen}
-        mode={mode}
         initialData={editing}
+        mode={mode}
         onSubmit={handleSubmit}
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        isSubmitting={isMutating}
       />
 
-      {confirmAction && (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setConfirmAction(null)
-          }}
-          title={
-            confirmAction.type === 'delete'
-              ? '删除知识源'
-              : confirmAction.source.status === 'disabled'
-                ? '启用知识源'
-                : '禁用知识源'
-          }
-          desc={
-            confirmAction.type === 'delete'
-              ? '删除后将无法恢复，确定要继续吗？'
-              : confirmAction.source.status === 'disabled'
-                ? '确认启用该知识源？开启后将允许触发同步。'
-                : '确认禁用该知识源？禁用后将暂停同步任务。'
-          }
-          confirmText={confirmAction.type === 'delete' ? '删除' : '确认'}
-          cancelBtnText='取消'
-          destructive={confirmAction.type === 'delete'}
-          handleConfirm={() => void handleConfirm()}
-          isLoading={updateMutation.isPending || deleteMutation.isPending}
-        />
-      )}
-
-      {bulkConfirmAction && (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setBulkConfirmAction(null)
-          }}
-          title={
-            bulkConfirmAction.type === 'enable'
-              ? '批量启用知识源'
-              : bulkConfirmAction.type === 'disable'
-                ? '批量禁用知识源'
-                : '批量触发同步'
-          }
-          desc={
-            bulkConfirmAction.type === 'enable'
-              ? `确认启用选中的 ${bulkConfirmAction.ids.length} 个知识源？`
-              : bulkConfirmAction.type === 'disable'
-                ? `确认禁用选中的 ${bulkConfirmAction.ids.length} 个知识源？`
-                : `确认触发选中的 ${bulkConfirmAction.ids.length} 个知识源同步？`
-          }
-          confirmText='确认'
-          cancelBtnText='取消'
-          destructive={bulkConfirmAction.type === 'disable'}
-          handleConfirm={() => void handleBulkConfirm()}
-          isLoading={
-            bulkEnableMutation.isPending ||
-            bulkDisableMutation.isPending ||
-            bulkSyncMutation.isPending
-          }
-        />
-      )}
+      <ConfirmDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => {
+          if (!open) setConfirmAction(null)
+        }}
+        title={
+          confirmAction?.type === 'delete' ? '删除知识源' : '切换知识源状态'
+        }
+        desc={
+          confirmAction?.type === 'delete'
+            ? '确定要删除该知识源吗？此操作无法撤销。'
+            : '确定要切换知识源启用状态吗？'
+        }
+        confirmText={confirmAction?.type === 'delete' ? '删除' : '确认'}
+        destructive={confirmAction?.type === 'delete'}
+        handleConfirm={handleConfirm}
+        isLoading={isMutating}
+      />
     </div>
   )
 }

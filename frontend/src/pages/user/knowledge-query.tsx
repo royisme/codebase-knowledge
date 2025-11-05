@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import {
   ChevronDown,
@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { useKnowledgeNoteStore } from '@/stores/knowledge-note-store'
 import { apiClient } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
+import { upsertKnowledgeNote } from '@/lib/knowledge-notes-service'
 import { useStreamingQuery } from '@/hooks/useStreamingQuery'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -53,6 +54,7 @@ const fetchKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
 }
 
 export const KnowledgeQueryPage = () => {
+  const queryClient = useQueryClient()
   const search = useSearch({
     from: '/_authenticated/knowledge-graph-query',
   }) as {
@@ -91,11 +93,14 @@ export const KnowledgeQueryPage = () => {
           executionTimeMs: metadata?.execution_time_ms || 0,
         })
       },
-      onError: (errorMessage) => {
-        if (errorMessage.includes('timeout') || errorMessage.includes('超时')) {
+      onError: (error) => {
+        if (
+          error.message.includes('timeout') ||
+          error.message.includes('超时')
+        ) {
           toast.warning('模型响应超时，请缩小问题范围或稍后重试。')
         } else {
-          toast.error(`查询失败: ${errorMessage}`)
+          toast.error(`查询失败: ${error.message}`)
         }
       },
     })
@@ -124,17 +129,37 @@ export const KnowledgeQueryPage = () => {
     toast.info('已停止生成')
   }
 
-  const handleSaveToLibrary = () => {
+  const handleSaveToLibrary = async () => {
     if (!text) return
-    const sourceName =
-      sources?.find((s) => s.id === selectedSourceId)?.alias || '未知'
-    addNote({
-      question,
-      answer: text,
-      sourceId: selectedSourceId,
-      sourceName,
-    })
-    toast.success('已保存到知识库')
+    if (!selectedSourceId) {
+      toast.error('请先选择知识源')
+      return
+    }
+
+    const source = sources?.find((s) => s.id === selectedSourceId)
+
+    try {
+      const noteId = await upsertKnowledgeNote({
+        sourceId: selectedSourceId,
+        question,
+        answerSummary: text,
+      })
+
+      addNote({
+        id: noteId,
+        question,
+        answerSummary: text,
+        sourceId: selectedSourceId,
+        sourceName: source?.alias ?? selectedSourceId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+
+      void queryClient.invalidateQueries({ queryKey: ['knowledge', 'notes'] })
+      toast.success('已保存到知识库')
+    } catch {
+      toast.error('保存失败，请稍后重试')
+    }
   }
 
   const handleNewQuery = () => {

@@ -1,6 +1,6 @@
 import { redirect } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/auth-store'
 import type { UserRole } from '@/types'
+import { useAuthStore } from '@/stores/auth-store'
 
 /**
  * 检查当前用户是否拥有指定角色中的任意一个

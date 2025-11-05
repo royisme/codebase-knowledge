@@ -1,5 +1,10 @@
 import { useState } from 'react'
+import type { JobLog } from '@/types/job'
+import { Info, AlertTriangle, XCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -7,11 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Info, AlertTriangle, XCircle } from 'lucide-react'
-import type { JobLog } from '@/types/job'
-import { cn } from '@/lib/utils'
 
 interface JobLogViewerProps {
   logs: JobLog[]
@@ -55,27 +55,27 @@ export function JobLogViewer({ logs }: JobLogViewerProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <CardTitle>任务日志</CardTitle>
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Select value={levelFilter} onValueChange={setLevelFilter}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="日志级别" />
+              <SelectTrigger className='w-[120px]'>
+                <SelectValue placeholder='日志级别' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部级别</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="warning">Warning</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
+                <SelectItem value='all'>全部级别</SelectItem>
+                <SelectItem value='info'>Info</SelectItem>
+                <SelectItem value='warning'>Warning</SelectItem>
+                <SelectItem value='error'>Error</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="阶段" />
+              <SelectTrigger className='w-[140px]'>
+                <SelectValue placeholder='阶段' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部阶段</SelectItem>
+                <SelectItem value='all'>全部阶段</SelectItem>
                 {stages.map((stage) => (
                   <SelectItem key={stage} value={stage}>
                     {stage}
@@ -87,13 +87,11 @@ export function JobLogViewer({ logs }: JobLogViewerProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+        <ScrollArea className='h-[400px] w-full rounded-md border p-4'>
           {sortedLogs.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              暂无日志
-            </p>
+            <p className='text-muted-foreground py-8 text-center'>暂无日志</p>
           ) : (
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {sortedLogs.map((log, index) => {
                 const config = LOG_LEVEL_CONFIG[log.level]
                 const Icon = config.icon
@@ -101,21 +99,18 @@ export function JobLogViewer({ logs }: JobLogViewerProps) {
                 return (
                   <div
                     key={index}
-                    className={cn(
-                      'rounded-md p-3 space-y-1',
-                      config.bgColor
-                    )}
+                    className={cn('space-y-1 rounded-md p-3', config.bgColor)}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className='flex items-center gap-2'>
                       <Icon className={cn('h-4 w-4', config.color)} />
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant='outline' className='text-xs'>
                         {log.stage}
                       </Badge>
-                      <span className="text-xs text-muted-foreground font-mono">
+                      <span className='text-muted-foreground font-mono text-xs'>
                         {new Date(log.timestamp).toLocaleTimeString('zh-CN')}
                       </span>
                     </div>
-                    <p className="text-sm pl-6">{log.message}</p>
+                    <p className='pl-6 text-sm'>{log.message}</p>
                   </div>
                 )
               })}

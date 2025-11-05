@@ -34,9 +34,7 @@
     "last_incremental": "2025-10-29T23:30:00Z",
     "status": "healthy",
     "tags": ["订单", "核心服务"],
-    "maintainers": [
-      { "name": "Charlie Liu", "email": "charlie@example.com" }
-    ],
+    "maintainers": [{ "name": "Charlie Liu", "email": "charlie@example.com" }],
     "recommended_questions": [
       "订单状态机是如何设计的？",
       "如何处理库存不足的场景？",
@@ -57,9 +55,7 @@
     "last_incremental": "2025-10-23T15:00:00Z",
     "status": "outdated",
     "tags": ["用户", "认证"],
-    "maintainers": [
-      { "name": "David Zhang", "email": "david@example.com" }
-    ],
+    "maintainers": [{ "name": "David Zhang", "email": "david@example.com" }],
     "recommended_questions": [
       "用户权限是如何管理的？",
       "JWT token 的过期策略是什么？",
@@ -80,9 +76,7 @@
     "last_incremental": "2025-10-30T07:15:00Z",
     "status": "healthy",
     "tags": ["通知", "消息"],
-    "maintainers": [
-      { "name": "Eva Li", "email": "eva@example.com" }
-    ],
+    "maintainers": [{ "name": "Eva Li", "email": "eva@example.com" }],
     "recommended_questions": [
       "如何保证消息不重复发送？",
       "短信发送的限流策略是什么？",
@@ -103,9 +97,7 @@
     "last_incremental": "2025-10-28T10:00:00Z",
     "status": "indexing",
     "tags": ["数据分析", "报表"],
-    "maintainers": [
-      { "name": "Frank Wu", "email": "frank@example.com" }
-    ],
+    "maintainers": [{ "name": "Frank Wu", "email": "frank@example.com" }],
     "recommended_questions": [
       "用户行为数据是如何采集的？",
       "报表生成的调度策略是什么？",
@@ -126,9 +118,7 @@
     "last_incremental": "2025-10-22T09:00:00Z",
     "status": "failed",
     "tags": ["认证", "SSO"],
-    "maintainers": [
-      { "name": "Grace Huang", "email": "grace@example.com" }
-    ],
+    "maintainers": [{ "name": "Grace Huang", "email": "grace@example.com" }],
     "recommended_questions": [
       "OAuth2 的授权流程是如何实现的？",
       "SSO 集成的步骤是什么？",

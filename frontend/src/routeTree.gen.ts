@@ -35,6 +35,7 @@ import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as authLdapRouteImport } from './routes/(auth)/ldap'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
+import { Route as AdminRepositoriesIndexRouteImport } from './routes/admin/repositories/index'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
@@ -44,6 +45,7 @@ import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_a
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AdminRepositoriesRepoIdJobsRouteImport } from './routes/admin/repositories/$repoId.jobs'
+import { Route as AdminRepositoriesRepoIdJobsIndexRouteImport } from './routes/admin/repositories/$repoId.jobs/index'
 import { Route as AdminRepositoriesRepoIdJobsJobIdRouteImport } from './routes/admin/repositories/$repoId.jobs.$jobId'
 
 const AdminRouteRoute = AdminRouteRouteImport.update({
@@ -179,6 +181,11 @@ const AuthenticatedSettingsRouteRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AdminRepositoriesIndexRoute = AdminRepositoriesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRepositoriesRoute,
+} as any)
 const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -229,6 +236,12 @@ const AdminRepositoriesRepoIdJobsRoute =
     path: '/$repoId/jobs',
     getParentRoute: () => AdminRepositoriesRoute,
   } as any)
+const AdminRepositoriesRepoIdJobsIndexRoute =
+  AdminRepositoriesRepoIdJobsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminRepositoriesRepoIdJobsRoute,
+  } as any)
 const AdminRepositoriesRepoIdJobsJobIdRoute =
   AdminRepositoriesRepoIdJobsJobIdRouteImport.update({
     id: '/$jobId',
@@ -270,8 +283,10 @@ export interface FileRoutesByFullPath {
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/admin/repositories/': typeof AdminRepositoriesIndexRoute
   '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsRouteWithChildren
   '/admin/repositories/$repoId/jobs/$jobId': typeof AdminRepositoriesRepoIdJobsJobIdRoute
+  '/admin/repositories/$repoId/jobs/': typeof AdminRepositoriesRepoIdJobsIndexRoute
 }
 export interface FileRoutesByTo {
   '/admin': typeof AdminRouteRouteWithChildren
@@ -295,7 +310,6 @@ export interface FileRoutesByTo {
   '/admin/policies': typeof AdminPoliciesRoute
   '/admin/rag-console': typeof AdminRagConsoleRoute
   '/admin/rbac': typeof AdminRbacRoute
-  '/admin/repositories': typeof AdminRepositoriesRouteWithChildren
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/tasks': typeof AdminTasksRoute
   '/': typeof AuthenticatedIndexRoute
@@ -307,8 +321,9 @@ export interface FileRoutesByTo {
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
-  '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsRouteWithChildren
+  '/admin/repositories': typeof AdminRepositoriesIndexRoute
   '/admin/repositories/$repoId/jobs/$jobId': typeof AdminRepositoriesRepoIdJobsJobIdRoute
+  '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -346,8 +361,10 @@ export interface FileRoutesById {
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/admin/repositories/': typeof AdminRepositoriesIndexRoute
   '/admin/repositories/$repoId/jobs': typeof AdminRepositoriesRepoIdJobsRouteWithChildren
   '/admin/repositories/$repoId/jobs/$jobId': typeof AdminRepositoriesRepoIdJobsJobIdRoute
+  '/admin/repositories/$repoId/jobs/': typeof AdminRepositoriesRepoIdJobsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -385,8 +402,10 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/tasks'
     | '/users'
+    | '/admin/repositories/'
     | '/admin/repositories/$repoId/jobs'
     | '/admin/repositories/$repoId/jobs/$jobId'
+    | '/admin/repositories/$repoId/jobs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/admin'
@@ -410,7 +429,6 @@ export interface FileRouteTypes {
     | '/admin/policies'
     | '/admin/rag-console'
     | '/admin/rbac'
-    | '/admin/repositories'
     | '/admin/sources'
     | '/admin/tasks'
     | '/'
@@ -422,8 +440,9 @@ export interface FileRouteTypes {
     | '/help-center'
     | '/tasks'
     | '/users'
-    | '/admin/repositories/$repoId/jobs'
+    | '/admin/repositories'
     | '/admin/repositories/$repoId/jobs/$jobId'
+    | '/admin/repositories/$repoId/jobs'
   id:
     | '__root__'
     | '/_authenticated'
@@ -460,8 +479,10 @@ export interface FileRouteTypes {
     | '/_authenticated/help-center/'
     | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/admin/repositories/'
     | '/admin/repositories/$repoId/jobs'
     | '/admin/repositories/$repoId/jobs/$jobId'
+    | '/admin/repositories/$repoId/jobs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -662,6 +683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/admin/repositories/': {
+      id: '/admin/repositories/'
+      path: '/'
+      fullPath: '/admin/repositories/'
+      preLoaderRoute: typeof AdminRepositoriesIndexRouteImport
+      parentRoute: typeof AdminRepositoriesRoute
+    }
     '/_authenticated/users/': {
       id: '/_authenticated/users/'
       path: '/users'
@@ -724,6 +752,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/repositories/$repoId/jobs'
       preLoaderRoute: typeof AdminRepositoriesRepoIdJobsRouteImport
       parentRoute: typeof AdminRepositoriesRoute
+    }
+    '/admin/repositories/$repoId/jobs/': {
+      id: '/admin/repositories/$repoId/jobs/'
+      path: '/'
+      fullPath: '/admin/repositories/$repoId/jobs/'
+      preLoaderRoute: typeof AdminRepositoriesRepoIdJobsIndexRouteImport
+      parentRoute: typeof AdminRepositoriesRepoIdJobsRoute
     }
     '/admin/repositories/$repoId/jobs/$jobId': {
       id: '/admin/repositories/$repoId/jobs/$jobId'
@@ -788,12 +823,15 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface AdminRepositoriesRepoIdJobsRouteChildren {
   AdminRepositoriesRepoIdJobsJobIdRoute: typeof AdminRepositoriesRepoIdJobsJobIdRoute
+  AdminRepositoriesRepoIdJobsIndexRoute: typeof AdminRepositoriesRepoIdJobsIndexRoute
 }
 
 const AdminRepositoriesRepoIdJobsRouteChildren: AdminRepositoriesRepoIdJobsRouteChildren =
   {
     AdminRepositoriesRepoIdJobsJobIdRoute:
       AdminRepositoriesRepoIdJobsJobIdRoute,
+    AdminRepositoriesRepoIdJobsIndexRoute:
+      AdminRepositoriesRepoIdJobsIndexRoute,
   }
 
 const AdminRepositoriesRepoIdJobsRouteWithChildren =
@@ -802,10 +840,12 @@ const AdminRepositoriesRepoIdJobsRouteWithChildren =
   )
 
 interface AdminRepositoriesRouteChildren {
+  AdminRepositoriesIndexRoute: typeof AdminRepositoriesIndexRoute
   AdminRepositoriesRepoIdJobsRoute: typeof AdminRepositoriesRepoIdJobsRouteWithChildren
 }
 
 const AdminRepositoriesRouteChildren: AdminRepositoriesRouteChildren = {
+  AdminRepositoriesIndexRoute: AdminRepositoriesIndexRoute,
   AdminRepositoriesRepoIdJobsRoute:
     AdminRepositoriesRepoIdJobsRouteWithChildren,
 }

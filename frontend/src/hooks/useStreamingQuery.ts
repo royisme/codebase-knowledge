@@ -11,8 +11,8 @@ import type {
   StreamEventHandlers,
 } from '@/types/streaming'
 import { useAuthStore } from '@/stores/auth-store'
-import { parseSSE } from '@/lib/sse-parser'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
+import { parseSSE } from '@/lib/sse-parser'
 
 const RAW_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim()
 const BASE_URL =
@@ -43,6 +43,10 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
     isStreaming: false,
     error: null,
     queryId: null,
+    nextActions: [],
+    confidenceScore: undefined,
+    sourcesQueried: [],
+    processingTimeMs: undefined,
   })
 
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -73,6 +77,12 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
           setState((prev) => ({
             ...prev,
             metadata: event.data,
+            confidenceScore:
+              typeof event.data.confidence_score === 'number'
+                ? event.data.confidence_score
+                : prev.confidenceScore,
+            sourcesQueried: event.data.sources_queried,
+            processingTimeMs: event.data.execution_time_ms,
           }))
           handlers?.onMetadata?.(event.data)
           break
@@ -82,8 +92,20 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
             ...prev,
             isStreaming: false,
             queryId: event.query_id,
+            nextActions: event.next_actions ?? prev.nextActions,
+            confidenceScore:
+              typeof event.confidence_score === 'number'
+                ? event.confidence_score
+                : prev.confidenceScore,
+            sourcesQueried: event.sources_queried?.length
+              ? event.sources_queried
+              : prev.sourcesQueried,
+            processingTimeMs:
+              typeof event.processing_time_ms === 'number'
+                ? event.processing_time_ms
+                : prev.processingTimeMs,
           }))
-          handlers?.onDone?.(event.query_id)
+          handlers?.onDone?.(event)
           break
 
         case 'error':
@@ -92,7 +114,7 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
             isStreaming: false,
             error: event.message,
           }))
-          handlers?.onError?.(event.message)
+          handlers?.onError?.(event)
           break
 
         default:
@@ -121,6 +143,10 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
         isStreaming: true,
         error: null,
         queryId: null,
+        nextActions: [],
+        confidenceScore: undefined,
+        sourcesQueried: [],
+        processingTimeMs: undefined,
       })
 
       // 创建新的 AbortController
@@ -206,7 +232,10 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
             isStreaming: false,
             error: error.message,
           }))
-          handlers?.onError?.(error.message)
+          handlers?.onError?.({
+            type: 'error',
+            message: error.message,
+          })
         } else {
           const message = 'Unknown error occurred'
           setState((prev) => ({
@@ -214,7 +243,10 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
             isStreaming: false,
             error: message,
           }))
-          handlers?.onError?.(message)
+          handlers?.onError?.({
+            type: 'error',
+            message,
+          })
         }
       }
     },
@@ -243,6 +275,10 @@ export function useStreamingQuery(handlers?: StreamEventHandlers) {
       isStreaming: false,
       error: null,
       queryId: null,
+      nextActions: [],
+      confidenceScore: undefined,
+      sourcesQueried: [],
+      processingTimeMs: undefined,
     })
   }, [abort])
 
@@ -263,12 +299,19 @@ export function buildQueryResponse(state: StreamQueryState) {
       summary: state.text,
       related_entities: state.entities,
       evidence: [],
-      next_actions: [],
+      next_actions: state.nextActions,
     },
-    confidence_score: state.metadata?.confidence_score || 0,
+    confidence_score:
+      typeof state.confidenceScore === 'number'
+        ? state.confidenceScore
+        : state.metadata?.confidence_score || 0,
     evidence_anchors: [],
-    sources_queried: state.metadata?.sources_queried || [],
-    processing_time_ms: state.metadata?.execution_time_ms || 0,
+    sources_queried:
+      state.sourcesQueried.length > 0
+        ? state.sourcesQueried
+        : state.metadata?.sources_queried || [],
+    processing_time_ms:
+      state.processingTimeMs ?? state.metadata?.execution_time_ms ?? 0,
     query_id: state.queryId || undefined,
   }
 }
