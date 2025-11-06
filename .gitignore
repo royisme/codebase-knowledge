@@ -65,3 +65,4 @@ dist-ssr
 *.sw?
 frontend/.tmp/
 .serena/
+.task_docs/
