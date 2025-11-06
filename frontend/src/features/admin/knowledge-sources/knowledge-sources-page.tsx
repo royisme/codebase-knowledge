@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Search as SearchIcon,
   SlidersHorizontal,
+  Database,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -20,7 +21,6 @@ import {
   triggerKnowledgeSourceSync,
   updateKnowledgeSource,
 } from '@/lib/knowledge-source-service'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import {
 import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { PageHeader } from '@/components/layout/page-header'
 import {
   KnowledgeSourceFormDialog,
   type KnowledgeSourceFormValues,
@@ -272,8 +273,22 @@ export function KnowledgeSourcesPage() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex flex-wrap items-center gap-2'>
-        <div className='relative w-full max-w-md'>
+      {/* 页面标题 */}
+      <PageHeader
+        title='知识源管理'
+        description='管理知识源并触发同步任务'
+        icon={<Database className='h-6 w-6' />}
+        actions={
+          <Button onClick={onCreate} disabled={isMutating}>
+            <Plus className='mr-2 h-4 w-4' />
+            新增知识源
+          </Button>
+        }
+      />
+
+      {/* 过滤栏 */}
+      <div className='flex items-center gap-2'>
+        <div className='relative flex-1'>
           <SearchIcon className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
           <Input
             value={searchValue}
@@ -292,14 +307,14 @@ export function KnowledgeSourcesPage() {
               <SlidersHorizontal className='mr-2 h-4 w-4' />
               状态筛选
               {statusFilters.length > 0 && (
-                <Badge variant='secondary' className='ml-2'>
+                <span className='bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs'>
                   {statusFilters.length}
-                </Badge>
+                </span>
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='start'>
-            <DropdownMenuLabel>筛选状态</DropdownMenuLabel>
+          <DropdownMenuContent align='end' className='w-48'>
+            <DropdownMenuLabel>按状态筛选</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {statusOptions.map((option) => (
               <DropdownMenuCheckboxItem
@@ -329,12 +344,9 @@ export function KnowledgeSourcesPage() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button className='ml-auto' onClick={onCreate} disabled={isMutating}>
-          <Plus className='mr-2 h-4 w-4' />
-          新增知识源
-        </Button>
         <Button
           variant='outline'
+          size='icon'
           onClick={() =>
             void queryClient.invalidateQueries({
               queryKey: ['admin', 'knowledge-sources'],
@@ -342,8 +354,7 @@ export function KnowledgeSourcesPage() {
           }
           disabled={listQuery.isLoading}
         >
-          <RefreshCw className='mr-2 h-4 w-4' />
-          刷新
+          <RefreshCw className='h-4 w-4' />
         </Button>
       </div>
 

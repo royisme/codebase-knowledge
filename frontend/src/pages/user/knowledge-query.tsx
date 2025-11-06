@@ -12,6 +12,7 @@ import {
   FileText,
   XCircle,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useKnowledgeNoteStore } from '@/stores/knowledge-note-store'
@@ -19,7 +20,6 @@ import { apiClient } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
 import { upsertKnowledgeNote } from '@/lib/knowledge-notes-service'
 import { useStreamingQuery } from '@/hooks/useStreamingQuery'
-import { GraphRAGResponse } from '@/components/graphrag-response'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,6 +38,8 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { GraphRAGResponse } from '@/components/graphrag-response'
+import { PageHeader } from '@/components/layout/page-header'
 
 interface KnowledgeSource {
   id: string
@@ -174,12 +176,11 @@ export const KnowledgeQueryPage = () => {
     <div className='h-full overflow-y-auto'>
       <div className='mx-auto max-w-6xl space-y-6 pb-6'>
         {/* Header */}
-        <div className='space-y-2'>
-          <h1 className='text-3xl font-bold tracking-tight'>代码知识问答</h1>
-          <p className='text-muted-foreground'>
-            基于 GraphRAG 的智能代码问答系统（流式传输）
-          </p>
-        </div>
+        <PageHeader
+          title='智能问答'
+          description='基于 GraphRAG 的智能代码问答系统（流式传输）'
+          icon={<MessageSquare className='h-6 w-6' />}
+        />
 
         {/* 提问表单 */}
         <Card>

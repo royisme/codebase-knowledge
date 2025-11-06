@@ -8,7 +8,7 @@ import {
   RefreshCw,
   Clock,
   User,
-  Activity,
+  Activity as ActivityIcon,
   Shield,
   AlertCircle,
 } from 'lucide-react'
@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PageHeader } from '@/components/layout/page-header'
 
 type AuditStatus = AuditLogEntry['status']
 type AuditAction =
@@ -206,22 +207,26 @@ export function AuditPage() {
   if (isLoading) {
     return (
       <div className='space-y-6'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-2xl font-bold'>审计日志</h1>
-            <p className='text-muted-foreground'>查看系统操作审计记录</p>
-          </div>
-          <div className='flex gap-2'>
-            <Button variant='outline'>
-              <Download className='mr-2 h-4 w-4' />
-              导出日志
-            </Button>
-            <Button>
-              <RefreshCw className='mr-2 h-4 w-4' />
-              刷新
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title='审计日志'
+          description='查看系统操作审计记录'
+          icon={<ActivityIcon className='h-6 w-6' />}
+          breadcrumbs={[
+            { label: '系统管理', href: '/admin' },
+            { label: '审计日志' },
+          ]}
+          actions={
+            <>
+              <Button variant='outline'>
+                <Download className='mr-2 h-4 w-4' />
+                导出
+              </Button>
+              <Button variant='outline' size='icon'>
+                <RefreshCw className='h-4 w-4' />
+              </Button>
+            </>
+          }
+        />
         <Card>
           <CardHeader>
             <div className='flex space-x-4'>
@@ -255,22 +260,26 @@ export function AuditPage() {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-2xl font-bold'>审计日志</h1>
-          <p className='text-muted-foreground'>查看系统操作审计记录</p>
-        </div>
-        <div className='flex gap-2'>
-          <Button variant='outline' onClick={handleExport}>
-            <Download className='mr-2 h-4 w-4' />
-            导出日志
-          </Button>
-          <Button onClick={() => refetch()}>
-            <RefreshCw className='mr-2 h-4 w-4' />
-            刷新
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title='审计日志'
+        description='查看系统操作审计记录'
+        icon={<ActivityIcon className='h-6 w-6' />}
+        breadcrumbs={[
+          { label: '系统管理', href: '/admin' },
+          { label: '审计日志' },
+        ]}
+        actions={
+          <>
+            <Button variant='outline' onClick={handleExport}>
+              <Download className='mr-2 h-4 w-4' />
+              导出
+            </Button>
+            <Button variant='outline' size='icon' onClick={() => refetch()}>
+              <RefreshCw className='h-4 w-4' />
+            </Button>
+          </>
+        }
+      />
 
       {/* 搜索和筛选区域 */}
       <Card>
@@ -348,7 +357,7 @@ export function AuditPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant='outline'>
-                  <Activity className='mr-2 h-4 w-4' />
+                  <ActivityIcon className='mr-2 h-4 w-4' />
                   动作筛选
                   {actionFilters.length > 0 && (
                     <Badge variant='secondary' className='ml-2'>
@@ -449,7 +458,7 @@ export function AuditPage() {
                         <div className='flex items-center space-x-2'>
                           {audit.actor === 'system' ? (
                             <>
-                              <Activity className='text-primary h-4 w-4' />
+                              <ActivityIcon className='text-primary h-4 w-4' />
                               <span className='text-muted-foreground font-medium'>
                                 系统
                               </span>

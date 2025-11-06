@@ -9,6 +9,7 @@ import {
   Users,
   MessageCircleQuestion,
   AlertTriangle,
+  Compass,
 } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
@@ -18,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/layout/page-header'
 
 interface KnowledgeSource {
   id: string
@@ -115,12 +117,11 @@ export const KnowledgeExplorePage = () => {
   return (
     <div className='flex h-full flex-col'>
       {/* Header */}
-      <div className='mb-6'>
-        <h1 className='mb-2 text-2xl font-bold tracking-tight'>探索知识源</h1>
-        <p className='text-muted-foreground text-sm'>
-          浏览可用的代码仓库,选择后查看详情与推荐问题
-        </p>
-      </div>
+      <PageHeader
+        title='知识源导航'
+        description='浏览可用的代码仓库，选择后查看详情与推荐问题'
+        icon={<Compass className='h-6 w-6' />}
+      />
 
       {/* Content - 左右分栏 */}
       <div className='flex min-h-0 flex-1 gap-6'>

@@ -8,20 +8,15 @@ import {
   Brain,
   Clock,
   Activity,
+  Eye,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
 
 function AnalyticsPage() {
   return (
     <div className='space-y-6'>
-      <div className='space-y-1'>
-        <h1 className='text-2xl font-bold tracking-tight'>数据分析</h1>
-        <p className='text-muted-foreground text-sm sm:text-base'>
-          知识库使用分析和智能洞察
-        </p>
-      </div>
-
       <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
         <Card>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>

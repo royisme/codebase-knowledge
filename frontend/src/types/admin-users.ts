@@ -1,6 +1,6 @@
 import type { Identifier, ISODateString } from './common'
 
-export type UserStatus = 'active' | 'inactive' | 'suspended' | 'invited'
+export type UserStatus = 'active' | 'unverified' | 'suspended'
 
 export interface AdminUser {
   id: Identifier

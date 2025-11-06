@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   createPolicy,
@@ -36,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PageHeader } from '@/components/layout/page-header'
 
 const ACTION_OPTIONS: Array<{ value: ActionType; label: string }> = [
   { value: 'read', label: '读取' },
@@ -130,6 +132,13 @@ export function PoliciesPage() {
 
   return (
     <div className='space-y-6'>
+      {/* 页面标题 */}
+      <PageHeader
+        title='权限策略'
+        description='管理角色与资源的访问权限配置'
+        icon={<ShieldCheck className='h-6 w-6' />}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>新增策略</CardTitle>

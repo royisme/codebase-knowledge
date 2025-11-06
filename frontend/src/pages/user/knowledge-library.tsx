@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ErrorState } from '@/components/ui/error-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageHeader } from '@/components/layout/page-header'
 
 export const KnowledgeLibraryPage = () => {
   const queryClient = useQueryClient()
@@ -107,11 +108,12 @@ export const KnowledgeLibraryPage = () => {
 
   return (
     <div className='h-full overflow-y-auto'>
-      <div className='mx-auto max-w-7xl space-y-6 pb-6'>
-        <div className='space-y-2'>
-          <h1 className='text-3xl font-bold tracking-tight'>知识库</h1>
-          <p className='text-muted-foreground'>管理你的收藏条目与提问历史</p>
-        </div>
+      <div className='mx-auto max-w-7xl space-y-8'>
+        <PageHeader
+          title='知识摘录'
+          description='管理您的代码知识摘录和提问历史'
+          icon={<BookMarked className='h-6 w-6' />}
+        />
 
         <Tabs defaultValue='history' className='w-full'>
           <TabsList className='grid w-full max-w-md grid-cols-2'>

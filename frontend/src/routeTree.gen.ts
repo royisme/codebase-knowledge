@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminTasksRouteImport } from './routes/admin/tasks'
 import { Route as AdminSourcesRouteImport } from './routes/admin/sources'
 import { Route as AdminRepositoriesRouteImport } from './routes/admin/repositories'
@@ -61,6 +62,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminTasksRoute = AdminTasksRouteImport.update({
   id: '/tasks',
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/admin/repositories': typeof AdminRepositoriesRouteWithChildren
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/tasks': typeof AdminTasksRoute
+  '/admin/users': typeof AdminUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -312,6 +319,7 @@ export interface FileRoutesByTo {
   '/admin/rbac': typeof AdminRbacRoute
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/tasks': typeof AdminTasksRoute
+  '/admin/users': typeof AdminUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/admin/repositories': typeof AdminRepositoriesRouteWithChildren
   '/admin/sources': typeof AdminSourcesRoute
   '/admin/tasks': typeof AdminTasksRoute
+  '/admin/users': typeof AdminUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
@@ -393,6 +402,7 @@ export interface FileRouteTypes {
     | '/admin/repositories'
     | '/admin/sources'
     | '/admin/tasks'
+    | '/admin/users'
     | '/'
     | '/errors/$error'
     | '/settings/account'
@@ -431,6 +441,7 @@ export interface FileRouteTypes {
     | '/admin/rbac'
     | '/admin/sources'
     | '/admin/tasks'
+    | '/admin/users'
     | '/'
     | '/errors/$error'
     | '/settings/account'
@@ -470,6 +481,7 @@ export interface FileRouteTypes {
     | '/admin/repositories'
     | '/admin/sources'
     | '/admin/tasks'
+    | '/admin/users'
     | '/_authenticated/'
     | '/_authenticated/errors/$error'
     | '/_authenticated/settings/account'
@@ -521,6 +533,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/admin/tasks': {
       id: '/admin/tasks'
@@ -862,6 +881,7 @@ interface AdminRouteRouteChildren {
   AdminRepositoriesRoute: typeof AdminRepositoriesRouteWithChildren
   AdminSourcesRoute: typeof AdminSourcesRoute
   AdminTasksRoute: typeof AdminTasksRoute
+  AdminUsersRoute: typeof AdminUsersRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
@@ -873,6 +893,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminRepositoriesRoute: AdminRepositoriesRouteWithChildren,
   AdminSourcesRoute: AdminSourcesRoute,
   AdminTasksRoute: AdminTasksRoute,
+  AdminUsersRoute: AdminUsersRoute,
 }
 
 const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(

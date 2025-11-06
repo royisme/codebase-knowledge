@@ -55,16 +55,31 @@ export const adminSidebarData: SidebarData = {
           url: '/admin/sources',
           icon: Database,
         },
+      ],
+    },
+    {
+      title: '访问控制',
+      items: [
+        {
+          title: '访问控制概览',
+          url: '/admin/rbac',
+          icon: Activity,
+        },
         {
           title: '用户管理',
-          url: '/admin/rbac',
+          url: '/admin/users',
           icon: Users,
         },
         {
-          title: '策略管理',
+          title: '权限策略',
           url: '/admin/policies',
           icon: ShieldCheck,
         },
+      ],
+    },
+    {
+      title: '审计与监控',
+      items: [
         {
           title: '审计日志',
           url: '/admin/audit',

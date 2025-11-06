@@ -32,6 +32,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { ServerPagination } from '@/components/ui/server-pagination'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { PageHeader } from '@/components/layout/page-header'
 import { AddRepositoryDialog } from '../components/AddRepositoryDialog'
 import { EditRepositoryDialog } from '../components/EditRepositoryDialog'
 import { RepositoriesTable } from '../components/RepositoriesTable'
@@ -113,7 +114,9 @@ export function RepositoryListPage() {
       const jobInfo = data.job_id ? `（ID: ${data.job_id.slice(0, 8)}）` : ''
       toast.success(`${data.message ?? '索引任务已创建'}${jobInfo}`)
       void queryClient.invalidateQueries({ queryKey: ['repositories'] })
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'knowledge-sources'] })
+      void queryClient.invalidateQueries({
+        queryKey: ['admin', 'knowledge-sources'],
+      })
       setConfirmAction(null)
     },
     onError: (error: unknown) => {
@@ -180,23 +183,19 @@ export function RepositoryListPage() {
   }
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-6'>
       {/* 页面标题 */}
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='flex items-center gap-2 text-2xl font-bold'>
-            <GitBranch className='h-6 w-6' />
-            代码仓库管理
-          </h1>
-          <p className='text-muted-foreground mt-1 text-sm'>
-            管理代码仓库并触发索引任务
-          </p>
-        </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className='mr-2 h-4 w-4' />
-          添加仓库
-        </Button>
-      </div>
+      <PageHeader
+        title='代码仓库管理'
+        description='管理代码仓库并触发索引任务'
+        icon={<GitBranch className='h-6 w-6' />}
+        actions={
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <Plus className='mr-2 h-4 w-4' />
+            添加仓库
+          </Button>
+        }
+      />
 
       {/* 过滤栏 */}
       <div className='flex items-center gap-2'>

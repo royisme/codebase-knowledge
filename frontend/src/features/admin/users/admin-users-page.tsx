@@ -46,6 +46,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { PageHeader } from '@/components/layout/page-header'
 
 type AdminUsersSearchParams = {
   page?: number
@@ -54,13 +55,12 @@ type AdminUsersSearchParams = {
   statuses?: UserStatus[]
 }
 
-const route = getRouteApi('/admin/rbac')
+const route = getRouteApi('/admin/users')
 
 const STATUS_OPTIONS: Array<{ value: UserStatus; label: string }> = [
   { value: 'active', label: '活跃' },
-  { value: 'inactive', label: '未激活' },
+  { value: 'unverified', label: '未验证' },
   { value: 'suspended', label: '已停用' },
-  { value: 'invited', label: '已邀请' },
 ]
 
 type UserAction =
@@ -190,6 +190,13 @@ export function AdminUsersPage() {
 
   return (
     <div className='space-y-6'>
+      {/* 页面标题 */}
+      <PageHeader
+        title='用户管理'
+        description='管理系统用户、分配角色和查看用户活动'
+        icon={<User className='h-6 w-6' />}
+      />
+
       {/* 搜索和筛选区域 */}
       <div className='flex flex-wrap items-center gap-2'>
         <div className='relative w-full max-w-md'>
@@ -400,15 +407,13 @@ function UserRow({ user, onAction, isMutating }: UserRowProps) {
       'default' | 'secondary' | 'destructive' | 'outline'
     > = {
       active: 'default',
-      inactive: 'secondary',
+      unverified: 'outline',
       suspended: 'destructive',
-      invited: 'outline',
     }
     const labels: Record<string, string> = {
       active: '活跃',
-      inactive: '未激活',
+      unverified: '未验证',
       suspended: '已停用',
-      invited: '已邀请',
     }
     return (
       <Badge variant={variants[status] || 'secondary'}>

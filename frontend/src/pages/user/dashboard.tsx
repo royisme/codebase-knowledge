@@ -11,6 +11,7 @@ import {
   MessageCircleQuestion,
   Library,
   AlertCircle,
+  LayoutDashboard,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -28,6 +29,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/layout/page-header'
 
 interface DashboardSummary {
   activeSources: number
@@ -140,12 +142,11 @@ export const DashboardPage = () => {
     <div className='h-full overflow-y-auto'>
       <div className='mx-auto max-w-7xl space-y-8'>
         {/* Header */}
-        <div className='space-y-2'>
-          <h1 className='text-3xl font-bold tracking-tight'>知识工作台</h1>
-          <p className='text-muted-foreground'>
-            通过 AI 代码知识图谱快速了解项目结构与业务逻辑
-          </p>
-        </div>
+        <PageHeader
+          title='知识工作台'
+          description='通过 AI 代码知识图谱快速了解项目结构与业务逻辑'
+          icon={<LayoutDashboard className='h-6 w-6' />}
+        />
 
         {/* 异常提示 */}
         {outdatedSources.length > 0 && (
