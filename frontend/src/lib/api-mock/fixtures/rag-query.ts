@@ -1,5 +1,4 @@
-// RAG Console 查询的 Mock fixtures
-import type { RetrievalMode } from '@/features/rag-console/types'
+import type { RetrievalMode } from '@/types/rag-console-types'
 
 interface QueryRequest {
   query: string

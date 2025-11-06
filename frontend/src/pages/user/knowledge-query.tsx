@@ -38,8 +38,8 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
-import { GraphRAGResponse } from '@/components/graphrag-response'
 import { PageHeader } from '@/components/layout/page-header'
+import { StreamingMarkdown } from '@/components/streaming-markdown'
 
 interface KnowledgeSource {
   id: string
@@ -383,7 +383,7 @@ export const KnowledgeQueryPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <GraphRAGResponse content={text} streaming={isStreaming} />
+                <StreamingMarkdown content={text} streaming={isStreaming} />
               </CardContent>
             </Card>
 

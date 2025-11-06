@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { AuditPage } from '@/features/admin'
+import { AuditPage } from '@/pages/admin/audit'
 
 const auditSearchSchema = z.object({
   page: z.number().optional().catch(1),

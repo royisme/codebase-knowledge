@@ -1,6 +1,6 @@
 import z from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { KnowledgeSourcesPage } from '@/features/admin/knowledge-sources'
+import { KnowledgeSourcesPage } from '@/pages/admin/knowledge-sources'
 
 const knowledgeSourcesSearchSchema = z.object({
   page: z.number().optional().catch(1),

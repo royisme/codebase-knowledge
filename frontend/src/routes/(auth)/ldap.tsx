@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { LdapAuth } from '@/features/auth/ldap-auth'
+import { LdapAuth } from '@/pages/shared/auth/ldap'
 
 export const Route = createFileRoute('/(auth)/ldap')({
   validateSearch: (search: Record<string, unknown>) => ({

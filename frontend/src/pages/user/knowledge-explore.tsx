@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Compass,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/layout/page-header'
 
+// 匹配后端 /api/v1/knowledge/sources 返回的数据结构
 interface KnowledgeSource {
   id: string
   name: string
@@ -28,16 +30,19 @@ interface KnowledgeSource {
   description?: string
   branch: string
   language: string
-  lastFullIndex?: string
-  lastIncremental?: string
+  tags: string[]
   status: 'healthy' | 'outdated' | 'indexing' | 'failed'
-  tags?: string[]
-  maintainers?: Array<{ name: string; email: string }>
-  recommendedQuestions?: string[]
+  lastFullIndex: string | null
+  lastIncremental: string | null
+  lastSyncedAt: string | null
+  createdAt: string
+  updatedAt: string
+  maintainers: Array<{ name: string; email: string }>
+  recommendedQuestions: string[]
+  isActive: boolean
   queryCount7d: number
-  nodeCount?: number
-  relationCount?: number
-  isActive?: boolean
+  nodeCount: number | null
+  relationCount: number | null
 }
 
 const fetchKnowledgeSources = async (): Promise<KnowledgeSource[]> => {
@@ -64,9 +69,10 @@ const StatusBadge = ({ status }: { status: string }) => {
   return <Badge variant={config.variant}>{config.label}</Badge>
 }
 
-const isIndexOutdated = (lastIndexed: string): boolean => {
+const isIndexOutdated = (lastSyncedAt?: string | null): boolean => {
+  if (!lastSyncedAt) return true
   const daysDiff =
-    (new Date().getTime() - new Date(lastIndexed).getTime()) /
+    (new Date().getTime() - new Date(lastSyncedAt).getTime()) /
     (1000 * 60 * 60 * 24)
   return daysDiff > 7
 }
@@ -82,16 +88,28 @@ export const KnowledgeExplorePage = () => {
     search.sourceId || null
   )
 
-  const { data: sources, isLoading } = useQuery({
+  const {
+    data: sources,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['knowledge', 'sources'],
     queryFn: fetchKnowledgeSources,
   })
 
+  // Show error toast when query fails
+  useEffect(() => {
+    if (error) {
+      toast.error('加载知识源失败，请稍后重试')
+    }
+  }, [error])
+
   const filteredSources = sources?.filter((source) => {
+    if (!source) return false
     if (!searchText) return true
     const lower = searchText.toLowerCase()
     return (
-      source.name.toLowerCase().includes(lower) ||
+      source.name?.toLowerCase().includes(lower) ||
       source.alias?.toLowerCase().includes(lower) ||
       source.description?.toLowerCase().includes(lower) ||
       source.tags?.some((tag) => tag.toLowerCase().includes(lower))
@@ -115,7 +133,7 @@ export const KnowledgeExplorePage = () => {
   }
 
   return (
-    <div className='flex h-full flex-col'>
+    <div className='space-y-6'>
       {/* Header */}
       <PageHeader
         title='知识源导航'
@@ -124,7 +142,7 @@ export const KnowledgeExplorePage = () => {
       />
 
       {/* Content - 左右分栏 */}
-      <div className='flex min-h-0 flex-1 gap-6'>
+      <div className='flex gap-6'>
         {/* 左侧列表 */}
         <div className='flex w-80 flex-shrink-0 flex-col gap-4'>
           <div className='relative'>
@@ -137,50 +155,75 @@ export const KnowledgeExplorePage = () => {
             />
           </div>
 
-          <ScrollArea className='flex-1 pr-4'>
-            {isLoading ? (
-              <div className='space-y-2'>
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className='h-20 w-full' />
-                ))}
-              </div>
-            ) : (
-              <div className='space-y-2'>
-                {filteredSources?.map((source) => (
-                  <Card
-                    key={source.id}
-                    className={`cursor-pointer transition-all ${
-                      selectedSourceId === source.id
-                        ? 'border-primary shadow-sm'
-                        : 'hover:border-primary/50'
-                    }`}
-                    onClick={() => setSelectedSourceId(source.id)}
-                  >
-                    <CardContent className='p-4'>
-                      <div className='flex items-start justify-between gap-2'>
-                        <div className='min-w-0 flex-1'>
-                          <div className='mb-1 flex items-center gap-2'>
-                            <h4 className='truncate font-medium'>
-                              {source.alias}
-                            </h4>
+          <ScrollArea className='h-[calc(100vh-280px)]'>
+            <div className='space-y-2 pr-4'>
+              {error ? (
+                <Card className='border-destructive'>
+                  <CardContent className='py-8 text-center'>
+                    <AlertTriangle className='text-destructive mx-auto mb-2 h-12 w-12' />
+                    <p className='text-destructive mb-2 font-medium'>
+                      加载知识源失败
+                    </p>
+                    <p className='text-muted-foreground text-sm'>
+                      {error instanceof Error ? error.message : '未知错误'}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : isLoading ? (
+                <>
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className='h-24 w-full' />
+                  ))}
+                </>
+              ) : filteredSources && filteredSources.length > 0 ? (
+                filteredSources.map((source) => {
+                  if (!source) return null
+
+                  return (
+                    <Card
+                      key={source.id}
+                      className={`cursor-pointer transition-all ${
+                        selectedSourceId === source.id
+                          ? 'border-primary shadow-sm'
+                          : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => setSelectedSourceId(source.id)}
+                    >
+                      <CardContent className='p-4'>
+                        <div className='flex items-start justify-between gap-2'>
+                          <div className='min-w-0 flex-1'>
+                            <div className='mb-1 flex items-center gap-2'>
+                              <h4 className='truncate font-medium'>
+                                {source.alias || source.name || '未命名'}
+                              </h4>
+                            </div>
+                            <p className='text-muted-foreground truncate text-xs'>
+                              {source.name || '无描述'}
+                            </p>
                           </div>
-                          <p className='text-muted-foreground truncate text-xs'>
-                            {source.name}
-                          </p>
+                          <StatusBadge status={source.status} />
                         </div>
-                        <StatusBadge status={source.status} />
-                      </div>
-                      <div className='text-muted-foreground mt-2 flex items-center gap-2 text-xs'>
-                        <Database className='h-3 w-3' />
-                        <span>{source.language}</span>
-                        <span>·</span>
-                        <span>{source.queryCount7d} 次提问</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                        <div className='text-muted-foreground mt-2 flex items-center gap-2 text-xs'>
+                          <Database className='h-3 w-3' />
+                          <span>{source.language || '未知'}</span>
+                          <span>·</span>
+                          <span>{source.queryCount7d || 0} 次提问</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              ) : (
+                <Card className='border-dashed'>
+                  <CardContent className='py-8 text-center'>
+                    <Database className='text-muted-foreground/50 mx-auto mb-2 h-12 w-12' />
+                    <p className='text-muted-foreground text-sm'>
+                      {searchText ? '未找到匹配的知识源' : '暂无知识源'}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </ScrollArea>
         </div>
 
@@ -196,7 +239,7 @@ export const KnowledgeExplorePage = () => {
               </CardContent>
             </Card>
           ) : (
-            <ScrollArea className='flex-1'>
+            <ScrollArea className='h-[calc(100vh-280px)]'>
               <div className='space-y-6 pr-4'>
                 {/* 基本信息 */}
                 <Card>
@@ -204,7 +247,7 @@ export const KnowledgeExplorePage = () => {
                     <div className='flex items-start justify-between'>
                       <div>
                         <CardTitle className='text-2xl'>
-                          {selectedSource.alias}
+                          {selectedSource.alias || selectedSource.name}
                         </CardTitle>
                         <p className='text-muted-foreground mt-1 text-sm'>
                           {selectedSource.name}
@@ -214,12 +257,14 @@ export const KnowledgeExplorePage = () => {
                     </div>
                   </CardHeader>
                   <CardContent className='space-y-4'>
-                    <div>
-                      <h4 className='mb-2 text-sm font-medium'>仓库简介</h4>
-                      <p className='text-muted-foreground text-sm'>
-                        {selectedSource.description}
-                      </p>
-                    </div>
+                    {selectedSource.description && (
+                      <div>
+                        <h4 className='mb-2 text-sm font-medium'>仓库简介</h4>
+                        <p className='text-muted-foreground text-sm'>
+                          {selectedSource.description}
+                        </p>
+                      </div>
+                    )}
 
                     <div className='grid grid-cols-2 gap-4'>
                       <div>
@@ -228,7 +273,7 @@ export const KnowledgeExplorePage = () => {
                           <span>分支</span>
                         </div>
                         <p className='text-sm font-medium'>
-                          {selectedSource.branch}
+                          {selectedSource.branch || '未知'}
                         </p>
                       </div>
                       <div>
@@ -237,18 +282,18 @@ export const KnowledgeExplorePage = () => {
                           <span>语言</span>
                         </div>
                         <p className='text-sm font-medium'>
-                          {selectedSource.language}
+                          {selectedSource.language || '未知'}
                         </p>
                       </div>
                       <div>
                         <div className='text-muted-foreground mb-1 flex items-center gap-2 text-sm'>
                           <Clock className='h-4 w-4' />
-                          <span>全量索引</span>
+                          <span>最后更新</span>
                         </div>
                         <p className='text-sm font-medium'>
-                          {selectedSource.lastFullIndex
+                          {selectedSource.lastSyncedAt
                             ? new Date(
-                                selectedSource.lastFullIndex
+                                selectedSource.lastSyncedAt
                               ).toLocaleString('zh-CN')
                             : '未知'}
                         </p>
@@ -256,21 +301,21 @@ export const KnowledgeExplorePage = () => {
                       <div>
                         <div className='text-muted-foreground mb-1 flex items-center gap-2 text-sm'>
                           <Clock className='h-4 w-4' />
-                          <span>增量索引</span>
+                          <span>创建时间</span>
                         </div>
                         <p className='text-sm font-medium'>
-                          {selectedSource.lastIncremental
-                            ? new Date(
-                                selectedSource.lastIncremental
-                              ).toLocaleString('zh-CN')
+                          {selectedSource.createdAt
+                            ? new Date(selectedSource.createdAt).toLocaleString(
+                                'zh-CN'
+                              )
                             : '未知'}
                         </p>
                       </div>
                     </div>
 
-                    {selectedSource.nodeCount &&
-                      selectedSource.relationCount && (
-                        <div className='border-t pt-2'>
+                    {selectedSource.nodeCount !== null &&
+                      selectedSource.relationCount !== null && (
+                        <div className='border-t pt-4'>
                           <div className='flex items-center gap-6 text-sm'>
                             <div>
                               <span className='text-muted-foreground'>
@@ -328,9 +373,9 @@ export const KnowledgeExplorePage = () => {
                 </Card>
 
                 {/* 索引状态提醒 */}
-                {((selectedSource.lastIncremental &&
-                  isIndexOutdated(selectedSource.lastIncremental)) ||
-                  selectedSource.status === 'failed') && (
+                {(isIndexOutdated(selectedSource.lastSyncedAt) ||
+                  selectedSource.status === 'failed' ||
+                  !selectedSource.isActive) && (
                   <Card className='border-yellow-200 bg-yellow-50'>
                     <CardContent className='pt-6'>
                       <div className='flex items-start gap-3'>
@@ -341,8 +386,10 @@ export const KnowledgeExplorePage = () => {
                           </h4>
                           <p className='mt-1 text-sm text-yellow-700'>
                             {selectedSource.status === 'failed'
-                              ? '索引任务失败,请联系管理员处理'
-                              : '索引已过期超过 7 天,本次回答可能缺少最新代码'}
+                              ? '索引任务失败，请联系管理员处理'
+                              : !selectedSource.isActive
+                                ? '该知识源已被禁用，请联系管理员处理'
+                                : '索引已过期超过 7 天，本次回答可能缺少最新代码'}
                           </p>
                         </div>
                       </div>

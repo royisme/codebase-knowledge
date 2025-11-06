@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { JobDetailPage } from '@/features/repository-management/pages/JobDetailPage'
+import { JobDetailPage } from '@/pages/admin/repository-job-detail'
 
 export const Route = createFileRoute('/admin/repositories/$repoId/jobs/$jobId')(
   {

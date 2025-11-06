@@ -8,11 +8,9 @@ import {
   Brain,
   Clock,
   Activity,
-  Eye,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PageHeader } from '@/components/layout/page-header'
 
 function AnalyticsPage() {
   return (

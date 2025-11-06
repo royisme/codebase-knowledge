@@ -12,12 +12,7 @@ import { faker } from '@faker-js/faker'
 const DEFAULT_ROLES = ['admin', 'maintainer', 'viewer'] as const
 
 const toIdentifier = (value: string): Identifier => value as Identifier
-const USER_STATUSES: UserStatus[] = [
-  'active',
-  'inactive',
-  'suspended',
-  'invited',
-]
+const USER_STATUSES: UserStatus[] = ['active', 'unverified', 'suspended']
 
 let seed = faker.string.alphanumeric(6)
 faker.seed(seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0))
@@ -85,7 +80,7 @@ function createInitialUsers(): AdminUser[] {
     createUser({
       displayName: '赵六',
       email: 'zhaoliu@enterprise.com',
-      status: 'invited',
+      status: 'unverified',
       roleIds: [toIdentifier('viewer')],
     }),
     ...Array.from({ length: 10 }, () => createUser({})),
