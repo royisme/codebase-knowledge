@@ -38,6 +38,17 @@ const formatLastSynced = (lastSyncedAt?: string) => {
   }
 }
 
+const getTopLanguages = (
+  languages?: Record<string, number>,
+  maxCount: number = 3
+): string[] => {
+  if (!languages) return []
+  return Object.entries(languages)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, maxCount)
+    .map(([lang]) => lang)
+}
+
 export function KnowledgeSourcesTable({
   data,
   isLoading,
@@ -81,67 +92,105 @@ export function KnowledgeSourcesTable({
               <TableHead>名称</TableHead>
               <TableHead>仓库地址</TableHead>
               <TableHead>默认分支</TableHead>
+              <TableHead>语言</TableHead>
               <TableHead>状态</TableHead>
+              <TableHead>统计</TableHead>
               <TableHead>最后同步</TableHead>
               <TableHead className='text-right'>操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((source) => (
-              <TableRow key={source.id}>
-                <TableCell className='font-medium'>{source.name}</TableCell>
-                <TableCell className='max-w-xs truncate font-mono text-xs'>
-                  {source.repositoryUrl}
-                </TableCell>
-                <TableCell>{source.defaultBranch}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      source.status === 'active' ? 'default' : 'secondary'
-                    }
-                  >
-                    {source.status === 'active' ? '已启用' : '已禁用'}
-                  </Badge>
-                </TableCell>
-                <TableCell>{formatLastSynced(source.lastSyncedAt)}</TableCell>
-                <TableCell>
-                  <div className='flex justify-end gap-2'>
-                    <Button
-                      size='sm'
-                      variant='outline'
-                      onClick={() => onSync(source)}
-                      disabled={isMutating}
+            {data.map((source) => {
+              const languages = getTopLanguages(source.metadata?.languages)
+              const hasIndexed = !!source.metadata?.index_version
+              
+              return (
+                <TableRow key={source.id}>
+                  <TableCell className='font-medium'>{source.name}</TableCell>
+                  <TableCell className='max-w-xs truncate font-mono text-xs'>
+                    {source.repositoryUrl}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant='outline' className='font-mono text-xs'>
+                      {source.defaultBranch}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {languages.length > 0 ? (
+                      <div className='flex gap-1'>
+                        {languages.map((lang) => (
+                          <Badge key={lang} variant='secondary' className='text-xs'>
+                            {lang}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className='text-muted-foreground text-xs'>-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        source.status === 'active' ? 'default' : 'secondary'
+                      }
                     >
-                      触发同步
-                    </Button>
-                    <Button
-                      size='sm'
-                      variant='outline'
-                      onClick={() => onToggle(source)}
-                      disabled={isMutating}
-                    >
-                      {source.status === 'active' ? '禁用' : '启用'}
-                    </Button>
-                    <Button
-                      size='sm'
-                      variant='outline'
-                      onClick={() => onEdit(source)}
-                      disabled={isMutating}
-                    >
-                      编辑
-                    </Button>
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      onClick={() => onDelete(source)}
-                      disabled={isMutating}
-                    >
-                      删除
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                      {hasIndexed
+                        ? source.status === 'active'
+                          ? '已索引'
+                          : '已禁用'
+                        : '待索引'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className='text-muted-foreground text-sm'>
+                    {source.metadata?.total_files ? (
+                      <div className='flex flex-col gap-0.5'>
+                        <span>文件: {source.metadata.total_files}</span>
+                        <span>函数: {source.metadata.total_functions || 0}</span>
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>{formatLastSynced(source.lastSyncedAt)}</TableCell>
+                  <TableCell>
+                    <div className='flex justify-end gap-2'>
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={() => onSync(source)}
+                        disabled={isMutating}
+                      >
+                        {hasIndexed ? '同步' : '索引'}
+                      </Button>
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={() => onToggle(source)}
+                        disabled={isMutating}
+                      >
+                        {source.status === 'active' ? '禁用' : '启用'}
+                      </Button>
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={() => onEdit(source)}
+                        disabled={isMutating}
+                      >
+                        编辑
+                      </Button>
+                      <Button
+                        size='sm'
+                        variant='ghost'
+                        onClick={() => onDelete(source)}
+                        disabled={isMutating}
+                      >
+                        删除
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>

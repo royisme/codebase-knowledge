@@ -113,6 +113,7 @@ export function RepositoryListPage() {
       const jobInfo = data.job_id ? `（ID: ${data.job_id.slice(0, 8)}）` : ''
       toast.success(`${data.message ?? '索引任务已创建'}${jobInfo}`)
       void queryClient.invalidateQueries({ queryKey: ['repositories'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'knowledge-sources'] })
       setConfirmAction(null)
     },
     onError: (error: unknown) => {

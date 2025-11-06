@@ -11,6 +11,17 @@ export interface ParserConfig {
   enableIncrementalRefresh: boolean
 }
 
+export interface KnowledgeSourceMetadata {
+  last_commit_sha?: string
+  total_files?: number
+  total_functions?: number
+  languages?: Record<string, number>
+  graph_nodes?: number
+  graph_edges?: number
+  index_version?: string
+  embedding_dimension?: number
+}
+
 export interface KnowledgeSource {
   id: Identifier
   name: string
@@ -22,6 +33,7 @@ export interface KnowledgeSource {
   lastSyncedAt?: ISODateString
   lastTaskId?: Identifier
   parserConfig: ParserConfig
+  metadata?: KnowledgeSourceMetadata
   createdAt?: ISODateString
   updatedAt?: ISODateString
   createdBy?: Identifier | null

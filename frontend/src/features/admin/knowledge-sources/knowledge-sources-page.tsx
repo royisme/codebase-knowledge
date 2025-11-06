@@ -188,6 +188,7 @@ export function KnowledgeSourcesPage() {
       void queryClient.invalidateQueries({
         queryKey: ['admin', 'knowledge-sources'],
       })
+      void queryClient.invalidateQueries({ queryKey: ['repositories'] })
     },
     onError: () => {
       toast.error('触发同步失败')

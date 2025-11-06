@@ -82,6 +82,16 @@ const mapApiToKnowledgeSource = (item: ApiKnowledgeSource): KnowledgeSource => {
           ? parserConfig.enable_incremental_refresh
           : true,
     },
+    metadata: {
+      last_commit_sha: metadata.last_commit_sha ? String(metadata.last_commit_sha) : undefined,
+      total_files: typeof metadata.total_files === 'number' ? metadata.total_files : undefined,
+      total_functions: typeof metadata.total_functions === 'number' ? metadata.total_functions : undefined,
+      languages: metadata.languages && typeof metadata.languages === 'object' ? metadata.languages as Record<string, number> : undefined,
+      graph_nodes: typeof metadata.graph_nodes === 'number' ? metadata.graph_nodes : undefined,
+      graph_edges: typeof metadata.graph_edges === 'number' ? metadata.graph_edges : undefined,
+      index_version: metadata.index_version ? String(metadata.index_version) : undefined,
+      embedding_dimension: typeof metadata.embedding_dimension === 'number' ? metadata.embedding_dimension : undefined,
+    },
     createdAt: item.created_at ?? undefined,
     updatedAt: item.updated_at ?? undefined,
     createdBy: item.created_by ?? undefined,
