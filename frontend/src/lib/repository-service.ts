@@ -66,10 +66,25 @@ export function deleteRepository(id: string) {
   })
 }
 
-export function triggerIndex(id: string, request: TriggerIndexRequest) {
+export function triggerIndex(
+  id: string,
+  request: TriggerIndexRequest & {
+    sync_mode?: 'incremental' | 'full' | 'force_rebuild'
+  }
+) {
+  let body = {}
+
+  if (request.sync_mode === 'force_rebuild' || request.force_full) {
+    body = { sync_config: { force_full: true } }
+  } else if (request.sync_mode === 'full') {
+    body = { sync_config: { sync_mode: 'full' } }
+  } else if (request.sync_mode === 'incremental') {
+    body = { sync_config: { sync_mode: 'incremental' } }
+  }
+
   return apiClient<TriggerIndexResponse>({
     endpoint: API_ENDPOINTS.repositories.triggerSync(id),
     method: 'POST',
-    body: request.force_full ? { sync_config: { force_full: true } } : {},
+    body,
   })
 }

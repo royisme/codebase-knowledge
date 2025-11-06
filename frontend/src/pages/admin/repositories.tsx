@@ -47,10 +47,15 @@ const statusOptions: Array<{ value: RepositoryStatus; label: string }> = [
 
 type ConfirmAction =
   | { type: 'delete'; repo: Repository }
-  | { type: 'triggerIndex'; repo: Repository; forceFull: boolean }
+  | {
+      type: 'triggerIndex'
+      repo: Repository
+      mode: 'incremental' | 'full' | 'force_rebuild'
+    }
   | null
 
-export function RepositoryListPage() {
+// 仓库列表内容组件（不含 PageHeader，可用于 Tab 中）
+export function RepositoryListContent() {
   const [isAddDialogOpen, setAddDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatuses, setSelectedStatuses] = useState<RepositoryStatus[]>(
@@ -108,8 +113,13 @@ export function RepositoryListPage() {
 
   // 触发索引
   const triggerIndexMutation = useMutation({
-    mutationFn: ({ id, forceFull }: { id: string; forceFull: boolean }) =>
-      triggerIndex(id, { force_full: forceFull }),
+    mutationFn: ({
+      id,
+      mode,
+    }: {
+      id: string
+      mode: 'incremental' | 'full' | 'force_rebuild'
+    }) => triggerIndex(id, { sync_mode: mode }),
     onSuccess: (data) => {
       const jobInfo = data.job_id ? `（ID: ${data.job_id.slice(0, 8)}）` : ''
       toast.success(`${data.message ?? '索引任务已创建'}${jobInfo}`)
@@ -140,8 +150,11 @@ export function RepositoryListPage() {
     setConfirmAction({ type: 'delete', repo })
   }
 
-  const handleTriggerIndex = (repo: Repository, forceFull: boolean = false) => {
-    setConfirmAction({ type: 'triggerIndex', repo, forceFull })
+  const handleTriggerIndex = (
+    repo: Repository,
+    mode: 'incremental' | 'full' | 'force_rebuild' = 'incremental'
+  ) => {
+    setConfirmAction({ type: 'triggerIndex', repo, mode })
   }
 
   const handleEdit = (repo: Repository) => {
@@ -177,72 +190,66 @@ export function RepositoryListPage() {
     } else if (confirmAction.type === 'triggerIndex') {
       triggerIndexMutation.mutate({
         id: confirmAction.repo.id,
-        forceFull: confirmAction.forceFull,
+        mode: confirmAction.mode,
       })
     }
   }
 
   return (
     <div className='space-y-6'>
-      {/* 页面标题 */}
-      <PageHeader
-        title='代码仓库管理'
-        description='管理代码仓库并触发索引任务'
-        icon={<GitBranch className='h-6 w-6' />}
-        actions={
-          <Button onClick={() => setAddDialogOpen(true)}>
-            <Plus className='mr-2 h-4 w-4' />
-            添加仓库
-          </Button>
-        }
-      />
+      {/* 操作栏 */}
+      <div className='flex items-center justify-between'>
+        <div className='flex flex-1 items-center gap-2'>
+          <div className='relative max-w-md flex-1'>
+            <SearchIcon className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
+            <Input
+              placeholder='搜索仓库名称或 URL...'
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className='pl-9'
+            />
+          </div>
 
-      {/* 过滤栏 */}
-      <div className='flex items-center gap-2'>
-        <div className='relative flex-1'>
-          <SearchIcon className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
-          <Input
-            placeholder='搜索仓库名称或 URL...'
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className='pl-9'
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant='outline'>
+                <SlidersHorizontal className='mr-2 h-4 w-4' />
+                状态筛选
+                {selectedStatuses.length > 0 && (
+                  <span className='bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs'>
+                    {selectedStatuses.length}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='w-48'>
+              <DropdownMenuLabel>按状态筛选</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {statusOptions.map((option) => (
+                <DropdownMenuCheckboxItem
+                  key={option.value}
+                  checked={selectedStatuses.includes(option.value)}
+                  onCheckedChange={(checked) => {
+                    const newStatuses = checked
+                      ? [...selectedStatuses, option.value]
+                      : selectedStatuses.filter((s) => s !== option.value)
+                    handleStatusChange(newStatuses)
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant='outline' size='icon' onClick={() => refetch()}>
+            <RefreshCw className='h-4 w-4' />
+          </Button>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant='outline'>
-              <SlidersHorizontal className='mr-2 h-4 w-4' />
-              状态筛选
-              {selectedStatuses.length > 0 && (
-                <span className='bg-primary text-primary-foreground ml-2 rounded-full px-2 py-0.5 text-xs'>
-                  {selectedStatuses.length}
-                </span>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end' className='w-48'>
-            <DropdownMenuLabel>按状态筛选</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {statusOptions.map((option) => (
-              <DropdownMenuCheckboxItem
-                key={option.value}
-                checked={selectedStatuses.includes(option.value)}
-                onCheckedChange={(checked) => {
-                  const newStatuses = checked
-                    ? [...selectedStatuses, option.value]
-                    : selectedStatuses.filter((s) => s !== option.value)
-                  handleStatusChange(newStatuses)
-                }}
-              >
-                {option.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button variant='outline' size='icon' onClick={() => refetch()}>
-          <RefreshCw className='h-4 w-4' />
+        <Button onClick={() => setAddDialogOpen(true)}>
+          <Plus className='mr-2 h-4 w-4' />
+          添加仓库
         </Button>
       </div>
 
@@ -298,18 +305,22 @@ export function RepositoryListPage() {
           confirmAction?.type === 'delete'
             ? '确认删除仓库'
             : confirmAction?.type === 'triggerIndex'
-              ? confirmAction.forceFull
-                ? '确认重新索引'
-                : '确认同步'
+              ? confirmAction.mode === 'incremental'
+                ? '增量同步'
+                : confirmAction.mode === 'full'
+                  ? '全量同步'
+                  : '强制重建'
               : ''
         }
         desc={
           confirmAction?.type === 'delete'
             ? `确定要删除仓库"${confirmAction.repo.name}"吗？此操作不可撤销。`
             : confirmAction?.type === 'triggerIndex'
-              ? confirmAction.forceFull
-                ? `确定要重新索引仓库"${confirmAction.repo.name}"吗？这将执行全量索引。`
-                : `确定要同步仓库"${confirmAction.repo.name}"吗？这将执行增量索引。`
+              ? confirmAction.mode === 'incremental'
+                ? `确定要增量同步仓库"${confirmAction.repo.name}"吗？只处理变更的文件。`
+                : confirmAction.mode === 'full'
+                  ? `确定要全量同步仓库"${confirmAction.repo.name}"吗？重新索引所有文件，但不清空图谱。`
+                  : `确定要强制重建仓库"${confirmAction.repo.name}"吗？这将清空现有图谱数据并完全重建。`
               : ''
         }
         handleConfirm={handleConfirm}
@@ -329,6 +340,20 @@ export function RepositoryListPage() {
           void queryClient.invalidateQueries({ queryKey: ['repositories'] })
         }}
       />
+    </div>
+  )
+}
+
+// 完整页面组件（包含 PageHeader）
+export function RepositoryListPage() {
+  return (
+    <div className='space-y-6'>
+      <PageHeader
+        title='代码仓库管理'
+        description='管理代码仓库并触发索引任务'
+        icon={<GitBranch className='h-6 w-6' />}
+      />
+      <RepositoryListContent />
     </div>
   )
 }

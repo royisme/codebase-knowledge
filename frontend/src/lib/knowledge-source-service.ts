@@ -83,14 +83,36 @@ const mapApiToKnowledgeSource = (item: ApiKnowledgeSource): KnowledgeSource => {
           : true,
     },
     metadata: {
-      last_commit_sha: metadata.last_commit_sha ? String(metadata.last_commit_sha) : undefined,
-      total_files: typeof metadata.total_files === 'number' ? metadata.total_files : undefined,
-      total_functions: typeof metadata.total_functions === 'number' ? metadata.total_functions : undefined,
-      languages: metadata.languages && typeof metadata.languages === 'object' ? metadata.languages as Record<string, number> : undefined,
-      graph_nodes: typeof metadata.graph_nodes === 'number' ? metadata.graph_nodes : undefined,
-      graph_edges: typeof metadata.graph_edges === 'number' ? metadata.graph_edges : undefined,
-      index_version: metadata.index_version ? String(metadata.index_version) : undefined,
-      embedding_dimension: typeof metadata.embedding_dimension === 'number' ? metadata.embedding_dimension : undefined,
+      last_commit_sha: metadata.last_commit_sha
+        ? String(metadata.last_commit_sha)
+        : undefined,
+      total_files:
+        typeof metadata.total_files === 'number'
+          ? metadata.total_files
+          : undefined,
+      total_functions:
+        typeof metadata.total_functions === 'number'
+          ? metadata.total_functions
+          : undefined,
+      languages:
+        metadata.languages && typeof metadata.languages === 'object'
+          ? (metadata.languages as Record<string, number>)
+          : undefined,
+      graph_nodes:
+        typeof metadata.graph_nodes === 'number'
+          ? metadata.graph_nodes
+          : undefined,
+      graph_edges:
+        typeof metadata.graph_edges === 'number'
+          ? metadata.graph_edges
+          : undefined,
+      index_version: metadata.index_version
+        ? String(metadata.index_version)
+        : undefined,
+      embedding_dimension:
+        typeof metadata.embedding_dimension === 'number'
+          ? metadata.embedding_dimension
+          : undefined,
     },
     createdAt: item.created_at ?? undefined,
     updatedAt: item.updated_at ?? undefined,
@@ -234,7 +256,19 @@ export async function deleteKnowledgeSource(id: Identifier) {
   })
 }
 
-export async function triggerKnowledgeSourceSync(id: Identifier) {
+export async function triggerKnowledgeSourceSync(
+  id: Identifier,
+  mode: 'incremental' | 'full' | 'force_rebuild' = 'incremental'
+) {
+  const body =
+    mode === 'force_rebuild'
+      ? { sync_config: { force_full: true } }
+      : mode === 'full'
+        ? { sync_config: { sync_mode: 'full' } }
+        : mode === 'incremental'
+          ? { sync_config: { sync_mode: 'incremental' } }
+          : {}
+
   return apiClient<{
     message: string
     job_id?: string
@@ -243,5 +277,21 @@ export async function triggerKnowledgeSourceSync(id: Identifier) {
   }>({
     endpoint: API_ENDPOINTS.knowledgeSources.sync(id),
     method: 'POST',
+    body,
   })
+}
+
+// 增量同步（默认）
+export async function triggerKnowledgeSourceIncrementalSync(id: Identifier) {
+  return triggerKnowledgeSourceSync(id, 'incremental')
+}
+
+// 全量同步（重新索引所有文件，但不清空图谱）
+export async function triggerKnowledgeSourceFullSync(id: Identifier) {
+  return triggerKnowledgeSourceSync(id, 'full')
+}
+
+// 强制重建（清空图谱后重建）
+export async function triggerKnowledgeSourceForceRebuild(id: Identifier) {
+  return triggerKnowledgeSourceSync(id, 'force_rebuild')
 }

@@ -1,7 +1,14 @@
 import { formatDistanceToNow } from 'date-fns'
 import type { KnowledgeSource } from '@/types'
+import { RefreshCw, RotateCcw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -23,7 +30,10 @@ interface KnowledgeSourcesTableProps {
   onEdit: (source: KnowledgeSource) => void
   onToggle: (source: KnowledgeSource) => void
   onDelete: (source: KnowledgeSource) => void
-  onSync: (source: KnowledgeSource) => void
+  onSync: (
+    source: KnowledgeSource,
+    mode?: 'incremental' | 'full' | 'force_rebuild'
+  ) => void
   isMutating?: boolean
 }
 
@@ -103,7 +113,7 @@ export function KnowledgeSourcesTable({
             {data.map((source) => {
               const languages = getTopLanguages(source.metadata?.languages)
               const hasIndexed = !!source.metadata?.index_version
-              
+
               return (
                 <TableRow key={source.id}>
                   <TableCell className='font-medium'>{source.name}</TableCell>
@@ -119,7 +129,11 @@ export function KnowledgeSourcesTable({
                     {languages.length > 0 ? (
                       <div className='flex gap-1'>
                         {languages.map((lang) => (
-                          <Badge key={lang} variant='secondary' className='text-xs'>
+                          <Badge
+                            key={lang}
+                            variant='secondary'
+                            className='text-xs'
+                          >
                             {lang}
                           </Badge>
                         ))}
@@ -145,7 +159,9 @@ export function KnowledgeSourcesTable({
                     {source.metadata?.total_files ? (
                       <div className='flex flex-col gap-0.5'>
                         <span>文件: {source.metadata.total_files}</span>
-                        <span>函数: {source.metadata.total_functions || 0}</span>
+                        <span>
+                          函数: {source.metadata.total_functions || 0}
+                        </span>
                       </div>
                     ) : (
                       '-'
@@ -154,14 +170,42 @@ export function KnowledgeSourcesTable({
                   <TableCell>{formatLastSynced(source.lastSyncedAt)}</TableCell>
                   <TableCell>
                     <div className='flex justify-end gap-2'>
-                      <Button
-                        size='sm'
-                        variant='outline'
-                        onClick={() => onSync(source)}
-                        disabled={isMutating}
-                      >
-                        {hasIndexed ? '同步' : '索引'}
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            disabled={isMutating}
+                          >
+                            <RefreshCw className='mr-2 h-4 w-4' />
+                            {hasIndexed ? '同步' : '索引'}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align='end'>
+                          <DropdownMenuItem
+                            onClick={() => onSync(source, 'incremental')}
+                          >
+                            <RefreshCw className='mr-2 h-4 w-4' />
+                            增量同步
+                          </DropdownMenuItem>
+                          {hasIndexed && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => onSync(source, 'full')}
+                              >
+                                <RefreshCw className='mr-2 h-4 w-4' />
+                                全量同步
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => onSync(source, 'force_rebuild')}
+                              >
+                                <RotateCcw className='mr-2 h-4 w-4' />
+                                强制重建
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button
                         size='sm'
                         variant='outline'

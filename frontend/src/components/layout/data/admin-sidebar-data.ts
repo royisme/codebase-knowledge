@@ -6,7 +6,6 @@ import {
   HelpCircle,
   Activity,
   Home,
-  GitBranch,
   ListTodo,
   Search,
   Eye,
@@ -46,12 +45,7 @@ export const adminSidebarData: SidebarData = {
       title: '系统配置',
       items: [
         {
-          title: '代码仓库',
-          url: '/admin/repositories',
-          icon: GitBranch,
-        },
-        {
-          title: '知识源',
+          title: '知识源管理',
           url: '/admin/sources',
           icon: Database,
         },

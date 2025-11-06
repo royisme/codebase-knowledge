@@ -52,7 +52,8 @@ export const adminRoutesMetadata: Record<string, RouteMetadata> = {
   },
   '/admin/sources': {
     title: '知识源管理',
-    description: '管理知识源并触发同步任务',
+    description:
+      '统一管理所有类型的知识源，包括代码仓库、数据库、API、网站和文档',
     icon: <Database className='h-6 w-6' />,
     breadcrumbLabel: '知识源',
   },

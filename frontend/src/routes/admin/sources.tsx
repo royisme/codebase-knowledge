@@ -1,25 +1,6 @@
-import z from 'zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { KnowledgeSourcesPage } from '@/pages/admin/knowledge-sources'
-
-const knowledgeSourcesSearchSchema = z.object({
-  page: z.number().optional().catch(1),
-  pageSize: z.number().optional().catch(10),
-  search: z.string().optional().catch(''),
-  statuses: z
-    .array(
-      z.union([
-        z.literal('active'),
-        z.literal('syncing'),
-        z.literal('disabled'),
-        z.literal('error'),
-      ])
-    )
-    .optional()
-    .catch([]),
-})
+import { UnifiedKnowledgeSourcesPage } from '@/pages/admin/unified-knowledge-sources'
 
 export const Route = createFileRoute('/admin/sources')({
-  validateSearch: knowledgeSourcesSearchSchema,
-  component: KnowledgeSourcesPage,
+  component: UnifiedKnowledgeSourcesPage,
 })

@@ -19,7 +19,10 @@ interface RepositoriesTableProps {
   data: Repository[]
   isLoading: boolean
   onDelete: (repo: Repository) => void
-  onTriggerIndex: (repo: Repository, forceFull?: boolean) => void
+  onTriggerIndex: (
+    repo: Repository,
+    mode?: 'incremental' | 'full' | 'force_rebuild'
+  ) => void
   onEdit: (repo: Repository) => void
 }
 
@@ -161,13 +164,19 @@ export function RepositoriesTable({
                             onSelect: () => onEdit(repo),
                           },
                           {
-                            label: '同步',
-                            onSelect: () => onTriggerIndex(repo, false),
+                            label: '增量同步',
+                            onSelect: () => onTriggerIndex(repo, 'incremental'),
+                          },
+                          {
+                            label: '全量同步',
+                            onSelect: () => onTriggerIndex(repo, 'full'),
                             disabled: !repo.source_metadata?.index_version,
                           },
                           {
-                            label: '重新索引',
-                            onSelect: () => onTriggerIndex(repo, true),
+                            label: '强制重建',
+                            onSelect: () =>
+                              onTriggerIndex(repo, 'force_rebuild'),
+                            disabled: !repo.source_metadata?.index_version,
                           },
                         ],
                       },

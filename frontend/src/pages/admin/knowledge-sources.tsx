@@ -92,6 +92,11 @@ export function KnowledgeSourcesPage() {
   const [confirmAction, setConfirmAction] = useState<
     | { type: 'delete'; source: KnowledgeSource }
     | { type: 'toggle'; source: KnowledgeSource }
+    | {
+        type: 'sync'
+        source: KnowledgeSource
+        mode: 'incremental' | 'full' | 'force_rebuild'
+      }
     | null
   >(null)
 
@@ -183,16 +188,24 @@ export function KnowledgeSourcesPage() {
   })
 
   const syncMutation = useMutation({
-    mutationFn: (id: string) => triggerKnowledgeSourceSync(id),
+    mutationFn: ({
+      id,
+      mode,
+    }: {
+      id: string
+      mode: 'incremental' | 'full' | 'force_rebuild'
+    }) => triggerKnowledgeSourceSync(id, mode),
     onSuccess: (response) => {
-      toast.success(response.message ?? '已触发同步')
+      toast.success(response.message ?? '已触发同步任务')
       void queryClient.invalidateQueries({
         queryKey: ['admin', 'knowledge-sources'],
       })
       void queryClient.invalidateQueries({ queryKey: ['repositories'] })
+      setConfirmAction(null)
     },
     onError: () => {
-      toast.error('触发同步失败')
+      toast.error('触发同步任务失败')
+      setConfirmAction(null)
     },
   })
 
@@ -238,8 +251,11 @@ export function KnowledgeSourcesPage() {
     await deleteMutation.mutateAsync(source.id)
   }
 
-  const handleSync = async (source: KnowledgeSource) => {
-    await syncMutation.mutateAsync(source.id)
+  const handleSync = (
+    source: KnowledgeSource,
+    mode: 'incremental' | 'full' | 'force_rebuild' = 'incremental'
+  ) => {
+    setConfirmAction({ type: 'sync', source, mode })
   }
 
   const handleEdit = (source: KnowledgeSource) => {
@@ -268,7 +284,17 @@ export function KnowledgeSourcesPage() {
       await handleDelete(confirmAction.source)
       return
     }
-    await handleToggleStatus(confirmAction.source)
+    if (confirmAction.type === 'toggle') {
+      await handleToggleStatus(confirmAction.source)
+      return
+    }
+    if (confirmAction.type === 'sync') {
+      await syncMutation.mutateAsync({
+        id: confirmAction.source.id,
+        mode: confirmAction.mode,
+      })
+      return
+    }
   }
 
   return (
@@ -398,14 +424,38 @@ export function KnowledgeSourcesPage() {
           if (!open) setConfirmAction(null)
         }}
         title={
-          confirmAction?.type === 'delete' ? '删除知识源' : '切换知识源状态'
+          confirmAction?.type === 'delete'
+            ? '删除知识源'
+            : confirmAction?.type === 'toggle'
+              ? '切换知识源状态'
+              : confirmAction?.type === 'sync'
+                ? confirmAction.mode === 'incremental'
+                  ? '增量同步'
+                  : confirmAction.mode === 'full'
+                    ? '全量同步'
+                    : '强制重建'
+                : '确认操作'
         }
         desc={
           confirmAction?.type === 'delete'
             ? '确定要删除该知识源吗？此操作无法撤销。'
-            : '确定要切换知识源启用状态吗？'
+            : confirmAction?.type === 'toggle'
+              ? '确定要切换知识源启用状态吗？'
+              : confirmAction?.type === 'sync'
+                ? confirmAction.mode === 'incremental'
+                  ? `确定要增量同步知识源"${confirmAction.source.name}"吗？只处理变更的文件。`
+                  : confirmAction.mode === 'full'
+                    ? `确定要全量同步知识源"${confirmAction.source.name}"吗？重新索引所有文件，但不清空图谱。`
+                    : `确定要强制重建知识源"${confirmAction.source.name}"吗？这将清空现有图谱数据并完全重建。`
+                : ''
         }
-        confirmText={confirmAction?.type === 'delete' ? '删除' : '确认'}
+        confirmText={
+          confirmAction?.type === 'delete'
+            ? '删除'
+            : confirmAction?.type === 'sync'
+              ? '确认'
+              : '确认'
+        }
         destructive={confirmAction?.type === 'delete'}
         handleConfirm={handleConfirm}
         isLoading={isMutating}
