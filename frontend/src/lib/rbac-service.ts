@@ -12,10 +12,18 @@ export const ACTION_MAPPING = {
   },
   // 后端 -> 前端
   toFrontend: (action: string): string => {
-    if (action === '*') return 'admin'
-    if (action === 'GET') return 'read'
+    const upper = action.toUpperCase()
+    // Casbin normalize_action_pattern 会把 '*' 变成 '.*'
+    if (upper === '*' || upper === '.*') return 'admin'
+    // 处理以 '|' 分隔的复合动作（如 GET|POST）
+    const parts = upper.split('|').filter(Boolean)
+    if (parts.length > 1) {
+      // 全是 GET 视为只读，否则视为管理
+      return parts.every((p) => p === 'GET') ? 'read' : 'admin'
+    }
+    if (upper === 'GET') return 'read'
     // 对于其他 HTTP 方法（POST、PUT、DELETE、PATCH），视为管理权限
-    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(action)) return 'admin'
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(upper)) return 'admin'
     return action.toLowerCase() // 兜底，保持原值
   },
 } as const

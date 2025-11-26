@@ -8,6 +8,8 @@ import {
   Database,
   MessageCircleQuestion,
   Library as LibraryIcon,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useKnowledgeNoteStore } from '@/stores/knowledge-note-store'
@@ -29,9 +31,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { ErrorState } from '@/components/ui/error-state'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/layout/page-header'
+import { StreamingMarkdown } from '@/components/streaming-markdown'
 
 export const KnowledgeLibraryPage = () => {
   const queryClient = useQueryClient()
@@ -41,6 +48,7 @@ export const KnowledgeLibraryPage = () => {
   const [showClearDialog, setShowClearDialog] = useState<
     'notes' | 'history' | null
   >(null)
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
   const notesQuery = useQuery<KnowledgeNoteDTO[], Error>({
     queryKey: ['knowledge', 'notes'] as const,
@@ -70,6 +78,18 @@ export const KnowledgeLibraryPage = () => {
   }, [notesQuery.isError])
 
   const noteList = notes
+
+  const toggleExpanded = (id: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   const handleCopyAnswer = (answer: string) => {
     navigator.clipboard.writeText(answer)
@@ -155,49 +175,87 @@ export const KnowledgeLibraryPage = () => {
               </Card>
             ) : (
               <div className='space-y-3'>
-                {history.map((item) => (
-                  <Card key={item.id}>
-                    <CardHeader>
-                      <div className='flex items-start justify-between gap-4'>
-                        <div className='min-w-0 flex-1'>
-                          <div className='mb-2 flex items-center gap-2'>
-                            <Database className='text-muted-foreground h-4 w-4 flex-shrink-0' />
-                            <span className='text-muted-foreground text-sm'>
-                              {item.sourceName}
-                            </span>
-                            <span className='text-muted-foreground text-sm'>
-                              ·
-                            </span>
-                            <span className='text-muted-foreground text-xs'>
-                              {new Date(item.timestamp).toLocaleString('zh-CN')}
-                            </span>
+                {history.map((item) => {
+                  const isExpanded = expandedItems.has(item.id)
+                  return (
+                    <Card key={item.id}>
+                      <CardHeader>
+                        <div className='flex items-start justify-between gap-4'>
+                          <div className='min-w-0 flex-1'>
+                            <div className='mb-2 flex items-center gap-2'>
+                              <Database className='text-muted-foreground h-4 w-4 flex-shrink-0' />
+                              <span className='text-muted-foreground text-sm'>
+                                {item.sourceName}
+                              </span>
+                              <span className='text-muted-foreground text-sm'>
+                                ·
+                              </span>
+                              <span className='text-muted-foreground text-xs'>
+                                {new Date(item.timestamp).toLocaleString(
+                                  'zh-CN'
+                                )}
+                              </span>
+                            </div>
+                            <CardTitle className='text-base'>
+                              {item.question}
+                            </CardTitle>
                           </div>
-                          <CardTitle className='text-base'>
-                            {item.question}
-                          </CardTitle>
+                          <Badge variant='outline'>
+                            {item.executionTimeMs}ms
+                          </Badge>
                         </div>
-                        <Badge variant='outline'>
-                          {item.executionTimeMs}ms
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className='prose prose-sm text-muted-foreground max-w-none'>
-                        <p className='line-clamp-3'>{item.answer}</p>
-                      </div>
-                      <div className='mt-4 flex gap-2'>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => handleCopyAnswer(item.answer)}
+                      </CardHeader>
+                      <CardContent>
+                        <Collapsible
+                          open={isExpanded}
+                          onOpenChange={() => toggleExpanded(item.id)}
                         >
-                          <Copy className='mr-2 h-4 w-4' />
-                          复制回答
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          <div className='relative'>
+                            <div
+                              className={
+                                isExpanded ? '' : 'max-h-32 overflow-hidden'
+                              }
+                            >
+                              <StreamingMarkdown content={item.answer} />
+                            </div>
+                            {!isExpanded && (
+                              <div className='bg-gradient-to-t from-background to-transparent pointer-events-none absolute bottom-0 left-0 right-0 h-12' />
+                            )}
+                          </div>
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              className='mt-2 w-full'
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className='mr-2 h-4 w-4' />
+                                  收起
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className='mr-2 h-4 w-4' />
+                                  展开完整回答
+                                </>
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </Collapsible>
+                        <div className='mt-4 flex gap-2'>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => handleCopyAnswer(item.answer)}
+                          >
+                            <Copy className='mr-2 h-4 w-4' />
+                            复制回答
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             )}
           </TabsContent>
@@ -261,69 +319,107 @@ export const KnowledgeLibraryPage = () => {
                     </Button>
                   </div>
                 )}
-                {noteList.map((note) => (
-                  <Card key={note.id}>
-                    <CardHeader>
-                      <div className='flex items-start justify-between gap-4'>
-                        <div className='min-w-0 flex-1'>
-                          <div className='mb-2 flex items-center gap-2'>
-                            <Database className='text-muted-foreground h-4 w-4 flex-shrink-0' />
-                            <span className='text-muted-foreground text-sm'>
-                              {note.sourceName ??
-                                note.sourceId ??
-                                '未关联知识源'}
-                            </span>
-                            <span className='text-muted-foreground text-sm'>
-                              ·
-                            </span>
-                            <span className='text-muted-foreground text-xs'>
-                              {new Date(note.createdAt).toLocaleString('zh-CN')}
-                            </span>
-                          </div>
-                          <CardTitle className='text-base'>
-                            {note.question}
-                          </CardTitle>
-                          {note.tags && note.tags.length > 0 && (
-                            <div className='mt-2 flex flex-wrap gap-1'>
-                              {note.tags.map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant='secondary'
-                                  className='text-xs'
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
+                {noteList.map((note) => {
+                  const isExpanded = expandedItems.has(note.id)
+                  return (
+                    <Card key={note.id}>
+                      <CardHeader>
+                        <div className='flex items-start justify-between gap-4'>
+                          <div className='min-w-0 flex-1'>
+                            <div className='mb-2 flex items-center gap-2'>
+                              <Database className='text-muted-foreground h-4 w-4 flex-shrink-0' />
+                              <span className='text-muted-foreground text-sm'>
+                                {note.sourceName ??
+                                  note.sourceId ??
+                                  '未关联知识源'}
+                              </span>
+                              <span className='text-muted-foreground text-sm'>
+                                ·
+                              </span>
+                              <span className='text-muted-foreground text-xs'>
+                                {new Date(note.createdAt).toLocaleString(
+                                  'zh-CN'
+                                )}
+                              </span>
                             </div>
-                          )}
+                            <CardTitle className='text-base'>
+                              {note.question}
+                            </CardTitle>
+                            {note.tags && note.tags.length > 0 && (
+                              <div className='mt-2 flex flex-wrap gap-1'>
+                                {note.tags.map((tag) => (
+                                  <Badge
+                                    key={tag}
+                                    variant='secondary'
+                                    className='text-xs'
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className='prose prose-sm text-muted-foreground max-w-none'>
-                        <p className='line-clamp-4'>{note.answerSummary}</p>
-                      </div>
-                      <div className='mt-4 flex gap-2'>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => handleCopyAnswer(note.answerSummary)}
+                      </CardHeader>
+                      <CardContent>
+                        <Collapsible
+                          open={isExpanded}
+                          onOpenChange={() => toggleExpanded(note.id)}
                         >
-                          <Copy className='mr-2 h-4 w-4' />
-                          复制摘要
-                        </Button>
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          onClick={() => setDeleteNoteId(note.id)}
-                        >
-                          <Trash2 className='mr-2 h-4 w-4' />
-                          删除
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          <div className='relative'>
+                            <div
+                              className={
+                                isExpanded ? '' : 'max-h-32 overflow-hidden'
+                              }
+                            >
+                              <StreamingMarkdown content={note.answerSummary} />
+                            </div>
+                            {!isExpanded && (
+                              <div className='bg-gradient-to-t from-background to-transparent pointer-events-none absolute bottom-0 left-0 right-0 h-12' />
+                            )}
+                          </div>
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              className='mt-2 w-full'
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className='mr-2 h-4 w-4' />
+                                  收起
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className='mr-2 h-4 w-4' />
+                                  展开完整回答
+                                </>
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </Collapsible>
+                        <div className='mt-4 flex gap-2'>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => handleCopyAnswer(note.answerSummary)}
+                          >
+                            <Copy className='mr-2 h-4 w-4' />
+                            复制摘要
+                          </Button>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => setDeleteNoteId(note.id)}
+                          >
+                            <Trash2 className='mr-2 h-4 w-4' />
+                            删除
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             )}
           </TabsContent>

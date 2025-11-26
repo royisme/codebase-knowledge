@@ -7,7 +7,6 @@ import {
   Send,
   Loader2,
   BookMarked,
-  Clock,
   Network,
   FileText,
   XCircle,
@@ -174,7 +173,7 @@ export const KnowledgeQueryPage = () => {
 
   return (
     <div className='h-full overflow-y-auto'>
-      <div className='mx-auto max-w-6xl space-y-6 pb-6'>
+      <div className='mx-auto max-w-7xl space-y-6 pb-6'>
         {/* Header */}
         <PageHeader
           title='智能问答'
@@ -182,7 +181,11 @@ export const KnowledgeQueryPage = () => {
           icon={<MessageSquare className='h-6 w-6' />}
         />
 
-        {/* 提问表单 */}
+        {/* 两栏布局 */}
+        <div className='flex flex-col gap-6 lg:flex-row'>
+          {/* 左侧主内容区 */}
+          <div className='flex-1 space-y-6'>
+            {/* 提问表单 */}
         <Card>
           <CardHeader>
             <CardTitle>提出你的问题</CardTitle>
@@ -348,32 +351,10 @@ export const KnowledgeQueryPage = () => {
             <Card>
               <CardHeader>
                 <div className='flex items-start justify-between'>
-                  <div>
-                    <CardTitle className='flex items-center gap-2'>
-                      <Sparkles className='text-primary h-5 w-5' />
-                      答案
-                    </CardTitle>
-                    {metadata && (
-                      <div className='text-muted-foreground mt-2 flex items-center gap-3 text-sm'>
-                        <div className='flex items-center gap-1'>
-                          <Clock className='h-4 w-4' />
-                          <span>{metadata.execution_time_ms}ms</span>
-                        </div>
-                        <Badge variant='outline'>
-                          {metadata.retrieval_mode || retrievalMode}
-                        </Badge>
-                        {metadata.from_cache && (
-                          <Badge variant='secondary'>缓存</Badge>
-                        )}
-                        {metadata.confidence_score && (
-                          <Badge variant='secondary'>
-                            置信度:{' '}
-                            {(metadata.confidence_score * 100).toFixed(0)}%
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <CardTitle className='flex items-center gap-2'>
+                    <Sparkles className='text-primary h-5 w-5' />
+                    答案
+                  </CardTitle>
                   {!isStreaming && text && (
                     <Button onClick={handleSaveToLibrary} size='sm'>
                       <BookMarked className='mr-2 h-4 w-4' />
@@ -386,83 +367,6 @@ export const KnowledgeQueryPage = () => {
                 <StreamingMarkdown content={text} streaming={isStreaming} />
               </CardContent>
             </Card>
-
-            {/* 关联实体 */}
-            {entities.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className='flex items-center gap-2'>
-                    <Network className='h-5 w-5' />
-                    关联实体 ({entities.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className='grid gap-3 md:grid-cols-2'>
-                    {entities.map((entity, idx) => (
-                      <Card key={idx} className='border-muted'>
-                        <CardContent className='pt-4'>
-                          <div className='flex items-start gap-3'>
-                            <Badge
-                              variant={
-                                entity.importance === 'high'
-                                  ? 'default'
-                                  : entity.importance === 'medium'
-                                    ? 'secondary'
-                                    : 'outline'
-                              }
-                            >
-                              {entity.type}
-                            </Badge>
-                            <div className='min-w-0 flex-1'>
-                              <h4 className='truncate font-medium'>
-                                {entity.link ? (
-                                  <a
-                                    href={entity.link}
-                                    className='text-primary hover:underline'
-                                    target='_blank'
-                                    rel='noopener noreferrer'
-                                  >
-                                    {entity.name}
-                                  </a>
-                                ) : (
-                                  entity.name
-                                )}
-                              </h4>
-                              <p className='text-muted-foreground text-sm'>
-                                {entity.detail}
-                              </p>
-                              {entity.author && (
-                                <p className='text-muted-foreground mt-1 text-xs'>
-                                  作者: {entity.author}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* 加载状态 */}
-            {isStreaming && entities.length === 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className='flex items-center gap-2'>
-                    <Loader2 className='h-5 w-5 animate-spin' />
-                    正在检索关联实体...
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className='space-y-3'>
-                    <Skeleton className='h-20 w-full' />
-                    <Skeleton className='h-20 w-full' />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         )}
 
@@ -479,6 +383,151 @@ export const KnowledgeQueryPage = () => {
             </CardContent>
           </Card>
         )}
+          </div>
+
+          {/* 右侧侧边栏 */}
+          <div className='w-full space-y-6 lg:w-80'>
+            {/* 查询元数据卡片 */}
+            {(hasResult || isStreaming) && (
+              <Card className='shadow-sm'>
+                <CardHeader className='pb-3'>
+                  <CardTitle className='flex items-center gap-2 text-sm font-semibold'>
+                    <Sparkles className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+                    查询详情
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='space-y-2.5 text-xs'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-muted-foreground'>执行时间</span>
+                    <span className='font-medium text-blue-600 dark:text-blue-400'>
+                      {metadata?.execution_time_ms
+                        ? `${metadata.execution_time_ms} ms`
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-muted-foreground'>检索模式</span>
+                    <Badge variant='outline'>
+                      {metadata?.retrieval_mode || retrievalMode}
+                    </Badge>
+                  </div>
+                  {metadata?.from_cache && (
+                    <div className='flex items-center justify-between'>
+                      <span className='text-muted-foreground'>缓存状态</span>
+                      <Badge variant='secondary'>已缓存</Badge>
+                    </div>
+                  )}
+                  {metadata?.confidence_score && (
+                    <div className='flex items-center justify-between'>
+                      <span className='text-muted-foreground'>置信度</span>
+                      <Badge variant='secondary'>
+                        {(metadata.confidence_score * 100).toFixed(0)}%
+                      </Badge>
+                    </div>
+                  )}
+                  {isStreaming && (
+                    <div className='mt-2 flex items-center gap-2 text-amber-600 dark:text-amber-400'>
+                      <Loader2 className='h-3 w-3 animate-spin' />
+                      <span>生成中...</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 关联实体卡片 */}
+            {(hasResult || isStreaming) && (
+              <Card className='shadow-sm'>
+                <CardHeader className='pb-3'>
+                  <CardTitle className='flex items-center gap-2 text-sm font-semibold'>
+                    <Network className='h-4 w-4 text-emerald-600 dark:text-emerald-400' />
+                    关联实体 ({entities.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className='flex max-h-[500px] flex-col gap-3 overflow-y-auto pr-2'>
+                    {entities.length > 0 ? (
+                      entities.map((entity, idx) => (
+                        <div
+                          key={idx}
+                          className='border-border bg-background rounded-lg border p-3 shadow-sm transition-shadow hover:shadow-md'
+                        >
+                          <div className='flex items-start justify-between gap-2'>
+                            <div className='flex-1'>
+                              <h4 className='text-foreground text-sm font-semibold'>
+                                {entity.link ? (
+                                  <a
+                                    href={entity.link}
+                                    className='text-primary hover:underline'
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                  >
+                                    {entity.name || '-'}
+                                  </a>
+                                ) : (
+                                  entity.name || '-'
+                                )}
+                              </h4>
+                              <p className='text-muted-foreground mt-0.5 text-xs'>
+                                {entity.type?.toUpperCase()}
+                              </p>
+                            </div>
+                            {entity.importance && (
+                              <Badge
+                                variant={
+                                  entity.importance === 'high'
+                                    ? 'default'
+                                    : entity.importance === 'medium'
+                                      ? 'secondary'
+                                      : 'outline'
+                                }
+                                className='shrink-0 text-[10px]'
+                              >
+                                {entity.importance === 'high'
+                                  ? '高'
+                                  : entity.importance === 'medium'
+                                    ? '中'
+                                    : '低'}
+                              </Badge>
+                            )}
+                          </div>
+                          {entity.detail && (
+                            <p className='text-muted-foreground mt-2 text-xs leading-relaxed'>
+                              {entity.detail}
+                            </p>
+                          )}
+                          {entity.author && (
+                            <p className='text-muted-foreground mt-1 text-xs'>
+                              作者: {entity.author}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className='border-muted-foreground/30 bg-muted/30 flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center'>
+                        {isStreaming ? (
+                          <>
+                            <Loader2 className='h-6 w-6 animate-spin text-blue-600 dark:text-blue-400' />
+                            <p className='text-muted-foreground text-xs'>
+                              正在检索关联实体...
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <FileText className='text-muted-foreground/70 h-6 w-6' />
+                            <p className='text-muted-foreground text-xs'>
+                              暂无关联实体
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

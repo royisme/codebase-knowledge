@@ -200,10 +200,6 @@ export function AuditPage() {
     return ACTION_LABELS[action] || action
   }
 
-  const handleExport = () => {
-    toast.info('导出功能开发中...')
-  }
-
   if (isLoading) {
     return (
       <div className='space-y-6'>
@@ -260,27 +256,6 @@ export function AuditPage() {
 
   return (
     <div className='space-y-6'>
-      <PageHeader
-        title='审计日志'
-        description='查看系统操作审计记录'
-        icon={<ActivityIcon className='h-6 w-6' />}
-        breadcrumbs={[
-          { label: '系统管理', href: '/admin' },
-          { label: '审计日志' },
-        ]}
-        actions={
-          <>
-            <Button variant='outline' onClick={handleExport}>
-              <Download className='mr-2 h-4 w-4' />
-              导出
-            </Button>
-            <Button variant='outline' size='icon' onClick={() => refetch()}>
-              <RefreshCw className='h-4 w-4' />
-            </Button>
-          </>
-        }
-      />
-
       {/* 搜索和筛选区域 */}
       <Card>
         <CardHeader>

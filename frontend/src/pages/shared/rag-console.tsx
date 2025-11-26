@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useRagConsoleStore } from '@/stores/rag-console-store'
-import { cn } from '@/lib/utils'
+import { cn, stripMarkdown } from '@/lib/utils'
 import { useStreamingQuery } from '@/hooks/useStreamingQuery'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -394,7 +394,9 @@ const SessionList = memo(function SessionList({
                       </span>
                     </div>
                     <p className='text-muted-foreground line-clamp-2 text-xs'>
-                      {lastMessage?.content || '暂无对话内容'}
+                      {lastMessage?.content
+                        ? stripMarkdown(lastMessage.content)
+                        : '暂无对话内容'}
                     </p>
                   </button>
                 )

@@ -62,6 +62,44 @@ export function sleep(ms: number = 1000) {
 }
 
 /**
+ * Strip Markdown syntax and extract plain text
+ * Used for preview text in lists and cards
+ * @param markdown - Markdown formatted text
+ * @returns Plain text without Markdown syntax
+ */
+export function stripMarkdown(markdown: string): string {
+  if (!markdown) return ''
+
+  return markdown
+    // Remove code blocks
+    .replace(/```[\s\S]*?```/g, '[代码]')
+    // Remove inline code
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove images
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+    // Remove links but keep text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove bold/italic
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*|_)(.*?)\1/g, '$2')
+    // Remove headers
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove blockquotes
+    .replace(/^\s*>\s+/gm, '')
+    // Remove horizontal rules
+    .replace(/^(-{3,}|\*{3,}|_{3,})$/gm, '')
+    // Remove list markers
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    // Remove strikethrough
+    .replace(/~~(.*?)~~/g, '$1')
+    // Normalize whitespace
+    .replace(/\n{2,}/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
  * Generates page numbers for pagination with ellipsis
  * @param currentPage - Current page number (1-based)
  * @param totalPages - Total number of pages
